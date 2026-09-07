@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CM Industrial · ProGest v3.0</title>
+  <meta name="description" content="Plataforma integral de gestión de proyectos industriales: presupuestos, mano de obra, inventario de herramientas, control documental, semáforo inteligente y Gantt.">
+  <meta property="og:title" content="CM Industrial · ProGest v3.0">
+  <meta property="og:description" content="Plataforma integral de gestión de proyectos industriales: presupuestos, mano de obra, inventario de herramientas, control documental, semáforo inteligente y Gantt.">
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="app.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <div id="app-layout">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div style="padding:20px 20px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:12px;">
+        <div style="width:38px;height:38px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:900;box-shadow:0 0 12px rgba(249,115,22,0.4);">
+          CM
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:-0.02em;">PROGEST <span style="color:var(--primary);font-size:11px;font-weight:700;">v3.0</span></div>
+          <div style="font-size:11px;color:var(--text-sub);font-weight:600;letter-spacing:0.04em;">CM INDUSTRIAL SpA</div>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav style="padding:16px 10px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
+        <div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:4px 12px 6px;">Operaciones</div>
+        
+        <button class="btn btn-secondary nav-item active" data-view="dashboard" onclick="navigateTo('dashboard')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-chart-pie" style="width:20px;"></i> Dashboard KPIs
+        </button>
+
+        <button class="btn btn-secondary nav-item" data-view="proyectos" onclick="navigateTo('proyectos')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-briefcase" style="width:20px;"></i> Proyectos & Faenas
+        </button>
+
+        <button class="btn btn-secondary nav-item" data-view="gantt" onclick="navigateTo('gantt')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-timeline" style="width:20px;"></i> Cronograma Gantt
+        </button>
+
+        <button class="btn btn-secondary nav-item" data-view="gastos" onclick="navigateTo('gastos')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-receipt" style="width:20px;"></i> Gastos & Compras
+        </button>
+
+        <div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:12px 12px 6px;">Recursos & Terreno</div>
+
+        <button class="btn btn-secondary nav-item" data-view="trabajadores" onclick="navigateTo('trabajadores')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-hard-hat" style="width:20px;"></i> Mano de Obra
+        </button>
+
+        <button class="btn btn-secondary nav-item" data-view="herramientas" onclick="navigateTo('herramientas')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-wrench" style="width:20px;"></i> Herramientas / Equipos
+        </button>
+
+        <button class="btn btn-secondary nav-item" data-view="documentos" onclick="navigateTo('documentos')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-folder-open" style="width:20px;"></i> Control Documental
+        </button>
+
+        <div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:12px 12px 6px;">Control & Sistema</div>
+
+        <button class="btn btn-secondary nav-item" data-view="alertas" onclick="navigateTo('alertas')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-bell" style="width:20px;color:var(--danger);"></i> Alertas Proactivas
+        </button>
+
+        <button class="btn btn-secondary nav-item" data-view="config" onclick="navigateTo('config')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-sliders" style="width:20px;"></i> Configuración / DB
+        </button>
+      </nav>
+
+      <!-- User card in sidebar footer -->
+      <div style="padding:14px 16px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;background:#0b0f19;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:34px;height:34px;border-radius:50%;background:#1e293b;border:1px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--primary);">
+            CM
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#fff;">Carlos Morales</div>
+            <div style="font-size:10px;color:var(--text-sub);"><span class="badge badge-orange" style="padding:2px 5px;font-size:9px;">ADMIN</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div id="main-content">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <button id="mobile-menu-btn" class="btn btn-secondary btn-sm" style="display:none;" title="Menú">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <i class="fa-solid fa-industry" style="color:var(--primary);"></i>
+            <span style="font-weight:700;font-size:14px;color:#fff;">Plataforma de Control de Obras y Proyectos Industriales</span>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="badge badge-green"><i class="fa-solid fa-circle-dot"></i> Base de Datos Local Activa</span>
+          <button class="btn btn-secondary btn-sm" onclick="navigateTo('alertas')" title="Alertas">
+            <i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- View Root -->
+      <main id="view-root" class="view-container">
+        <!-- Rendered dynamically by app.js -->
+      </main>
+    </div>
+  </div>
+
+  <!-- Universal CRUD Modal -->
+  <div id="crud-modal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-title" style="font-size:15px;font-weight:700;">Editar Registro</h3>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal()" style="border:none;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-body-content"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveModalRecord()"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @media (max-width: 900px) {
+      #mobile-menu-btn { display: inline-flex !important; }
+    }
+  </style>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
