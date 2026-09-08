@@ -89,7 +89,8 @@ function renderSidebarUserCard() {
   const card = document.getElementById("sidebar-user-card");
   if (!card) return;
 
-  const user = DB.users && DB.users[0];
+  const session = getSession();
+  const user = session && session.user;
 
   if (!user) {
     card.innerHTML = `
@@ -109,15 +110,18 @@ function renderSidebarUserCard() {
   const roleBadge = user.role === "Administrador" ? "badge-orange" : user.role === "Desarrollador" ? "badge-blue" : "badge-gray";
 
   card.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:34px;height:34px;border-radius:50%;background:#1e293b;border:1px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--primary);">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+      <div style="width:34px;height:34px;border-radius:50%;background:#1e293b;border:1px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--primary);flex-shrink:0;">
         ${user.avatar || getInitials(user.name)}
       </div>
-      <div>
-        <div style="font-size:12px;font-weight:700;color:#fff;">${user.name}</div>
+      <div style="min-width:0;">
+        <div style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${user.name}</div>
         <div style="font-size:10px;color:var(--text-sub);"><span class="badge ${roleBadge}" style="padding:2px 5px;font-size:9px;">${(user.role || "").toUpperCase()}</span></div>
       </div>
     </div>
+    <button class="btn btn-secondary btn-sm" onclick="handleLogout()" title="Cerrar sesión" style="padding:6px 9px;flex-shrink:0;">
+      <i class="fa-solid fa-right-from-bracket"></i>
+    </button>
   `;
 }
 
@@ -1393,6 +1397,7 @@ function getEntityFormHTML(entity, data) {
       </div>
     `;
   } else if (entity === "users") {
+    const isCreating = !data.id;
     return `
       <div class="form-grid">
         <div class="form-group full">
@@ -1401,7 +1406,7 @@ function getEntityFormHTML(entity, data) {
         </div>
         <div class="form-group">
           <label class="form-label">Correo Electrónico</label>
-          <input type="email" id="f_uemail" class="form-control" value="${data.email || ''}">
+          <input type="email" id="f_uemail" class="form-control" value="${data.email || ''}" ${isCreating ? '' : 'disabled'}>
         </div>
         <div class="form-group">
           <label class="form-label">Rol</label>
@@ -1411,13 +1416,23 @@ function getEntityFormHTML(entity, data) {
             <option value="Usuario" ${(!data.role || data.role === 'Usuario') ? 'selected' : ''}>Usuario</option>
           </select>
         </div>
+        ${isCreating ? `
+          <div class="form-group full">
+            <label class="form-label">Contraseña</label>
+            <input type="password" id="f_upass" class="form-control" placeholder="Mínimo 4 caracteres" autocomplete="new-password" required>
+          </div>
+        ` : `
+          <div class="form-group full" style="color:var(--text-sub);font-size:12px;padding:8px;background:#1e293b;border-radius:6px;border:1px solid var(--border-color);">
+            Para cambiar contraseña, usa la función de "Cambiar contraseña" en tu cuenta de Firebase.
+          </div>
+        `}
       </div>
     `;
   }
   return "";
 }
 
-function saveModalRecord() {
+async function saveModalRecord() {
   if (!activeModalEntity) return;
 
   if (activeModalEntity === "projects") {
@@ -1484,13 +1499,46 @@ function saveModalRecord() {
 
     if (!activeModalRecord) DB.documents.push(record);
   } else if (activeModalEntity === "users") {
-    const record = activeModalRecord || { id: "usr-" + Date.now(), createdAt: new Date().toISOString().split("T")[0] };
-    record.name = document.getElementById("f_uname").value.trim();
-    record.email = document.getElementById("f_uemail").value.trim();
-    record.role = document.getElementById("f_urole").value;
-    record.avatar = getInitials(record.name);
-
-    if (!activeModalRecord) DB.users.push(record);
+    const isCreating = !activeModalRecord;
+    const name = document.getElementById("f_uname").value.trim();
+    const email = document.getElementById("f_uemail").value.trim();
+    const role = document.getElementById("f_urole").value;
+    
+    if (isCreating) {
+      const password = document.getElementById("f_upass").value;
+      
+      if (!password) {
+        alert("La contraseña es requerida para crear un usuario.");
+        return;
+      }
+      
+      try {
+        // Crear en Firebase
+        await firebaseAuth.createUserWithEmailAndPassword(email, password);
+        
+        // Crear perfil local en DB.users
+        const user = {
+          id: "usr-" + Date.now(),
+          name,
+          email,
+          role,
+          avatar: getInitials(name),
+          createdAt: new Date().toISOString().split("T")[0]
+        };
+        DB.users.push(user);
+      } catch (error) {
+        let msg = error.message;
+        if (error.code === "auth/email-already-in-use") msg = "Este correo ya está registrado.";
+        else if (error.code === "auth/weak-password") msg = "Contraseña muy débil.";
+        alert("Error al crear usuario: " + msg);
+        return;
+      }
+    } else {
+      // Editar: solo actualizar nombre/rol (no email ni contraseña)
+      activeModalRecord.name = name;
+      activeModalRecord.role = role;
+      activeModalRecord.avatar = getInitials(name);
+    }
   }
 
   saveDB();
@@ -1506,11 +1554,169 @@ function deleteRecord(entity, id) {
   }
 }
 
+// ===== AUTENTICACIÓN CON FIREBASE =====
+// Firebase maneja email/contraseña de forma segura en la nube.
+// localStorage almacena datos del usuario (nombre, rol, avatar) pero NO contraseña.
+
+function showApp() {
+  document.getElementById("auth-screen").style.display = "none";
+  document.getElementById("app-layout").style.display = "flex";
+  renderCurrentView();
+}
+
+function showAuthScreen(showSetupForm = false) {
+  document.getElementById("auth-screen").style.display = "flex";
+  document.getElementById("app-layout").style.display = "none";
+  document.getElementById("auth-login-form").style.display = showSetupForm ? "none" : "block";
+  document.getElementById("auth-setup-form").style.display = showSetupForm ? "block" : "none";
+}
+
+function initAuth() {
+  // Firebase maneja el estado de autenticación. Cuando el DOM está listo,
+  // Firebase ya sabe si hay sesión activa en el navegador.
+  // Escuchamos cambios con onAuthStateChanged.
+  
+  firebaseAuth.onAuthStateChanged((firebaseUser) => {
+    if (firebaseUser) {
+      // Usuario autenticado en Firebase
+      // Buscar su perfil en DB.users
+      const localUser = DB.users.find(u => u.email === firebaseUser.email);
+      
+      if (localUser) {
+        // Perfil existe: entrar a la app
+        setLocalSession(localUser);
+        showApp();
+      } else {
+        // Usuario en Firebase pero sin perfil local (no debería ocurrir)
+        // Logout y mostrar login para recrear perfil
+        firebaseAuth.signOut().catch(e => console.error("Logout error:", e));
+        showAuthScreen();
+      }
+    } else {
+      // No hay sesión en Firebase
+      // Mostrar login o setup según si hay usuarios locales
+      const showSetup = DB.users.length === 0;
+      showAuthScreen(showSetup);
+    }
+  });
+}
+
+// Guarda datos del usuario en sessionStorage (para la sesión actual)
+function setLocalSession(user) {
+  currentSession = {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar || getInitials(user.name)
+    },
+    loginTime: new Date().toISOString()
+  };
+  sessionStorage.setItem("cm_progest_session", JSON.stringify(currentSession));
+}
+
+async function attemptLogin() {
+  const emailInput = document.getElementById("auth-email");
+  const passInput = document.getElementById("auth-password");
+  const errorBox = document.getElementById("auth-login-error");
+  const email = emailInput.value.trim();
+  const password = passInput.value;
+
+  errorBox.textContent = "";
+
+  if (!email || !password) {
+    errorBox.textContent = "Ingresa tu correo y contraseña.";
+    return;
+  }
+
+  try {
+    // Firebase se encarga de verificar credenciales
+    await firebaseAuth.signInWithEmailAndPassword(email, password);
+    // Si llega aquí, autenticación exitosa. onAuthStateChanged se dispara automáticamente.
+    passInput.value = "";
+  } catch (error) {
+    if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
+      errorBox.textContent = "Correo o contraseña incorrectos.";
+    } else if (error.code === "auth/too-many-requests") {
+      errorBox.textContent = "Demasiados intentos. Intenta más tarde.";
+    } else {
+      errorBox.textContent = "Error: " + error.message;
+    }
+    passInput.value = "";
+  }
+}
+
+async function createFirstUser() {
+  const nameInput = document.getElementById("setup-name");
+  const emailInput = document.getElementById("setup-email");
+  const passInput = document.getElementById("setup-password");
+  const errorBox = document.getElementById("auth-setup-error");
+
+  const name = nameInput.value.trim();
+  const email = emailInput.value.trim();
+  const password = passInput.value;
+
+  errorBox.textContent = "";
+
+  if (!name || !email || !password) {
+    errorBox.textContent = "Completa todos los campos.";
+    return;
+  }
+  if (password.length < 4) {
+    errorBox.textContent = "La contraseña debe tener al menos 4 caracteres.";
+    return;
+  }
+
+  try {
+    // Firebase crea usuario con email/password (encriptado en la nube)
+    const firebaseUser = await firebaseAuth.createUserWithEmailAndPassword(email, password);
+    
+    // Crear perfil local en DB.users (sin contraseña)
+    const user = {
+      id: "usr-" + Date.now(),
+      name,
+      email,
+      role: "Administrador",
+      avatar: getInitials(name),
+      createdAt: new Date().toISOString().split("T")[0]
+    };
+    
+    DB.users.push(user);
+    saveDB();
+    setLocalSession(user);
+    
+    // onAuthStateChanged se dispara automáticamente y muestra la app
+    passInput.value = "";
+  } catch (error) {
+    if (error.code === "auth/email-already-in-use") {
+      errorBox.textContent = "Este correo ya está registrado.";
+    } else if (error.code === "auth/weak-password") {
+      errorBox.textContent = "Contraseña muy débil. Usa al menos 6 caracteres.";
+    } else if (error.code === "auth/invalid-email") {
+      errorBox.textContent = "Correo inválido.";
+    } else {
+      errorBox.textContent = "Error: " + error.message;
+    }
+  }
+}
+
+function handleLogout() {
+  if (confirm("¿Cerrar sesión?")) {
+    firebaseAuth.signOut()
+      .then(() => {
+        currentSession = null;
+        sessionStorage.removeItem("cm_progest_session");
+        // onAuthStateChanged se dispara automáticamente y muestra login
+      })
+      .catch(e => console.error("Logout error:", e));
+  }
+}
+
 // App Initialization
 document.addEventListener("DOMContentLoaded", () => {
   loadDB();
-  getSession();
-  
+
   // Mobile sidebar toggling
   const menuBtn = document.getElementById("mobile-menu-btn");
   const sidebar = document.getElementById("sidebar");
@@ -1520,5 +1726,5 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  renderCurrentView();
+  initAuth();
 });
