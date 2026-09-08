@@ -1,14 +1,6 @@
 // CM INDUSTRIAL — Data Store & Business Logic
 const STORAGE_KEY = "cm_progest_v3";
 
-// SHA-256 password hash using browser Web Crypto API
-async function sha256(str) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 // Initial default database structure
 function freshDB() {
   return {
@@ -111,18 +103,7 @@ function getSession() {
   if (currentSession) return currentSession;
   try {
     const raw = sessionStorage.getItem("cm_progest_session");
-    if (raw) {
-      currentSession = JSON.parse(raw);
-    } else {
-      // Default to first user (Admin) for seamless preview
-      if (DB && DB.users && DB.users.length > 0) {
-        currentSession = {
-          user: DB.users[0],
-          loginTime: new Date().toISOString()
-        };
-        sessionStorage.setItem("cm_progest_session", JSON.stringify(currentSession));
-      }
-    }
+    if (raw) currentSession = JSON.parse(raw);
   } catch (e) {
     console.error("Session error:", e);
   }
