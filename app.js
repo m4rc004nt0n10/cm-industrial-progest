@@ -1,4 +1,4 @@
-// CM INDUSTRIAL · ProGest v3.0 — UI Controller & Views
+// CM INDUSTRIAL — UI Controller & Views
 let currentView = "dashboard";
 let chartInstances = {};
 let activeModalEntity = null;
@@ -11,6 +11,14 @@ function fmtMoney(amount) {
 
 function fmtPercent(val) {
   return Number(val || 0).toFixed(1) + "%";
+}
+
+// Builds a 2-letter avatar from a person's name, e.g. "Carlos Morales" -> "CM"
+function getInitials(name) {
+  if (!name) return "??";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
 // Navigation
@@ -37,6 +45,8 @@ function renderCurrentView() {
   });
   chartInstances = {};
 
+  renderSidebarUserCard();
+
   switch (currentView) {
     case "dashboard":
       renderDashboard(container);
@@ -59,6 +69,9 @@ function renderCurrentView() {
     case "documentos":
       renderDocuments(container);
       break;
+    case "usuarios":
+      renderUsers(container);
+      break;
     case "alertas":
       renderAlerts(container);
       break;
@@ -68,6 +81,44 @@ function renderCurrentView() {
     default:
       renderDashboard(container);
   }
+}
+
+// Fills the sidebar footer card from the real user roster (DB.users) instead
+// of a hardcoded name. Shows the first registered user, or a prompt to create one.
+function renderSidebarUserCard() {
+  const card = document.getElementById("sidebar-user-card");
+  if (!card) return;
+
+  const user = DB.users && DB.users[0];
+
+  if (!user) {
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="navigateTo('usuarios')">
+        <div style="width:34px;height:34px;border-radius:50%;background:#1e293b;border:1px dashed var(--border-subtle);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text-sub);">
+          <i class="fa-solid fa-user-plus"></i>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#fff;">Sin usuarios</div>
+          <div style="font-size:10px;color:var(--primary);">+ Crear usuario</div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const roleBadge = user.role === "Administrador" ? "badge-orange" : user.role === "Desarrollador" ? "badge-blue" : "badge-gray";
+
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:34px;height:34px;border-radius:50%;background:#1e293b;border:1px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--primary);">
+        ${user.avatar || getInitials(user.name)}
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#fff;">${user.name}</div>
+        <div style="font-size:10px;color:var(--text-sub);"><span class="badge ${roleBadge}" style="padding:2px 5px;font-size:9px;">${(user.role || "").toUpperCase()}</span></div>
+      </div>
+    </div>
+  `;
 }
 
 // 1. DASHBOARD VIEW WITH 10 KPIS & 4 CHARTS
@@ -781,7 +832,72 @@ function renderDocuments(container) {
   `;
 }
 
-// 8. ALERTAS VIEW
+// 8. USUARIOS VIEW (roster of app users, not a login/access-control system)
+function renderUsers(container) {
+  container.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <p style="font-size:13px;color:var(--text-sub);">Directorio de personas que usan la plataforma. Roles disponibles: Desarrollador, Administrador y Usuario.</p>
+    </div>
+    <div class="data-table-container">
+      <div class="table-toolbar">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <h2 style="font-size:18px;font-weight:700;">Usuarios del Sistema</h2>
+          <span class="badge badge-orange">${DB.users.length} Registrados</span>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div class="search-box">
+            <i class="fa-solid fa-search search-icon"></i>
+            <input type="text" class="search-input" placeholder="Buscar usuario, correo..." oninput="filterTable('usr-table', this.value)">
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="exportCSV('users')"><i class="fa-solid fa-file-export"></i> Exportar</button>
+          <button class="btn btn-primary btn-sm" onclick="openCreateModal('users')"><i class="fa-solid fa-plus"></i> Nuevo Usuario</button>
+        </div>
+      </div>
+      <table id="usr-table">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Correo</th>
+            <th>Rol</th>
+            <th>Creado</th>
+            <th style="text-align:right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${DB.users.map(u => {
+            const roleBadge = u.role === "Administrador" ? "badge-orange" : u.role === "Desarrollador" ? "badge-blue" : "badge-gray";
+            return `
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:30px;height:30px;border-radius:50%;background:#1e293b;border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-main);flex-shrink:0;">${u.avatar || getInitials(u.name)}</div>
+                    <strong>${u.name}</strong>
+                  </div>
+                </td>
+                <td>${u.email || "-"}</td>
+                <td><span class="badge ${roleBadge}">${u.role}</span></td>
+                <td><small>${u.createdAt || "-"}</small></td>
+                <td style="text-align:right;">
+                  <button class="btn btn-secondary btn-sm" onclick="openEditModal('users', '${u.id}')"><i class="fa-solid fa-pen"></i></button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteRecord('users', '${u.id}')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+      ${DB.users.length === 0 ? `
+        <div style="padding:32px;text-align:center;">
+          <i class="fa-solid fa-users" style="font-size:32px;color:var(--text-sub);margin-bottom:12px;"></i>
+          <h3 style="font-size:15px;">Aún no hay usuarios registrados</h3>
+          <p style="color:var(--text-sub);font-size:13px;margin-top:6px;">Usa "Nuevo Usuario" para agregar al primero.</p>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+// 9. ALERTAS VIEW
 function renderAlerts(container) {
   const alerts = [];
 
@@ -879,7 +995,7 @@ function renderAlerts(container) {
   `;
 }
 
-// 9. CONFIGURACIÓN VIEW (CSV / JSON BACKUP / RESET / SEED)
+// 10. CONFIGURACIÓN VIEW (CSV / JSON BACKUP / RESET / SEED)
 function renderConfig(container) {
   const session = getSession();
 
@@ -969,7 +1085,7 @@ function downloadJSONBackup() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `CM_ProGest_Backup_${new Date().toISOString().split("T")[0]}.json`;
+  a.download = `CM_Industrial_Backup_${new Date().toISOString().split("T")[0]}.json`;
   a.click();
 }
 
@@ -986,7 +1102,7 @@ function restoreJSONBackup(evt) {
         renderCurrentView();
         alert("¡Copia de seguridad restaurada correctamente!");
       } else {
-        alert("El archivo no tiene el formato de ProGest válido.");
+        alert("El archivo no tiene un formato válido para esta aplicación.");
       }
     } catch (err) {
       alert("Error al leer el archivo JSON: " + err.message);
@@ -998,7 +1114,7 @@ function restoreJSONBackup(evt) {
 // CSV Export
 function exportCSV(entity) {
   let rows = [];
-  let filename = `ProGest_${entity}_${new Date().toISOString().split("T")[0]}.csv`;
+  let filename = `CM_Industrial_${entity}_${new Date().toISOString().split("T")[0]}.csv`;
 
   if (entity === "projects") {
     rows = [["ID", "Nombre", "Cliente", "Ubicación", "Jefe", "Inicio", "Fin", "Presupuesto", "Gasto", "AvancePlan", "AvanceReal", "Estado"]];
@@ -1024,6 +1140,11 @@ function exportCSV(entity) {
     rows = [["ID", "Codigo", "Nombre", "Proyecto", "Tipo", "Vencimiento", "Estado"]];
     DB.documents.forEach(d => {
       rows.push([d.id, d.code, d.name, d.projectId, d.type, d.expiryDate, d.status]);
+    });
+  } else if (entity === "users") {
+    rows = [["ID", "Nombre", "Correo", "Rol", "Creado"]];
+    DB.users.forEach(u => {
+      rows.push([u.id, u.name, u.email, u.role, u.createdAt]);
     });
   }
 
@@ -1271,6 +1392,27 @@ function getEntityFormHTML(entity, data) {
         </div>
       </div>
     `;
+  } else if (entity === "users") {
+    return `
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Nombre Completo</label>
+          <input type="text" id="f_uname" class="form-control" value="${data.name || ''}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo Electrónico</label>
+          <input type="email" id="f_uemail" class="form-control" value="${data.email || ''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rol</label>
+          <select id="f_urole" class="form-control">
+            <option value="Desarrollador" ${data.role === 'Desarrollador' ? 'selected' : ''}>Desarrollador</option>
+            <option value="Administrador" ${data.role === 'Administrador' ? 'selected' : ''}>Administrador</option>
+            <option value="Usuario" ${(!data.role || data.role === 'Usuario') ? 'selected' : ''}>Usuario</option>
+          </select>
+        </div>
+      </div>
+    `;
   }
   return "";
 }
@@ -1341,6 +1483,14 @@ function saveModalRecord() {
     record.status = "Vigente";
 
     if (!activeModalRecord) DB.documents.push(record);
+  } else if (activeModalEntity === "users") {
+    const record = activeModalRecord || { id: "usr-" + Date.now(), createdAt: new Date().toISOString().split("T")[0] };
+    record.name = document.getElementById("f_uname").value.trim();
+    record.email = document.getElementById("f_uemail").value.trim();
+    record.role = document.getElementById("f_urole").value;
+    record.avatar = getInitials(record.name);
+
+    if (!activeModalRecord) DB.users.push(record);
   }
 
   saveDB();
