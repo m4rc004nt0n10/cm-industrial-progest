@@ -1,4 +1,4 @@
-// CM INDUSTRIAL · ProGest v3.0 — Data Store & Business Logic
+// CM INDUSTRIAL — Data Store & Business Logic
 const STORAGE_KEY = "cm_progest_v3";
 
 // SHA-256 password hash using browser Web Crypto API
@@ -14,7 +14,7 @@ function freshDB() {
   return {
     version: "3.0",
     settings: {
-      companyName: "CM Industrial SpA",
+      companyName: "CM Industrial",
       currency: "USD",
       currencySymbol: "$",
       trafficLight: {
@@ -23,44 +23,9 @@ function freshDB() {
         budgetWarningPercent: 85
       }
     },
-    users: [
-      {
-        id: "usr-1",
-        name: "Carlos Morales",
-        email: "admin@cmindustrial.cl",
-        role: "admin", // admin, supervisor, operador, lectura
-        passHash: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", // 'admin'
-        avatar: "CM",
-        createdAt: "2026-01-15"
-      },
-      {
-        id: "usr-2",
-        name: "Valeria Soto",
-        email: "vsoto@cmindustrial.cl",
-        role: "supervisor",
-        passHash: "04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb", // 'user'
-        avatar: "VS",
-        createdAt: "2026-02-01"
-      },
-      {
-        id: "usr-3",
-        name: "Rodrigo Araya",
-        email: "raraya@cmindustrial.cl",
-        role: "operador",
-        passHash: "04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb",
-        avatar: "RA",
-        createdAt: "2026-02-10"
-      },
-      {
-        id: "usr-4",
-        name: "Auditor Cliente",
-        email: "auditor@cliente.com",
-        role: "lectura",
-        passHash: "04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb",
-        avatar: "AC",
-        createdAt: "2026-02-15"
-      }
-    ],
+    // Roster of app users. Roles: "Desarrollador", "Administrador", "Usuario".
+    // Managed from the "Usuarios" section in the UI (see renderUsers in app.js).
+    users: [],
     projects: [],
     expenses: [],
     workers: [],
