@@ -22,7 +22,53 @@
 </head>
 <body>
 
-  <div id="app-layout">
+  <!-- Auth Screen: login form, or first-run setup form when there are zero users yet -->
+  <div id="auth-screen" style="position:fixed;inset:0;background:var(--bg-main);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;">
+    <div style="width:100%;max-width:380px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:32px 28px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:26px;">
+        <div style="width:42px;height:42px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;font-weight:900;box-shadow:0 0 12px rgba(249,115,22,0.4);">CM</div>
+        <div style="font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.02em;">CM INDUSTRIAL</div>
+      </div>
+
+      <!-- Login form (shown when at least one user exists) -->
+      <div id="auth-login-form">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;">Iniciar Sesión</h3>
+        <p style="font-size:12px;color:var(--text-sub);margin-bottom:18px;">Ingresa tu correo y contraseña para continuar.</p>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Correo Electrónico</label>
+          <input type="email" id="auth-email" class="form-control" placeholder="tu@correo.com" autocomplete="username" autofocus>
+        </div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label class="form-label">Contraseña</label>
+          <input type="password" id="auth-password" class="form-control" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter'){attemptLogin();}">
+        </div>
+        <div id="auth-login-error" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:8px;"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="attemptLogin()">Ingresar</button>
+      </div>
+
+      <!-- First-run setup form (shown only while DB.users is empty) -->
+      <div id="auth-setup-form" style="display:none;">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;">Crear Cuenta de Administrador</h3>
+        <p style="font-size:12px;color:var(--text-sub);margin-bottom:18px;">Aún no hay usuarios registrados. Crea la primera cuenta para empezar.</p>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Nombre Completo</label>
+          <input type="text" id="setup-name" class="form-control" placeholder="Tu nombre" autocomplete="name">
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Correo Electrónico</label>
+          <input type="email" id="setup-email" class="form-control" placeholder="tu@correo.com" autocomplete="username">
+        </div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label class="form-label">Contraseña</label>
+          <input type="password" id="setup-password" class="form-control" placeholder="Mínimo 4 caracteres" autocomplete="new-password" onkeydown="if(event.key==='Enter'){createFirstUser();}">
+        </div>
+        <div id="auth-setup-error" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:8px;"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="createFirstUser()">Crear y Entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-layout" style="display:none;">
     <!-- Sidebar -->
     <aside id="sidebar">
       <div style="padding:20px 20px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:12px;">
@@ -138,6 +184,25 @@
       #mobile-menu-btn { display: inline-flex !important; }
     }
   </style>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js"></script>
+  
+  <!-- Firebase Configuration & Initialization -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAH6N2OfvpQvx0SWHqcks81WLRzmSBClBw",
+      authDomain: "aplicacion-web-95635.firebaseapp.com",
+      projectId: "aplicacion-web-95635",
+      storageBucket: "aplicacion-web-95635.firebasestorage.app",
+      messagingSenderId: "252659714101",
+      appId: "1:252659714101:web:89ee95fbaf52eeadfc897c"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    window.firebaseAuth = firebase.auth();
+  </script>
 
   <!-- Scripts -->
   <script src="data.js"></script>
