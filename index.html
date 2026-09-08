@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CM Industrial · ProGest v3.0</title>
+  <title>CM Industrial</title>
   <meta name="description" content="Plataforma integral de gestión de proyectos industriales: presupuestos, mano de obra, inventario de herramientas, control documental, semáforo inteligente y Gantt.">
-  <meta property="og:title" content="CM Industrial · ProGest v3.0">
+  <meta property="og:title" content="CM Industrial">
   <meta property="og:description" content="Plataforma integral de gestión de proyectos industriales: presupuestos, mano de obra, inventario de herramientas, control documental, semáforo inteligente y Gantt.">
   
   <!-- Fonts & Icons -->
@@ -30,8 +30,7 @@
           CM
         </div>
         <div>
-          <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:-0.02em;">PROGEST <span style="color:var(--primary);font-size:11px;font-weight:700;">v3.0</span></div>
-          <div style="font-size:11px;color:var(--text-sub);font-weight:600;letter-spacing:0.04em;">CM INDUSTRIAL SpA</div>
+          <div style="font-size:16px;font-weight:800;color:#fff;letter-spacing:-0.02em;">CM INDUSTRIAL</div>
         </div>
       </div>
 
@@ -71,6 +70,10 @@
 
         <div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:12px 12px 6px;">Control & Sistema</div>
 
+        <button class="btn btn-secondary nav-item" data-view="usuarios" onclick="navigateTo('usuarios')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-users" style="width:20px;"></i> Usuarios
+        </button>
+
         <button class="btn btn-secondary nav-item" data-view="alertas" onclick="navigateTo('alertas')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
           <i class="fa-solid fa-bell" style="width:20px;color:var(--danger);"></i> Alertas Proactivas
         </button>
@@ -80,18 +83,8 @@
         </button>
       </nav>
 
-      <!-- User card in sidebar footer -->
-      <div style="padding:14px 16px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;background:#0b0f19;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:34px;height:34px;border-radius:50%;background:#1e293b;border:1px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--primary);">
-            CM
-          </div>
-          <div>
-            <div style="font-size:12px;font-weight:700;color:#fff;">Carlos Morales</div>
-            <div style="font-size:10px;color:var(--text-sub);"><span class="badge badge-orange" style="padding:2px 5px;font-size:9px;">ADMIN</span></div>
-          </div>
-        </div>
-      </div>
+      <!-- User card in sidebar footer (rendered dynamically by app.js from DB.users) -->
+      <div id="sidebar-user-card" style="padding:14px 16px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;background:#0b0f19;"></div>
     </aside>
 
     <!-- Main Content Area -->
