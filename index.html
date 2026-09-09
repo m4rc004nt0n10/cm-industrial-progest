@@ -186,8 +186,8 @@
   </style>
 
   <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   
   <!-- Firebase Configuration & Initialization -->
   <script>
@@ -204,24 +204,8 @@
     window.firebaseAuth = firebase.auth();
   </script>
 
- <!-- Scripts: app.js debe esperar a que Firebase esté listo -->
-<script>
-  function loadAppScripts() {
-    if (typeof firebase !== 'undefined' && firebase.auth) {
-      const script1 = document.createElement('script');
-      script1.src = 'data.js';
-      document.body.appendChild(script1);
-      
-      script1.onload = function() {
-        const script2 = document.createElement('script');
-        script2.src = 'app.js';
-        document.body.appendChild(script2);
-      };
-    } else {
-      setTimeout(loadAppScripts, 100);
-    }
-  }
-  loadAppScripts();
-</script>
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
