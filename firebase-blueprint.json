@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "projects": {
+      "title": "Proyectos Industriales",
+      "description": "Registro centralizado de obras, presupuestos, gastos y avances físicos",
+      "fields": {
+        "id": { "type": "string", "description": "Código identificador del proyecto" },
+        "name": { "type": "string", "description": "Nombre de la obra" },
+        "client": { "type": "string", "description": "Cliente" },
+        "budget": { "type": "number", "description": "Presupuesto asignado" },
+        "spent": { "type": "number", "description": "Gasto ejecutado" },
+        "realProgress": { "type": "number", "description": "Avance real %" },
+        "plannedProgress": { "type": "number", "description": "Avance planificado %" },
+        "startDate": { "type": "string", "description": "Fecha de inicio" },
+        "endDate": { "type": "string", "description": "Fecha de término" }
+      }
+    },
+    "workers": {
+      "title": "Mano de Obra",
+      "description": "Colaboradores, técnicos, soldadores y personal en faena",
+      "fields": {
+        "id": { "type": "string", "description": "ID del trabajador" },
+        "rut": { "type": "string", "description": "RUT o DNI" },
+        "name": { "type": "string", "description": "Nombre completo" },
+        "role": { "type": "string", "description": "Cargo / Especialidad" },
+        "hourlyRate": { "type": "number", "description": "Tarifa ordinaria por hora" },
+        "workSchedule": { "type": "string", "description": "Turno o jornada" },
+        "status": { "type": "string", "description": "Estado operativo" }
+      }
+    },
+    "overtime": {
+      "title": "Horas Extras y Turnos",
+      "description": "Registro de horas extraordinarias con recargo legal",
+      "fields": {
+        "id": { "type": "string", "description": "ID del registro de sobretiempo" },
+        "workerId": { "type": "string", "description": "ID del trabajador" },
+        "projectId": { "type": "string", "description": "Proyecto asignado" },
+        "date": { "type": "string", "description": "Fecha del turno" },
+        "regularHours": { "type": "number", "description": "Horas ordinarias" },
+        "overtimeHours": { "type": "number", "description": "Horas extras trabajadas" },
+        "hourlyRate": { "type": "number", "description": "Tarifa base" },
+        "overtimeRate": { "type": "number", "description": "Tarifa extra (+50%)" },
+        "status": { "type": "string", "description": "Estado de aprobación" }
+      }
+    },
+    "expenses": {
+      "title": "Gastos y Compras",
+      "description": "Egresos, compras de insumos, arriendos y facturación de obras",
+      "fields": {
+        "id": { "type": "string", "description": "ID del gasto" },
+        "folio": { "type": "string", "description": "Folio o N° documento" },
+        "projectId": { "type": "string", "description": "Proyecto asociado" },
+        "category": { "type": "string", "description": "Categoría de gasto" },
+        "amount": { "type": "number", "description": "Monto del gasto" },
+        "supplier": { "type": "string", "description": "Proveedor" },
+        "date": { "type": "string", "description": "Fecha" }
+      }
+    },
+    "tools": {
+      "title": "Herramientas y Maquinaria",
+      "description": "Inventario de equipos, calibraciones y mantenciones",
+      "fields": {
+        "id": { "type": "string", "description": "ID del equipo" },
+        "code": { "type": "string", "description": "Código interno" },
+        "name": { "type": "string", "description": "Nombre de la herramienta o equipo" },
+        "projectId": { "type": "string", "description": "Ubicación o proyecto" },
+        "status": { "type": "string", "description": "Estado operativo" }
+      }
+    },
+    "documents": {
+      "title": "Documentos y Facturación",
+      "description": "Control documental, carpetas técnicas, fotos de facturas y boletas",
+      "fields": {
+        "id": { "type": "string", "description": "ID del documento" },
+        "code": { "type": "string", "description": "Código o folio" },
+        "name": { "type": "string", "description": "Título o glosa" },
+        "type": { "type": "string", "description": "Tipo documental" },
+        "projectId": { "type": "string", "description": "Proyecto" }
+      }
+    }
+  }
+}

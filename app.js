@@ -2346,10 +2346,16 @@ function renderConfig(container) {
         <button class="btn btn-primary btn-sm" onclick="saveTrafficSettings()">Guardar Umbrales</button>
       </div>
 
-      <!-- Backup & Restore -->
+      <!-- Backup & Cloud Database -->
       <div class="chart-box">
-        <div class="chart-title" style="margin-bottom:14px;"><i class="fa-solid fa-database" style="color:var(--blue-accent);"></i> Gestión de Base de Datos Local</div>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Clave de persistencia: <code>cm_progest_v4</code></p>
+        <div class="chart-title" style="margin-bottom:14px;"><i class="fa-solid fa-cloud" style="color:var(--blue-accent);"></i> Base de Datos en la Nube (Firestore)</div>
+        <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:8px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;flex-shrink:0;"></div>
+          <div style="font-size:12px;color:var(--text-main);">
+            <strong>Sincronización en Tiempo Real Activa</strong><br>
+            <span style="color:var(--text-muted);font-size:11px;">Todos los dispositivos y usuarios ven y editan la misma información centralizada.</span>
+          </div>
+        </div>
         
         <div style="display:flex;flex-direction:column;gap:10px;">
           <button class="btn btn-secondary" onclick="downloadJSONBackup()"><i class="fa-solid fa-download"></i> Descargar Copia de Datos (JSON)</button>

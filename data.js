@@ -288,6 +288,145 @@ function freshDB() {
   return defaultSeedData();
 }
 
+// Cloud synchronization state (Firebase Firestore)
+let cloudSyncStatus = "connecting";
+let isRemoteUpdate = false;
+let cloudSyncDebounceTimer = null;
+let cloudSyncInitialized = false;
+
+function updateCloudStatusBadge(status, text) {
+  cloudSyncStatus = status;
+  const badge = document.getElementById("cloud-sync-status-badge");
+  if (!badge) return;
+  if (status === "synced") {
+    badge.className = "badge badge-green";
+    badge.innerHTML = `<i class="fa-solid fa-cloud-check"></i> ${text || "Nube Conectada"}`;
+    badge.title = "Base de datos en la nube (Firestore) sincronizada en tiempo real para todos los usuarios y dispositivos";
+  } else if (status === "syncing") {
+    badge.className = "badge badge-blue";
+    badge.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i> ${text || "Sincronizando..."}`;
+  } else if (status === "offline") {
+    badge.className = "badge badge-gray";
+    badge.innerHTML = `<i class="fa-solid fa-hard-drive"></i> ${text || "Memoria Local"}`;
+    badge.title = "Modo local: los cambios se guardan en este dispositivo y se subirán cuando haya conexión";
+  } else {
+    badge.className = "badge badge-yellow";
+    badge.innerHTML = `<i class="fa-solid fa-cloud"></i> ${text || "Nube"}`;
+  }
+}
+
+// Push local state to Firestore
+function pushToCloud() {
+  if (isRemoteUpdate) return;
+  if (!window.firebaseDb) {
+    updateCloudStatusBadge("offline", "Memoria Local");
+    return;
+  }
+  
+  updateCloudStatusBadge("syncing", "Guardando...");
+  
+  if (cloudSyncDebounceTimer) clearTimeout(cloudSyncDebounceTimer);
+  cloudSyncDebounceTimer = setTimeout(() => {
+    try {
+      if (!DB) return;
+      const payload = {
+        version: DB.version || "4.0",
+        settings: DB.settings || defaultSeedData().settings,
+        users: DB.users || defaultSeedData().users,
+        projects: DB.projects || [],
+        expenses: DB.expenses || [],
+        workers: DB.workers || [],
+        overtime: DB.overtime || [],
+        tools: DB.tools || [],
+        documents: DB.documents || [],
+        lastUpdated: new Date().toISOString()
+      };
+      
+      window.firebaseDb.collection("cm_workspace").doc("global_data")
+        .set(payload)
+        .then(() => {
+          updateCloudStatusBadge("synced", "Nube Conectada");
+        })
+        .catch(err => {
+          console.warn("Firestore save warning:", err);
+          updateCloudStatusBadge("offline", "Memoria Local");
+        });
+    } catch (e) {
+      console.warn("Cloud push exception:", e);
+      updateCloudStatusBadge("offline", "Memoria Local");
+    }
+  }, 250);
+}
+
+// Listen to Firestore real-time changes
+function initCloudSync() {
+  if (cloudSyncInitialized) return;
+  
+  if (!window.firebaseDb) {
+    updateCloudStatusBadge("offline", "Memoria Local");
+    // Retry in 1.5s if SDK was still loading
+    setTimeout(() => {
+      if (window.firebaseDb && !cloudSyncInitialized) {
+        initCloudSync();
+      }
+    }, 1500);
+    return;
+  }
+
+  cloudSyncInitialized = true;
+  updateCloudStatusBadge("syncing", "Conectando...");
+
+  try {
+    const docRef = window.firebaseDb.collection("cm_workspace").doc("global_data");
+    
+    docRef.onSnapshot(doc => {
+      if (doc && doc.exists) {
+        const remoteData = doc.data();
+        if (remoteData) {
+          isRemoteUpdate = true;
+          DB = DB || defaultSeedData();
+          DB.version = remoteData.version || DB.version || "4.0";
+          DB.settings = remoteData.settings || DB.settings;
+          if (Array.isArray(remoteData.users) && remoteData.users.length > 0) {
+            DB.users = remoteData.users;
+          }
+          DB.projects = Array.isArray(remoteData.projects) ? remoteData.projects : [];
+          DB.expenses = Array.isArray(remoteData.expenses) ? remoteData.expenses : [];
+          DB.workers = Array.isArray(remoteData.workers) ? remoteData.workers : [];
+          DB.overtime = Array.isArray(remoteData.overtime) ? remoteData.overtime : [];
+          DB.tools = Array.isArray(remoteData.tools) ? remoteData.tools : [];
+          DB.documents = Array.isArray(remoteData.documents) ? remoteData.documents : [];
+          
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+          } catch (e) {}
+
+          updateCloudStatusBadge("synced", "Nube Conectada");
+          
+          // Re-render active view if the app layout is visible
+          if (typeof renderCurrentView === "function") {
+            const layout = document.getElementById("app-layout");
+            if (layout && layout.style.display !== "none") {
+              renderCurrentView();
+            }
+          }
+          isRemoteUpdate = false;
+        }
+      } else {
+        // First initialization: publish current dataset to cloud
+        console.log("No cloud workspace found yet, publishing initial data...");
+        pushToCloud();
+      }
+    }, err => {
+      console.warn("Firestore snapshot listener error:", err);
+      updateCloudStatusBadge("offline", "Memoria Local");
+    });
+  } catch (e) {
+    console.warn("initCloudSync exception:", e);
+    updateCloudStatusBadge("offline", "Memoria Local");
+  }
+}
+
 // Storage management
 let DB = null;
 
@@ -318,6 +457,10 @@ function loadDB() {
     DB = defaultSeedData();
     saveDB();
   }
+
+  // Initialize Firestore real-time cloud listener
+  initCloudSync();
+
   return DB;
 }
 
@@ -327,6 +470,7 @@ function saveDB() {
   } catch (e) {
     console.error("Error saving DB to localStorage:", e);
   }
+  pushToCloud();
 }
 
 function resetDB() {

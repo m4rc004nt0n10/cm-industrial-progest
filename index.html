@@ -234,6 +234,9 @@
         </div>
 
         <div class="topbar-right">
+          <div id="cloud-sync-status-badge" class="badge badge-green" style="font-size:11px;display:inline-flex;align-items:center;gap:5px;" title="Sincronización en tiempo real activa">
+            <i class="fa-solid fa-cloud-check"></i> Nube Conectada
+          </div>
           <div id="topbar-role-badge"></div>
           <button class="btn btn-secondary btn-sm topbar-alert-btn" onclick="navigateTo('alertas')" title="Centro de Alertas">
             <i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i>
@@ -295,9 +298,10 @@
     </div>
   </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <!-- Firebase SDK (App, Auth, Firestore Compat v10) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   
   <!-- Firebase Configuration & Initialization -->
   <script>
@@ -307,7 +311,8 @@
       projectId: "aplicacion-web-95635",
       storageBucket: "aplicacion-web-95635.firebasestorage.app",
       messagingSenderId: "252659714101",
-      appId: "1:252659714101:web:89ee95fbaf52eeadfc897c"
+      appId: "1:252659714101:web:89ee95fbaf52eeadfc897c",
+      measurementId: "G-ZJ1XH1Z5T4"
     };
     
     try {
@@ -316,6 +321,18 @@
           firebase.initializeApp(firebaseConfig);
         }
         window.firebaseAuth = firebase.auth();
+        window.firebaseDb = firebase.firestore();
+        
+        // Ensure secure authenticated session
+        firebase.auth().onAuthStateChanged((user) => {
+          if (!user) {
+            firebase.auth().signInAnonymously().catch(err => {
+              console.log("Auth session note:", err.message);
+            });
+          }
+        });
+        
+        console.log("Firebase Firestore initialized with user project: aplicacion-web-95635");
       }
     } catch (e) {
       console.warn("Firebase initialization note:", e);
