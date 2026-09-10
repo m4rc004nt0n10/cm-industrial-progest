@@ -19,10 +19,11 @@ function defaultSeedData() {
     users: [
       {
         id: "usr-dev",
-        name: "Desarrollador CM",
-        email: "desarrollador@cmindustrial.cl",
+        name: "Marco Antonio (Dev)",
+        email: "marco@aiep.cl",
         role: "Desarrollador",
-        avatar: "DEV",
+        password: "admin",
+        avatar: "MA",
         createdAt: new Date().toISOString().split("T")[0]
       },
       {
@@ -30,6 +31,7 @@ function defaultSeedData() {
         name: "Operador de Terreno",
         email: "usuario@cmindustrial.cl",
         role: "Usuario",
+        password: "user",
         avatar: "OP",
         createdAt: new Date().toISOString().split("T")[0]
       }

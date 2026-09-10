@@ -162,24 +162,16 @@ function updateNavPermissions() {
             <span class="role-name-full">Desarrollador (Edición Habilitada)</span>
             <span class="role-name-short">Dev</span>
           </span>
-          <button class="btn btn-secondary btn-sm topbar-switch-btn" onclick="switchActiveRole('Usuario')" title="Probar restricciones como perfil Usuario" style="font-size:11px;padding:4px 8px;">
-            <i class="fa-solid fa-user-shield"></i>
-            <span class="switch-label-full">Probar como Usuario</span>
-          </button>
         </div>
       `;
     } else {
       topbarBadge.innerHTML = `
         <div class="topbar-role-wrapper">
           <span class="badge badge-yellow" style="font-size:11px;padding:4px 9px;" title="Perfil restringido a solo consulta">
-            <i class="fa-solid fa-lock"></i>
+            <i class="fa-solid fa-user-shield"></i>
             <span class="role-name-full">Usuario (Solo Consulta)</span>
             <span class="role-name-short">Usuario</span>
           </span>
-          <button class="btn btn-primary btn-sm topbar-switch-btn" onclick="switchActiveRole('Desarrollador')" title="Cambiar a Desarrollador para habilitar edición" style="font-size:11px;padding:4px 8px;">
-            <i class="fa-solid fa-code"></i>
-            <span class="switch-label-full">Entrar Desarrollador</span>
-          </button>
         </div>
       `;
     }
@@ -4565,15 +4557,17 @@ async function attemptLogin() {
     return;
   }
 
-  let loggedInViaFirebase = false;
+  let authenticated = false;
+  let loggedInRole = null;
 
+  // 1. Validar autenticación vía Firebase Auth si está conectado
   if (window.firebaseAuth) {
     try {
       await firebaseAuth.signInWithEmailAndPassword(email, password);
-      loggedInViaFirebase = true;
+      authenticated = true;
     } catch (error) {
-      if (error.code === "auth/wrong-password") {
-        if (errorBox) errorBox.textContent = "Contraseña incorrecta.";
+      if (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
+        if (errorBox) errorBox.textContent = "Contraseña o credenciales incorrectas.";
         if (passInput) passInput.value = "";
         return;
       }
@@ -4581,34 +4575,45 @@ async function attemptLogin() {
     }
   }
 
-  // Verificar perfil en base de datos local
+  // 2. Validar con base de datos local si Firebase no validó directamente
   const localUser = DB.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (localUser) {
-    setLocalSession(localUser);
-    if (passInput) passInput.value = "";
-    showApp();
-    return;
+  
+  if (!authenticated) {
+    if (localUser) {
+      // Verificar contraseña local
+      if (localUser.password && localUser.password === password) {
+        authenticated = true;
+      } else if (!localUser.password && (password === "admin123" || password === "123456" || password === "cm2026")) {
+        // Contraseña por defecto si el usuario fue migrado
+        localUser.password = password;
+        saveDB();
+        authenticated = true;
+      }
+    }
   }
 
-  if (loggedInViaFirebase) {
-    // Si Firebase lo autenticó pero no estaba en DB local
-    const user = {
-      id: "usr-" + Date.now(),
-      name: email.split("@")[0],
-      email: email,
-      role: "Usuario",
-      avatar: getInitials(email.split("@")[0]),
-      createdAt: new Date().toISOString().split("T")[0]
-    };
-    DB.users.push(user);
-    saveDB();
+  if (authenticated) {
+    let user = localUser;
+    if (!user) {
+      user = {
+        id: "usr-" + Date.now(),
+        name: email.split("@")[0],
+        email: email,
+        role: "Usuario",
+        avatar: getInitials(email.split("@")[0]),
+        password: password,
+        createdAt: new Date().toISOString().split("T")[0]
+      };
+      DB.users.push(user);
+      saveDB();
+    }
     setLocalSession(user);
     if (passInput) passInput.value = "";
     showApp();
     return;
   }
 
-  if (errorBox) errorBox.textContent = "Correo o contraseña incorrectos.";
+  if (errorBox) errorBox.textContent = "Correo o contraseña incorrectos. Verifica tus datos.";
   if (passInput) passInput.value = "";
 }
 
@@ -4625,11 +4630,11 @@ async function createFirstUser() {
   if (errorBox) errorBox.textContent = "";
 
   if (!name || !email || !password) {
-    if (errorBox) errorBox.textContent = "Completa todos los campos.";
+    if (errorBox) errorBox.textContent = "Completa todos los campos obligatorios.";
     return;
   }
-  if (password.length < 4) {
-    if (errorBox) errorBox.textContent = "La contraseña debe tener al menos 4 caracteres.";
+  if (password.length < 6) {
+    if (errorBox) errorBox.textContent = "La contraseña debe tener al menos 6 caracteres por seguridad.";
     return;
   }
 
@@ -4639,33 +4644,47 @@ async function createFirstUser() {
         await firebaseAuth.createUserWithEmailAndPassword(email, password);
       } catch (fbErr) {
         if (fbErr.code === "auth/email-already-in-use") {
-          if (errorBox) errorBox.textContent = "Este correo ya está registrado.";
-          return;
+          // Intentar iniciar sesión para verificar contraseña
+          try {
+            await firebaseAuth.signInWithEmailAndPassword(email, password);
+          } catch (signErr) {
+            if (errorBox) errorBox.textContent = "Este correo ya existe con otra contraseña.";
+            return;
+          }
         } else if (fbErr.code === "auth/weak-password") {
           if (errorBox) errorBox.textContent = "Contraseña muy débil. Usa al menos 6 caracteres.";
           return;
         } else if (fbErr.code === "auth/invalid-email") {
-          if (errorBox) errorBox.textContent = "Correo inválido.";
+          if (errorBox) errorBox.textContent = "Formato de correo inválido.";
           return;
         }
-        console.warn("Nota de Firebase Auth en creación inicial:", fbErr);
+        console.warn("Nota de Firebase Auth en creación:", fbErr);
       }
     }
     
     const roleSelect = document.getElementById("setup-role");
     const role = roleSelect ? roleSelect.value : "Desarrollador";
     
-    // Crear perfil local en DB.users
-    const user = {
-      id: "usr-" + Date.now(),
-      name,
-      email,
-      role: role,
-      avatar: getInitials(name),
-      createdAt: new Date().toISOString().split("T")[0]
-    };
+    // Crear o actualizar perfil en DB.users
+    let user = DB.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (user) {
+      user.name = name;
+      user.role = role;
+      user.password = password;
+      user.avatar = getInitials(name);
+    } else {
+      user = {
+        id: "usr-" + Date.now(),
+        name,
+        email,
+        role: role,
+        password: password,
+        avatar: getInitials(name),
+        createdAt: new Date().toISOString().split("T")[0]
+      };
+      DB.users.push(user);
+    }
     
-    DB.users.push(user);
     saveDB();
     setLocalSession(user);
     
@@ -4674,52 +4693,6 @@ async function createFirstUser() {
   } catch (error) {
     if (errorBox) errorBox.textContent = "Error: " + error.message;
   }
-}
-
-function quickLoginRole(targetRole) {
-  loadDB();
-  let user = DB.users.find(u => (u.role || "").toLowerCase() === targetRole.toLowerCase());
-  if (!user) {
-    user = {
-      id: "usr-" + (targetRole === "Desarrollador" ? "dev" : "user"),
-      name: targetRole === "Desarrollador" ? "Marco Antonio (Dev)" : "Operador Técnico",
-      email: targetRole === "Desarrollador" ? "desarrollador@cmindustrial.cl" : "usuario@cmindustrial.cl",
-      role: targetRole,
-      avatar: targetRole === "Desarrollador" ? "DEV" : "USR",
-      createdAt: new Date().toISOString().split("T")[0]
-    };
-    DB.users.push(user);
-    saveDB();
-  }
-  setLocalSession(user);
-  showApp();
-}
-
-function switchActiveRole(targetRole) {
-  loadDB();
-  let user = DB.users.find(u => (u.role || "").toLowerCase() === targetRole.toLowerCase());
-  if (!user) {
-    user = {
-      id: "usr-" + (targetRole === "Desarrollador" ? "dev" : "user"),
-      name: targetRole === "Desarrollador" ? "Marco Antonio (Dev)" : "Operador Técnico",
-      email: targetRole === "Desarrollador" ? "desarrollador@cmindustrial.cl" : "usuario@cmindustrial.cl",
-      role: targetRole,
-      avatar: targetRole === "Desarrollador" ? "DEV" : "USR",
-      createdAt: new Date().toISOString().split("T")[0]
-    };
-    DB.users.push(user);
-    saveDB();
-  }
-  setLocalSession(user);
-  
-  // If current view was a restricted view and switching to Usuario, navigate to dashboard
-  if (targetRole === "Usuario" && (currentView === "usuarios" || currentView === "config")) {
-    currentView = "dashboard";
-    document.querySelectorAll(".nav-item").forEach(item => {
-      item.classList.toggle("active", item.dataset.view === "dashboard");
-    });
-  }
-  renderCurrentView();
 }
 
 function handleLogout() {
