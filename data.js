@@ -344,6 +344,7 @@ function pushToCloud() {
         lastUpdated: new Date().toISOString()
       };
       
+      // Sync consolidated workspace
       window.firebaseDb.collection("cm_workspace").doc("global_data")
         .set(payload)
         .then(() => {
@@ -353,6 +354,24 @@ function pushToCloud() {
           console.warn("Firestore save warning:", err);
           updateCloudStatusBadge("offline", "Memoria Local");
         });
+
+      // Also sync individual user documents into the 'users' collection for clear visibility in Firebase Console
+      if (Array.isArray(DB.users)) {
+        DB.users.forEach(u => {
+          if (u && u.email) {
+            const userDocId = u.email.replace(/[^a-zA-Z0-9_-]/g, "_");
+            window.firebaseDb.collection("users").doc(userDocId).set({
+              id: u.id || "usr-" + Date.now(),
+              name: u.name || "",
+              email: u.email,
+              role: u.role || "Usuario",
+              avatar: u.avatar || "US",
+              createdAt: u.createdAt || new Date().toISOString().split("T")[0],
+              lastUpdated: new Date().toISOString()
+            }, { merge: true }).catch(uErr => console.log("User doc sync note:", uErr));
+          }
+        });
+      }
     } catch (e) {
       console.warn("Cloud push exception:", e);
       updateCloudStatusBadge("offline", "Memoria Local");
@@ -361,18 +380,24 @@ function pushToCloud() {
 }
 
 // Listen to Firestore real-time changes
-function initCloudSync() {
-  if (cloudSyncInitialized) return;
+let activeFirestoreUnsubscribe = null;
+
+function initCloudSync(force = false) {
+  if (cloudSyncInitialized && !force) return;
   
   if (!window.firebaseDb) {
     updateCloudStatusBadge("offline", "Memoria Local");
-    // Retry in 1.5s if SDK was still loading
     setTimeout(() => {
-      if (window.firebaseDb && !cloudSyncInitialized) {
+      if (window.firebaseDb) {
         initCloudSync();
       }
     }, 1500);
     return;
+  }
+
+  if (activeFirestoreUnsubscribe) {
+    try { activeFirestoreUnsubscribe(); } catch (e) {}
+    activeFirestoreUnsubscribe = null;
   }
 
   cloudSyncInitialized = true;
@@ -381,7 +406,7 @@ function initCloudSync() {
   try {
     const docRef = window.firebaseDb.collection("cm_workspace").doc("global_data");
     
-    docRef.onSnapshot(doc => {
+    activeFirestoreUnsubscribe = docRef.onSnapshot(doc => {
       if (doc && doc.exists) {
         const remoteData = doc.data();
         if (remoteData) {
@@ -405,7 +430,6 @@ function initCloudSync() {
 
           updateCloudStatusBadge("synced", "Nube Conectada");
           
-          // Re-render active view if the app layout is visible
           if (typeof renderCurrentView === "function") {
             const layout = document.getElementById("app-layout");
             if (layout && layout.style.display !== "none") {
@@ -415,18 +439,34 @@ function initCloudSync() {
           isRemoteUpdate = false;
         }
       } else {
-        // First initialization: publish current dataset to cloud
-        console.log("No cloud workspace found yet, publishing initial data...");
+        console.log("Inicializando espacio de trabajo en Firestore...");
         pushToCloud();
       }
     }, err => {
-      console.warn("Firestore snapshot listener error:", err);
-      updateCloudStatusBadge("offline", "Memoria Local");
+      if (err && err.code === "permission-denied") {
+        updateCloudStatusBadge("offline", "Inicia sesión para sincronizar");
+      } else {
+        console.log("Nota de sincronización:", err.message || err);
+        updateCloudStatusBadge("offline", "Memoria Local");
+      }
     });
   } catch (e) {
-    console.warn("initCloudSync exception:", e);
     updateCloudStatusBadge("offline", "Memoria Local");
   }
+}
+
+// Auto-reconnect Firestore when user signs in with email/password
+if (typeof window !== "undefined") {
+  window.addEventListener("DOMContentLoaded", () => {
+    if (window.firebaseAuth) {
+      window.firebaseAuth.onAuthStateChanged(user => {
+        if (user) {
+          console.log("Usuario autenticado en Firebase:", user.email || user.uid);
+          initCloudSync(true);
+        }
+      });
+    }
+  });
 }
 
 // Storage management
