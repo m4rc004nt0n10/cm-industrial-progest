@@ -2,7 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>CM Industrial</title>
   <meta name="description" content="Plataforma integral de gestión de proyectos industriales: presupuestos, mano de obra, inventario de herramientas, control documental, semáforo inteligente y Gantt.">
   <meta property="og:title" content="CM Industrial">
@@ -22,66 +26,142 @@
 </head>
 <body>
 
-  <!-- Auth Screen: login form, or first-run setup form when there are zero users yet -->
+  <!-- Auth Screen: role selection, login form, or registration form -->
   <div id="auth-screen" style="position:fixed;inset:0;background:var(--bg-main);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;">
-    <div style="width:100%;max-width:380px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:32px 28px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:26px;">
+    <div style="width:100%;max-width:440px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:30px 28px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
         <div style="width:42px;height:42px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;font-weight:900;box-shadow:0 0 12px rgba(249,115,22,0.4);">CM</div>
-        <div style="font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.02em;">CM INDUSTRIAL</div>
+        <div>
+          <div style="font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.02em;">CM INDUSTRIAL</div>
+          <div style="font-size:11px;color:var(--text-sub);">Control de Obras & Perfiles de Acceso</div>
+        </div>
       </div>
 
-      <!-- Login form (shown when at least one user exists) -->
+      <!-- Login form (with quick role selection) -->
       <div id="auth-login-form">
-        <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;">Iniciar Sesión</h3>
-        <p style="font-size:12px;color:var(--text-sub);margin-bottom:18px;">Ingresa tu correo y contraseña para continuar.</p>
-        <div class="form-group" style="margin-bottom:12px;">
-          <label class="form-label">Correo Electrónico</label>
-          <input type="email" id="auth-email" class="form-control" placeholder="tu@correo.com" autocomplete="username" autofocus>
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;color:#fff;">Ingreso según Perfil</h3>
+        <p style="font-size:12px;color:var(--text-sub);margin-bottom:14px;">Elige ingresar como Desarrollador (con permisos de edición) o como Usuario (solo consulta):</p>
+
+        <!-- Profile Quick Selection Cards -->
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
+          <!-- Developer option -->
+          <div onclick="quickLoginRole('Desarrollador')" style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.3);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s ease;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:38px;height:38px;border-radius:8px;background:rgba(56,189,248,0.2);color:var(--blue-accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">
+                <i class="fa-solid fa-code"></i>
+              </div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <strong style="font-size:13px;color:#fff;">Desarrollador</strong>
+                  <span class="badge badge-blue" style="font-size:9px;padding:2px 6px;">Edición Total</span>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Crear, modificar y borrar obras, costos, dotación y DB.</div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right" style="color:var(--blue-accent);font-size:12px;"></i>
+          </div>
+
+          <!-- Regular User option -->
+          <div onclick="quickLoginRole('Usuario')" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.2s ease;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:38px;height:38px;border-radius:8px;background:rgba(245,158,11,0.2);color:var(--warning);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">
+                <i class="fa-solid fa-user-shield"></i>
+              </div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <strong style="font-size:13px;color:#fff;">Usuario</strong>
+                  <span class="badge badge-yellow" style="font-size:9px;padding:2px 6px;">Solo Consulta</span>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">No puede modificar datos ni entrar a configuración.</div>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right" style="color:var(--warning);font-size:12px;"></i>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin:16px 0 14px;">
+          <div style="flex:1;height:1px;background:var(--border-color);"></div>
+          <span style="font-size:11px;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.06em;">o ingresar con credenciales</span>
+          <div style="flex:1;height:1px;background:var(--border-color);"></div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label" style="font-size:11px;">Correo Electrónico</label>
+          <input type="email" id="auth-email" class="form-control" placeholder="desarrollador@cmindustrial.cl o tu correo" autocomplete="username">
         </div>
         <div class="form-group" style="margin-bottom:8px;">
-          <label class="form-label">Contraseña</label>
+          <label class="form-label" style="font-size:11px;">Contraseña</label>
           <input type="password" id="auth-password" class="form-control" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter'){attemptLogin();}">
         </div>
         <div id="auth-login-error" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:8px;"></div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="attemptLogin()">Ingresar</button>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="attemptLogin()">Ingresar al Sistema</button>
+
+        <div style="margin-top:14px;text-align:center;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="showAuthScreen(true)" style="border:none;background:transparent;color:var(--text-sub);font-size:11px;">
+            <i class="fa-solid fa-user-plus"></i> Registrar nueva cuenta con rol personalizado
+          </button>
+        </div>
       </div>
 
-      <!-- First-run setup form (shown only while DB.users is empty) -->
+      <!-- Account registration form -->
       <div id="auth-setup-form" style="display:none;">
-        <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;">Crear Cuenta de Administrador</h3>
-        <p style="font-size:12px;color:var(--text-sub);margin-bottom:18px;">Aún no hay usuarios registrados. Crea la primera cuenta para empezar.</p>
-        <div class="form-group" style="margin-bottom:12px;">
-          <label class="form-label">Nombre Completo</label>
-          <input type="text" id="setup-name" class="form-control" placeholder="Tu nombre" autocomplete="name">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;color:#fff;">Registrar Cuenta</h3>
+        <p style="font-size:12px;color:var(--text-sub);margin-bottom:16px;">Configura tu usuario indicando si ingresarás como Desarrollador o Usuario.</p>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label" style="font-size:11px;">Nombre Completo</label>
+          <input type="text" id="setup-name" class="form-control" placeholder="Ej: Marcela Pardo" autocomplete="name">
         </div>
-        <div class="form-group" style="margin-bottom:12px;">
-          <label class="form-label">Correo Electrónico</label>
-          <input type="email" id="setup-email" class="form-control" placeholder="tu@correo.com" autocomplete="username">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label" style="font-size:11px;">Correo Electrónico</label>
+          <input type="email" id="setup-email" class="form-control" placeholder="marcela@cmindustrial.cl" autocomplete="username">
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label" style="font-size:11px;">Rol Asignado</label>
+          <select id="setup-role" class="form-control">
+            <option value="Desarrollador">Desarrollador (Control total y permisos de edición)</option>
+            <option value="Usuario">Usuario (Solo consulta / Bloqueo de edición)</option>
+            <option value="Administrador">Administrador (Control total)</option>
+          </select>
         </div>
         <div class="form-group" style="margin-bottom:8px;">
-          <label class="form-label">Contraseña</label>
+          <label class="form-label" style="font-size:11px;">Contraseña</label>
           <input type="password" id="setup-password" class="form-control" placeholder="Mínimo 4 caracteres" autocomplete="new-password" onkeydown="if(event.key==='Enter'){createFirstUser();}">
         </div>
         <div id="auth-setup-error" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:8px;"></div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="createFirstUser()">Crear y Entrar</button>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="createFirstUser()">Crear Usuario e Ingresar</button>
+
+        <div style="margin-top:12px;text-align:center;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="showAuthScreen(false)" style="border:none;background:transparent;color:var(--text-sub);font-size:11px;">
+            <i class="fa-solid fa-arrow-left"></i> Volver a opciones de inicio
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
   <div id="app-layout" style="display:none;">
-    <!-- Sidebar -->
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleMobileSidebar(false)"></div>
+
+    <!-- Sidebar Navigation Drawer -->
     <aside id="sidebar">
-      <div style="padding:20px 20px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;gap:12px;">
-        <div style="width:38px;height:38px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:900;box-shadow:0 0 12px rgba(249,115,22,0.4);">
-          CM
+      <div class="sidebar-header" style="padding:16px 18px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:38px;height:38px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:900;box-shadow:0 0 12px rgba(249,115,22,0.4);flex-shrink:0;">
+            CM
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:-0.02em;">CM INDUSTRIAL</div>
+            <div style="font-size:11px;color:var(--text-sub);">Control de Obras & Faenas</div>
+          </div>
         </div>
-        <div>
-          <div style="font-size:16px;font-weight:800;color:#fff;letter-spacing:-0.02em;">CM INDUSTRIAL</div>
-        </div>
+        <button id="sidebar-close-btn" class="btn btn-secondary btn-sm sidebar-close-btn" onclick="toggleMobileSidebar(false)" title="Cerrar Menú" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;padding:6px 10px;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
       <!-- Navigation Links -->
-      <nav style="padding:16px 10px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
+      <nav style="padding:14px 10px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
         <div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:4px 12px 6px;">Operaciones</div>
         
         <button class="btn btn-secondary nav-item active" data-view="dashboard" onclick="navigateTo('dashboard')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
@@ -106,6 +186,10 @@
           <i class="fa-solid fa-hard-hat" style="width:20px;"></i> Mano de Obra
         </button>
 
+        <button class="btn btn-secondary nav-item" data-view="horas_extras" onclick="navigateTo('horas_extras')" style="justify-content:flex-start;width:100%;border:none;background:transparent;padding-left:24px;font-size:12.5px;">
+          <i class="fa-solid fa-business-time" style="width:18px;color:var(--warning);"></i> Horas Extras & Turnos
+        </button>
+
         <button class="btn btn-secondary nav-item" data-view="herramientas" onclick="navigateTo('herramientas')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
           <i class="fa-solid fa-wrench" style="width:20px;"></i> Herramientas / Equipos
         </button>
@@ -116,16 +200,16 @@
 
         <div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:12px 12px 6px;">Control & Sistema</div>
 
-        <button class="btn btn-secondary nav-item" data-view="usuarios" onclick="navigateTo('usuarios')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-users" style="width:20px;"></i> Usuarios
+        <button class="btn btn-secondary nav-item" id="nav-item-usuarios" data-view="usuarios" onclick="navigateTo('usuarios')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-users" style="width:20px;"></i> <span>Usuarios</span>
         </button>
 
-        <button class="btn btn-secondary nav-item" data-view="alertas" onclick="navigateTo('alertas')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-bell" style="width:20px;color:var(--danger);"></i> Alertas Proactivas
+        <button class="btn btn-secondary nav-item" id="nav-item-alertas" data-view="alertas" onclick="navigateTo('alertas')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-bell" style="width:20px;color:var(--danger);"></i> <span>Alertas Proactivas</span>
         </button>
 
-        <button class="btn btn-secondary nav-item" data-view="config" onclick="navigateTo('config')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-sliders" style="width:20px;"></i> Configuración / DB
+        <button class="btn btn-secondary nav-item" id="nav-item-config" data-view="config" onclick="navigateTo('config')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-sliders" style="width:20px;"></i> <span>Configuración / DB</span>
         </button>
       </nav>
 
@@ -137,19 +221,21 @@
     <div id="main-content">
       <!-- Top Bar -->
       <header class="topbar">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <button id="mobile-menu-btn" class="btn btn-secondary btn-sm" style="display:none;" title="Menú">
+        <div class="topbar-left">
+          <button id="mobile-menu-btn" class="btn btn-secondary btn-sm mobile-menu-toggle" onclick="toggleMobileSidebar(true)" title="Menú de Navegación">
             <i class="fa-solid fa-bars"></i>
           </button>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <i class="fa-solid fa-industry" style="color:var(--primary);"></i>
-            <span style="font-weight:700;font-size:14px;color:#fff;">Plataforma de Control de Obras y Proyectos Industriales</span>
+          <div class="topbar-brand">
+            <i class="fa-solid fa-industry topbar-brand-icon"></i>
+            <span class="topbar-title-desktop">Plataforma de Control de Obras y Proyectos Industriales</span>
+            <span class="topbar-title-tablet">CM Industrial • Control de Obras</span>
+            <span class="topbar-title-mobile">CM Industrial</span>
           </div>
         </div>
 
-        <div style="display:flex;align-items:center;gap:12px;">
-          <span class="badge badge-green"><i class="fa-solid fa-circle-dot"></i> Base de Datos Local Activa</span>
-          <button class="btn btn-secondary btn-sm" onclick="navigateTo('alertas')" title="Alertas">
+        <div class="topbar-right">
+          <div id="topbar-role-badge"></div>
+          <button class="btn btn-secondary btn-sm topbar-alert-btn" onclick="navigateTo('alertas')" title="Centro de Alertas">
             <i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i>
           </button>
         </div>
@@ -179,11 +265,35 @@
     </div>
   </div>
 
-  <style>
-    @media (max-width: 900px) {
-      #mobile-menu-btn { display: inline-flex !important; }
-    }
-  </style>
+  <!-- Lightbox Modal for Equipment & Invoices/Receipts Photos/Docs -->
+  <div id="photo-lightbox-modal" class="modal-backdrop" onclick="closePhotoLightbox(event)">
+    <div id="lightbox-card" class="modal-box" style="max-width:620px;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <i id="lightbox-header-icon" class="fa-solid fa-camera" style="color:var(--primary);"></i>
+          <h3 id="lightbox-title" style="font-size:15px;font-weight:700;">Visor de Imagen / Documento</h3>
+        </div>
+        <button id="lightbox-close-btn" class="btn btn-secondary btn-sm" onclick="closePhotoLightbox()" style="border:none;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" style="padding:16px;text-align:center;">
+        <div id="lightbox-img-container" style="background:#080c14;border:1px solid var(--border-color);border-radius:10px;overflow:hidden;max-height:480px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+          <img id="lightbox-img" src="" alt="Fotografía" style="max-width:100%;max-height:460px;object-fit:contain;">
+        </div>
+        <div id="lightbox-pdf-container" style="display:none;background:#0d121f;border:1px dashed var(--border-color);border-radius:10px;padding:24px;margin-bottom:14px;text-align:center;">
+          <i class="fa-solid fa-file-pdf" style="font-size:48px;color:#ef4444;margin-bottom:12px;"></i>
+          <div id="lightbox-pdf-name" style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;">Documento PDF</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-bottom:16px;">Documento técnico o factura en formato PDF listo para visualizar o descargar.</div>
+          <a id="lightbox-pdf-view-btn" href="#" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir PDF en Nueva Pestaña</a>
+        </div>
+        <div id="lightbox-meta" style="font-size:13px;color:var(--text-muted);text-align:left;background:#0d121f;border:1px solid var(--border-color);border-radius:8px;padding:12px;">
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <a id="lightbox-download-link" href="#" download="archivo.jpg" class="btn btn-secondary btn-sm"><i class="fa-solid fa-download"></i> Descargar Archivo</a>
+        <button id="lightbox-done-btn" class="btn btn-primary btn-sm" onclick="closePhotoLightbox()">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -200,8 +310,36 @@
       appId: "1:252659714101:web:89ee95fbaf52eeadfc897c"
     };
     
-    firebase.initializeApp(firebaseConfig);
-    window.firebaseAuth = firebase.auth();
+    try {
+      if (typeof firebase !== 'undefined') {
+        if (!firebase.apps || !firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        window.firebaseAuth = firebase.auth();
+      }
+    } catch (e) {
+      console.warn("Firebase initialization note:", e);
+    }
+  </script>
+
+  <!-- Mobile Navigation Helper -->
+  <script>
+    function toggleMobileSidebar(forceState) {
+      const sidebar = document.getElementById("sidebar");
+      const overlay = document.getElementById("sidebar-overlay");
+      if (!sidebar) return;
+      const willOpen = typeof forceState === "boolean" ? forceState : !sidebar.classList.contains("mobile-open");
+      if (willOpen) {
+        sidebar.classList.add("mobile-open");
+        if (overlay) overlay.classList.add("active");
+        document.body.classList.add("mobile-nav-locked");
+      } else {
+        sidebar.classList.remove("mobile-open");
+        if (overlay) overlay.classList.remove("active");
+        document.body.classList.remove("mobile-nav-locked");
+      }
+    }
+    window.toggleMobileSidebar = toggleMobileSidebar;
   </script>
 
   <!-- Scripts -->

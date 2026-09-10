@@ -1,0 +1,10 @@
+{
+  "name": "CM Industrial",
+  "description": "Plataforma integral de gestión de proyectos industriales: presupuestos, mano de obra, inventario de herramientas, control documental, semáforo inteligente y Gantt.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
