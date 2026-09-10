@@ -4403,13 +4403,13 @@ async function saveModalRecord() {
             await firebaseAuth.createUserWithEmailAndPassword(email, password);
           } catch (fbErr) {
             if (fbErr.code === "auth/email-already-in-use") {
-              alert("Este correo ya está registrado en Firebase.");
-              return;
+              console.log("El correo ya existe en Firebase Auth, vinculando perfil local...");
             } else if (fbErr.code === "auth/weak-password") {
               alert("Contraseña muy débil. Usa al menos 6 caracteres.");
               return;
+            } else {
+              console.warn("Nota de Firebase Auth:", fbErr);
             }
-            console.warn("Nota de Firebase Auth:", fbErr);
           }
         }
         
