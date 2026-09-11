@@ -4593,13 +4593,74 @@ async function attemptLogin() {
   }
 
   if (authenticated) {
-    let user = localUser;
-    if (!user) {
+    // 1. Fetch latest global workspace from Firestore
+    if (window.firebaseDb) {
+      try {
+        const docRef = window.firebaseDb.collection("cm_workspace").doc("global_data");
+        const docSnap = await docRef.get();
+        if (docSnap && docSnap.exists) {
+          const remoteData = docSnap.data();
+          if (remoteData) {
+            DB = DB || defaultSeedData();
+            DB.version = remoteData.version || DB.version || "4.0";
+            DB.settings = remoteData.settings || DB.settings;
+            if (Array.isArray(remoteData.users) && remoteData.users.length > 0) {
+              DB.users = remoteData.users;
+            }
+            DB.projects = Array.isArray(remoteData.projects) ? remoteData.projects : [];
+            DB.expenses = Array.isArray(remoteData.expenses) ? remoteData.expenses : [];
+            DB.workers = Array.isArray(remoteData.workers) ? remoteData.workers : [];
+            DB.overtime = Array.isArray(remoteData.overtime) ? remoteData.overtime : [];
+            DB.tools = Array.isArray(remoteData.tools) ? remoteData.tools : [];
+            DB.documents = Array.isArray(remoteData.documents) ? remoteData.documents : [];
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+            } catch (e) {}
+          }
+        }
+      } catch (fErr) {
+        console.warn("Error cargando datos globales de Firestore en login:", fErr);
+      }
+
+      // 2. Fetch specific user record from 'users' collection to guarantee role accuracy
+      try {
+        const userDocId = email.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, "_");
+        const userDocSnap = await window.firebaseDb.collection("users").doc(userDocId).get();
+        if (userDocSnap && userDocSnap.exists) {
+          const userData = userDocSnap.data();
+          if (userData && userData.role) {
+            let existingInDB = (DB.users || []).find(u => u.email.toLowerCase() === email.toLowerCase());
+            if (existingInDB) {
+              existingInDB.role = userData.role;
+              existingInDB.name = userData.name || existingInDB.name;
+            } else {
+              DB.users = DB.users || [];
+              DB.users.push(userData);
+            }
+            saveDB();
+          }
+        }
+      } catch (uErr) {
+        console.warn("Error consultando documento de usuario en Firestore:", uErr);
+      }
+    }
+
+    let user = (DB.users || []).find(u => u.email.toLowerCase() === email.toLowerCase());
+    
+    // Check if user is one of the team developers
+    const isTeamDev = ["marco@aiep.cl", "medali@aiep.cl", "adita@aiep.cl", "ricardo@aiep.cl"].includes(email.toLowerCase());
+
+    if (user) {
+      if (isTeamDev && user.role !== "Desarrollador") {
+        user.role = "Desarrollador";
+        saveDB();
+      }
+    } else {
       user = {
         id: "usr-" + Date.now(),
         name: email.split("@")[0],
         email: email,
-        role: "Usuario",
+        role: isTeamDev ? "Desarrollador" : "Usuario",
         avatar: getInitials(email.split("@")[0]),
         password: password,
         createdAt: new Date().toISOString().split("T")[0]
@@ -4607,8 +4668,12 @@ async function attemptLogin() {
       DB.users.push(user);
       saveDB();
     }
+    
     setLocalSession(user);
     if (passInput) passInput.value = "";
+    if (typeof initCloudSync === "function") {
+      initCloudSync(true);
+    }
     showApp();
     return;
   }

@@ -18,22 +18,36 @@ function defaultSeedData() {
     // App users. Roles: "Desarrollador" (edición y administración total), "Usuario" (solo consulta)
     users: [
       {
-        id: "usr-dev",
-        name: "Marco Antonio (Dev)",
+        id: "usr-marco",
+        name: "Marco Antonio",
         email: "marco@aiep.cl",
         role: "Desarrollador",
-        password: "admin",
         avatar: "MA",
-        createdAt: new Date().toISOString().split("T")[0]
+        createdAt: "2026-09-10"
       },
       {
-        id: "usr-user",
-        name: "Operador de Terreno",
-        email: "usuario@cmindustrial.cl",
-        role: "Usuario",
-        password: "user",
-        avatar: "OP",
-        createdAt: new Date().toISOString().split("T")[0]
+        id: "usr-medali",
+        name: "Medali",
+        email: "medali@aiep.cl",
+        role: "Desarrollador",
+        avatar: "ME",
+        createdAt: "2026-09-10"
+      },
+      {
+        id: "usr-adita",
+        name: "Adita",
+        email: "adita@aiep.cl",
+        role: "Desarrollador",
+        avatar: "AD",
+        createdAt: "2026-09-10"
+      },
+      {
+        id: "usr-ricardo",
+        name: "Ricardo",
+        email: "ricardo@aiep.cl",
+        role: "Desarrollador",
+        avatar: "RI",
+        createdAt: "2026-09-10"
       }
     ],
     projects: [],
