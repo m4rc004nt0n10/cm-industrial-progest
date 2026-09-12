@@ -684,6 +684,9 @@ tr:hover td {
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
+.modal-box.modal-box-lg {
+  max-width: 950px;
+}
 .modal-header {
   padding: 18px 22px;
   border-bottom: 1px solid var(--border-color);

@@ -55,7 +55,109 @@ function defaultSeedData() {
     workers: [],
     overtime: [],
     tools: [],
-    documents: []
+    documents: [],
+    quotations: [
+      {
+        id: "COT-001",
+        code: "COT-2026-001",
+        title: "AGRICOLA VAL VALLE - PROYECTO SECADORA DE NUECES",
+        client: "Agrícola Val Valle",
+        executionTime: "4 Meses (Por confirmar fechas)",
+        months: 4,
+        status: "Enviada", // "Borrador", "Enviada", "Aprobada", "Rechazada", "Convertida"
+        createdAt: "2026-09-10",
+        validUntil: "2026-10-10",
+        notes: "Fabricación, plegado de acero 3mm, pintura anticorrosiva, motores y montaje en terreno para secadora de nueces.",
+        laborItems: [
+          { role: "Operarios", count: 2, taxableMonthly: 2025000, fonasa: 70875, afp: 121500, liquidMonthly: 820125 },
+          { role: "Ayudantes", count: 2, taxableMonthly: 1730000, fonasa: 60550, afp: 103800, liquidMonthly: 700650 },
+          { role: "Bono Supervisión", count: 1, taxableMonthly: 247000, fonasa: 17290, afp: 29640, liquidMonthly: 200070 }
+        ],
+        laborMonthlySubtotal: 4002000,
+        laborTotal: 16008000,
+        fieldItems: [
+          { name: "Ropa y EE.PP.", qty: 3, unitPrice: 70000, total: 210000 },
+          { name: "Colaciones (22 días x 5 personas)", qty: 210, unitPrice: 7000, total: 1470000 },
+          { name: "Fletes ida y vuelta", qty: 11, unitPrice: 430000, total: 4730000 },
+          { name: "Traslado (Bencina)", qty: 22, unitPrice: 15000, total: 330000 }
+        ],
+        materialItems: [
+          { name: "Máquina de soldar, cilindro y carga", qty: 1, unitPrice: 2000000, total: 2000000 },
+          { name: "Gas máquina soldar", qty: 10, unitPrice: 100000, total: 1000000 },
+          { name: "Alambre máquina de soldar", qty: 6, unitPrice: 40000, total: 240000 },
+          { name: "Pintura anticorrosivo (galones) diluyente", qty: 50, unitPrice: 80000, total: 4000000 },
+          { name: "Planchas de acero plegado (3mm)", qty: 1, unitPrice: 29205000, total: 29205000 },
+          { name: "Perfiles estructurales", qty: 1, unitPrice: 2878000, total: 2878000 },
+          { name: "Motores eléctricos", qty: 5, unitPrice: 700000, total: 3500000 },
+          { name: "Correas y accesorios", qty: 1, unitPrice: 5860000, total: 5860000 },
+          { name: "Componentes varios", qty: 1, unitPrice: 3435000, total: 3435000 }
+        ],
+        expensesSubtotal: 58858000,
+        costCenterSubtotal: 74866000,
+        adminPercent: 2,
+        adminTotal: 1497320,
+        contingencyPercent: 5,
+        contingencyTotal: 3743300,
+        adminSubtotal: 5240620,
+        totalCostCenter: 80106620,
+        profitPercent: 50,
+        profitAmount: 40053310,
+        totalNet: 120159930,
+        discountPercent: 5,
+        discountAmount: 6007997,
+        totalNetNegotiated: 114151934
+      },
+      {
+        id: "COT-002",
+        code: "COT-2026-002",
+        title: "MOLINO - INSTALACION DE ALIMENTADOR LLENADO DE SILOS",
+        client: "Molino Industrial SpA",
+        executionTime: "4 Meses",
+        months: 4,
+        status: "Aprobada",
+        createdAt: "2026-09-08",
+        validUntil: "2026-10-08",
+        notes: "Instalación de alimentador para llenado de silos. Incluye planchas de acero plegado 2mm, pintura sintética y montaje.",
+        laborItems: [
+          { role: "Operarios", count: 2, taxableMonthly: 2025000, fonasa: 70875, afp: 121500, liquidMonthly: 820125 },
+          { role: "Ayudantes", count: 2, taxableMonthly: 1730000, fonasa: 60550, afp: 103800, liquidMonthly: 700650 },
+          { role: "Bono Supervisión", count: 1, taxableMonthly: 247000, fonasa: 17290, afp: 29640, liquidMonthly: 200070 }
+        ],
+        laborMonthlySubtotal: 4002000,
+        laborTotal: 16008000,
+        fieldItems: [
+          { name: "Ropa y EE.PP.", qty: 3, unitPrice: 70000, total: 210000 },
+          { name: "Colaciones (22 días x 5 personas)", qty: 210, unitPrice: 7000, total: 1470000 },
+          { name: "Fletes ida y vuelta", qty: 11, unitPrice: 430000, total: 4730000 },
+          { name: "Traslado (Bencina)", qty: 22, unitPrice: 15000, total: 330000 }
+        ],
+        materialItems: [
+          { name: "Máquina de soldar, cilindro y carga", qty: 1, unitPrice: 2000000, total: 2000000 },
+          { name: "Gas máquina soldar", qty: 10, unitPrice: 100000, total: 1000000 },
+          { name: "Alambre máquina de soldar", qty: 6, unitPrice: 40000, total: 240000 },
+          { name: "Pintura sintética (galones) diluyente", qty: 50, unitPrice: 48000, total: 2400000 },
+          { name: "Planchas de acero plegado (2mm)", qty: 1, unitPrice: 19617000, total: 19617000 },
+          { name: "Perfiles estructurales", qty: 1, unitPrice: 2878000, total: 2878000 },
+          { name: "Motores eléctricos", qty: 5, unitPrice: 700000, total: 3500000 },
+          { name: "Correas y accesorios", qty: 1, unitPrice: 5860000, total: 5860000 },
+          { name: "Componentes varios", qty: 1, unitPrice: 3435000, total: 3435000 }
+        ],
+        expensesSubtotal: 47460000,
+        costCenterSubtotal: 63468000,
+        adminPercent: 2,
+        adminTotal: 1269360,
+        contingencyPercent: 5,
+        contingencyTotal: 3173400,
+        adminSubtotal: 4442760,
+        totalCostCenter: 67910760,
+        profitPercent: 50,
+        profitAmount: 33955380,
+        totalNet: 101866140,
+        discountPercent: 5,
+        discountAmount: 5093307,
+        totalNetNegotiated: 96772833
+      }
+    ]
   };
 }
 
@@ -355,6 +457,7 @@ function pushToCloud() {
         overtime: DB.overtime || [],
         tools: DB.tools || [],
         documents: DB.documents || [],
+        quotations: DB.quotations || [],
         lastUpdated: new Date().toISOString()
       };
       
@@ -437,6 +540,7 @@ function initCloudSync(force = false) {
           DB.overtime = Array.isArray(remoteData.overtime) ? remoteData.overtime : [];
           DB.tools = Array.isArray(remoteData.tools) ? remoteData.tools : [];
           DB.documents = Array.isArray(remoteData.documents) ? remoteData.documents : [];
+          DB.quotations = Array.isArray(remoteData.quotations) ? remoteData.quotations : (DB.quotations || defaultSeedData().quotations || []);
           
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
@@ -504,6 +608,7 @@ function loadDB() {
       DB.tools = DB.tools || [];
       DB.documents = DB.documents || [];
       DB.overtime = DB.overtime || [];
+      DB.quotations = DB.quotations || defaultSeedData().quotations || [];
     } else {
       DB = defaultSeedData();
       saveDB();

@@ -127,6 +127,10 @@
           <i class="fa-solid fa-chart-pie" style="width:20px;"></i> Dashboard KPIs
         </button>
 
+        <button class="btn btn-secondary nav-item" data-view="cotizaciones" onclick="navigateTo('cotizaciones')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+          <i class="fa-solid fa-file-invoice-dollar" style="width:20px;color:var(--primary);"></i> Cotizaciones & Costos
+        </button>
+
         <button class="btn btn-secondary nav-item" data-view="proyectos" onclick="navigateTo('proyectos')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
           <i class="fa-solid fa-briefcase" style="width:20px;"></i> Proyectos & Faenas
         </button>
@@ -210,17 +214,32 @@
     </div>
   </div>
 
+  <!-- Dedicated Record & Quotation Modal -->
+  <div id="record-modal" class="modal-backdrop">
+    <div class="modal-box modal-box-lg">
+      <div class="modal-header">
+        <h3 id="modal-title" style="font-size:15px;font-weight:700;">Presupuesto & Cotización</h3>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal()" style="border:none;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" id="modal-body">
+      </div>
+      <div class="modal-footer" id="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Universal CRUD Modal -->
   <div id="crud-modal" class="modal-backdrop">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 id="modal-title" style="font-size:15px;font-weight:700;">Editar Registro</h3>
+        <h3 id="crud-modal-title" style="font-size:15px;font-weight:700;">Editar Registro</h3>
         <button class="btn btn-secondary btn-sm" onclick="closeModal()" style="border:none;"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" id="crud-modal-body">
         <div id="modal-body-content"></div>
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer" id="crud-modal-footer">
         <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
         <button class="btn btn-primary" onclick="saveModalRecord()"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
       </div>

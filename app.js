@@ -28,6 +28,16 @@ function fmtPercent(val) {
 }
 
 // Genera descriptor visual y legible para diferenciar miles de millones en tiempo real
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function describeAmountInWords(val) {
   const num = parseCurrencyNumber(val);
   if (num === 0) {
@@ -248,6 +258,9 @@ function renderCurrentView() {
   switch (currentView) {
     case "dashboard":
       renderDashboard(container);
+      break;
+    case "cotizaciones":
+      renderQuotations(container);
       break;
     case "proyectos":
       renderProjects(container);
@@ -744,6 +757,1738 @@ function mountDashboardCharts() {
       }
     });
   }
+}
+
+// ==========================================
+// 1.5. COTIZACIONES & COSTOS INDUSTRIALES (ESTRUCTURA EXCEL CM INDUSTRIAL)
+// ==========================================
+
+let activeQuotationFilter = "todas";
+let quotationSearchTerm = "";
+
+function renderQuotations(container) {
+  const userIsDev = isDeveloper();
+  const quotations = DB.quotations || [];
+
+  // Filtered list
+  const filteredQuotes = quotations.filter(q => {
+    const matchStatus = activeQuotationFilter === "todas" || (q.status || "Borrador").toLowerCase() === activeQuotationFilter.toLowerCase();
+    const term = quotationSearchTerm.toLowerCase();
+    const matchSearch = !term || 
+      (q.title || "").toLowerCase().includes(term) ||
+      (q.code || "").toLowerCase().includes(term) ||
+      (q.client || "").toLowerCase().includes(term);
+    return matchStatus && matchSearch;
+  });
+
+  // Calculate high-level KPIs
+  const totalCotizaciones = quotations.length;
+  const totalMontoCotizado = quotations.reduce((acc, q) => acc + (Number(q.totalNet) || 0), 0);
+  const aprobadas = quotations.filter(q => q.status === "Aprobada" || q.status === "Convertida").length;
+  const totalUtilidad = quotations.reduce((acc, q) => acc + (Number(q.profitAmount) || 0), 0);
+
+  container.innerHTML = `
+    ${!userIsDev ? `
+      <div class="mode-banner">
+        <div class="mode-banner-content">
+          <div class="mode-banner-icon">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div>
+            <div class="mode-banner-title">Perfil: Usuario (Modo Consulta Protegido)</div>
+            <div class="mode-banner-desc">Puedes revisar las cotizaciones, exportar las hojas de costos y generar presupuestos en PDF. La creación y edición requiere rol de Desarrollador.</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="showAuthScreen(true)" style="align-self:center;font-size:12px;">
+          <i class="fa-solid fa-code"></i> Entrar como Desarrollador
+        </button>
+      </div>
+    ` : ""}
+
+    <!-- Module Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <h1 style="font-size:22px;font-weight:800;color:#fff;margin:0 0 4px;display:flex;align-items:center;gap:10px;">
+          <i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary);"></i>
+          Cotizaciones & Presupuestos
+        </h1>
+        <p style="font-size:13px;color:var(--text-sub);margin:0;">
+          Calculadora de costos según estructura CM Industrial (Mano de Obra, Insumos, Materiales, Administración, Imprevistos y Margen de Utilidad).
+        </p>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="openQuotationSimulatorModal()" style="font-size:13px;border-color:var(--primary);color:#fed7aa;" title="Simulador manual sin alterar datos reales">
+          <i class="fa-solid fa-calculator" style="color:var(--primary);"></i> Simulador Manual (Sin alterar datos)
+        </button>
+        <button class="btn btn-secondary" onclick="openQuotationTemplateModal()" style="font-size:13px;">
+          <i class="fa-solid fa-file-import"></i> Plantillas Rápidas
+        </button>
+        ${userIsDev ? `
+          <button class="btn btn-primary" onclick="openQuotationModal()" style="font-size:13px;">
+            <i class="fa-solid fa-plus"></i> Nueva Cotización
+          </button>
+        ` : ""}
+      </div>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 22px;">
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">TOTAL COTIZACIONES</span>
+          <i class="fa-solid fa-folder-open kpi-icon" style="color:var(--primary);"></i>
+        </div>
+        <div class="kpi-value" style="color:#fff;">${totalCotizaciones} <span style="font-size:13px;font-weight:400;color:var(--text-sub);">emitidas</span></div>
+        <div class="kpi-subtext">Histórico en plataforma</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">MONTO TOTAL COTIZADO</span>
+          <i class="fa-solid fa-money-bill-wave kpi-icon" style="color:#38bdf8;"></i>
+        </div>
+        <div class="kpi-value" style="color:#38bdf8;">$ ${formatNumberCL(totalMontoCotizado)}</div>
+        <div class="kpi-subtext">Suma de cartera neta</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">APROBADAS / CONVERTIDAS</span>
+          <i class="fa-solid fa-circle-check kpi-icon" style="color:var(--success);"></i>
+        </div>
+        <div class="kpi-value" style="color:var(--success);">${aprobadas} <span style="font-size:13px;font-weight:400;color:var(--text-sub);">obras</span></div>
+        <div class="kpi-subtext">${totalCotizaciones > 0 ? ((aprobadas / totalCotizaciones) * 100).toFixed(0) : 0}% tasa de adjudicación</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">UTILIDAD PROYECTADA (50%)</span>
+          <i class="fa-solid fa-arrow-trend-up kpi-icon" style="color:#a855f7;"></i>
+        </div>
+        <div class="kpi-value" style="color:#a855f7;">$ ${formatNumberCL(totalUtilidad)}</div>
+        <div class="kpi-subtext">Margen bruto estimado</div>
+      </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="card" style="padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#0d1424;">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:260px;">
+        <i class="fa-solid fa-magnifying-glass" style="color:var(--text-muted);font-size:14px;"></i>
+        <input type="text" class="form-control" placeholder="Buscar por proyecto, código o cliente..." value="${escapeHtml(quotationSearchTerm)}" oninput="quotationSearchTerm=this.value;renderQuotations(document.getElementById('view-root'))" style="background:transparent;border:none;padding:6px 0;font-size:13px;color:#fff;">
+      </div>
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:11px;color:var(--text-sub);text-transform:uppercase;font-weight:700;margin-right:4px;">Estado:</span>
+        ${["todas", "borrador", "enviada", "aprobada", "convertida", "rechazada"].map(st => `
+          <button class="btn btn-sm ${activeQuotationFilter === st ? 'btn-primary' : 'btn-secondary'}" onclick="activeQuotationFilter='${st}';renderQuotations(document.getElementById('view-root'))" style="font-size:11px;padding:4px 10px;text-transform:capitalize;">
+            ${st}
+          </button>
+        `).join("")}
+      </div>
+    </div>
+
+    <!-- Quotations Table / List -->
+    <div class="card" style="padding:0;overflow:hidden;background:#0d1424;">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
+        <h3 style="font-size:15px;font-weight:700;color:#fff;margin:0;">
+          Listado de Presupuestos & Cotizaciones (${filteredQuotes.length})
+        </h3>
+        <span style="font-size:11px;color:var(--text-sub);">Estructura Centro de Costos + Utilidad 50%</span>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="table" style="margin:0;width:100%;">
+          <thead>
+            <tr>
+              <th style="padding:12px 16px;">Código / Obra</th>
+              <th style="padding:12px 16px;">Cliente</th>
+              <th style="padding:12px 16px;">Duración</th>
+              <th style="padding:12px 16px;text-align:right;">Mano de Obra</th>
+              <th style="padding:12px 16px;text-align:right;">Insumos & Mat.</th>
+              <th style="padding:12px 16px;text-align:right;">C. Costos</th>
+              <th style="padding:12px 16px;text-align:right;">Utilidad</th>
+              <th style="padding:12px 16px;text-align:right;">Total Neto</th>
+              <th style="padding:12px 16px;text-align:center;">Estado</th>
+              <th style="padding:12px 16px;text-align:center;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredQuotes.length === 0 ? `
+              <tr>
+                <td colspan="10" style="text-align:center;padding:36px;color:var(--text-sub);">
+                  <i class="fa-solid fa-file-circle-question" style="font-size:32px;margin-bottom:10px;opacity:0.4;display:block;"></i>
+                  No se encontraron cotizaciones con los filtros seleccionados.
+                  <div style="margin-top:10px;">
+                    <button class="btn btn-secondary btn-sm" onclick="openQuotationTemplateModal()">Cargar Plantilla de Ejemplo</button>
+                  </div>
+                </td>
+              </tr>
+            ` : filteredQuotes.map(q => {
+              const statusColors = {
+                "Borrador": { bg: "rgba(156,163,175,0.12)", color: "#9ca3af", border: "rgba(156,163,175,0.3)" },
+                "Enviada": { bg: "rgba(56,189,248,0.12)", color: "#38bdf8", border: "rgba(56,189,248,0.3)" },
+                "Aprobada": { bg: "rgba(34,197,94,0.15)", color: "#4ade80", border: "rgba(34,197,94,0.4)" },
+                "Convertida": { bg: "rgba(168,85,247,0.15)", color: "#c084fc", border: "rgba(168,85,247,0.4)" },
+                "Rechazada": { bg: "rgba(239,68,68,0.12)", color: "#f87171", border: "rgba(239,68,68,0.3)" }
+              };
+              const st = statusColors[q.status] || statusColors["Borrador"];
+
+              return `
+                <tr>
+                  <td style="padding:14px 16px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                      <span class="badge" style="background:#1e293b;color:#f8fafc;font-size:10px;font-weight:700;letter-spacing:0.04em;">${escapeHtml(q.code || q.id)}</span>
+                    </div>
+                    <div style="font-weight:700;color:#fff;font-size:13px;max-width:280px;line-height:1.3;">
+                      ${escapeHtml(q.title || "Cotización sin título")}
+                    </div>
+                  </td>
+                  <td style="padding:14px 16px;color:var(--text-sub);font-size:12.5px;">
+                    <i class="fa-solid fa-building" style="font-size:10px;margin-right:4px;"></i>
+                    ${escapeHtml(q.client || "Cliente no especificado")}
+                  </td>
+                  <td style="padding:14px 16px;font-size:12.5px;color:#fff;">
+                    <span class="badge badge-gray" style="font-size:11px;">
+                      <i class="fa-regular fa-clock"></i> ${escapeHtml(q.executionTime || `${q.months || 4} Meses`)}
+                    </span>
+                  </td>
+                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#cbd5e1;font-weight:600;">
+                    $ ${formatNumberCL(q.laborTotal || 0)}
+                  </td>
+                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#cbd5e1;font-weight:600;">
+                    $ ${formatNumberCL(q.expensesSubtotal || 0)}
+                  </td>
+                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#e2e8f0;font-weight:700;">
+                    $ ${formatNumberCL(q.totalCostCenter || 0)}
+                  </td>
+                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#a855f7;font-weight:700;">
+                    $ ${formatNumberCL(q.profitAmount || 0)}
+                    <div style="font-size:10px;color:var(--text-sub);font-weight:400;">(${q.profitPercent || 50}%)</div>
+                  </td>
+                  <td style="padding:14px 16px;text-align:right;font-size:14px;color:#4ade80;font-weight:800;">
+                    $ ${formatNumberCL(q.totalNet || 0)}
+                    ${q.discountPercent ? `
+                      <div style="font-size:10px;color:var(--warning);font-weight:500;">
+                        Desc. ${q.discountPercent}%: $ ${formatNumberCL(q.totalNetNegotiated || q.totalNet)}
+                      </div>
+                    ` : ""}
+                  </td>
+                  <td style="padding:14px 16px;text-align:center;">
+                    ${userIsDev ? `
+                      <select class="form-control form-control-sm" style="background:${st.bg};color:${st.color};border:1px solid ${st.border};font-weight:700;font-size:11px;padding:3px 6px;border-radius:6px;cursor:pointer;" onchange="onQuotationStatusChange('${q.id}', this.value)" title="Seleccionar estado: si marcas 'Aprobada' se cargará y guardará directamente en Proyectos y Faenas">
+                        <option value="Borrador" ${q.status === "Borrador" ? "selected" : ""} style="background:#0f172a;color:#9ca3af;">Borrador</option>
+                        <option value="Enviada" ${q.status === "Enviada" ? "selected" : ""} style="background:#0f172a;color:#38bdf8;">Enviada</option>
+                        <option value="Aprobada" ${q.status === "Aprobada" ? "selected" : ""} style="background:#0f172a;color:#4ade80;">✔ Aprobada (Cargar a Obra)</option>
+                        <option value="Convertida" ${q.status === "Convertida" ? "selected" : ""} style="background:#0f172a;color:#c084fc;">Convertida</option>
+                        <option value="Rechazada" ${q.status === "Rechazada" ? "selected" : ""} style="background:#0f172a;color:#f87171;">Rechazada</option>
+                      </select>
+                    ` : `
+                      <span class="badge" style="background:${st.bg};color:${st.color};border:1px solid ${st.border};font-size:11px;padding:3px 9px;">
+                        ${escapeHtml(q.status || "Borrador")}
+                      </span>
+                    `}
+                  </td>
+                  <td style="padding:14px 16px;text-align:center;">
+                    <div style="display:inline-flex;gap:4px;align-items:center;">
+                      <button class="btn btn-secondary btn-sm" onclick="openQuotationDetails('${q.id}')" title="Ver Hoja de Costos Estilo Excel" style="padding:5px 8px;font-size:11px;background:#1e293b;border:1px solid var(--border-color);">
+                        <i class="fa-solid fa-table-cells" style="color:#38bdf8;"></i> Excel
+                      </button>
+                      
+                      <button class="btn btn-secondary btn-sm" onclick="printQuotation('${q.id}')" title="Imprimir / Exportar PDF Formal" style="padding:5px 8px;font-size:11px;">
+                        <i class="fa-solid fa-print"></i>
+                      </button>
+
+                      ${userIsDev ? `
+                        <button class="btn btn-sm" onclick="approveQuotationAndLoadProject('${q.id}', true)" title="Aprobar proyecto y cargar a Proyectos & Faenas para rellenar recuadros" style="padding:5px 8px;font-size:11px;background:rgba(34,197,94,0.18);color:#4ade80;border:1px solid rgba(34,197,94,0.35);font-weight:700;">
+                          <i class="fa-solid fa-circle-check"></i> ${q.status === "Aprobada" || q.status === "Convertida" ? "Ver en Obra" : "Aprobar y Cargar"}
+                        </button>
+
+                        <button class="btn btn-secondary btn-sm" onclick="openQuotationModal('${q.id}')" title="Editar Cotización" style="padding:5px 8px;font-size:11px;">
+                          <i class="fa-solid fa-pen"></i>
+                        </button>
+
+                        <button class="btn btn-secondary btn-sm" onclick="deleteQuotation('${q.id}')" title="Eliminar Cotización" style="padding:5px 8px;font-size:11px;color:var(--danger);">
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                      ` : ""}
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// Open detailed Excel-like Sheet Modal (The exact structure from user's images)
+function openQuotationDetails(quoteId) {
+  const quote = (DB.quotations || []).find(q => q.id === quoteId);
+  if (!quote) return;
+
+  const modal = document.getElementById("record-modal");
+  const title = document.getElementById("modal-title");
+  const body = document.getElementById("modal-body");
+  const footer = document.getElementById("modal-footer");
+
+  if (!modal || !title || !body) return;
+
+  title.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;">
+      <i class="fa-solid fa-table" style="color:var(--primary);"></i>
+      <span>Hoja de Costos & Cotización Industrial &bull; ${escapeHtml(quote.code || quote.id)}</span>
+    </div>
+  `;
+
+  body.innerHTML = `
+    <div style="background:#090d16;border-radius:10px;padding:18px;border:1px solid #1e293b;font-family:Inter,system-ui,sans-serif;">
+      
+      <!-- Excel Header Block -->
+      <div style="background:#1e293b;border:2px solid #334155;border-radius:6px;padding:12px 16px;margin-bottom:16px;text-align:center;">
+        <div style="font-size:16px;font-weight:900;color:#f8fafc;letter-spacing:0.03em;text-transform:uppercase;">
+          ${escapeHtml(quote.title || "PROYECTO INDUSTRIAL")}
+        </div>
+        <div style="font-size:12px;font-weight:700;color:var(--primary);margin-top:4px;">
+          EJECUCIÓN: ${escapeHtml(quote.executionTime || `${quote.months || 4} MESES`)}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns: 2fr 1fr;gap:16px;align-items:start;">
+        
+        <!-- Main Cost Sheet (Left Table) -->
+        <div>
+          
+          <!-- SECTION 1: MANO DE OBRA -->
+          <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px;border:1px solid #334155;">
+            <thead>
+              <tr style="background:#0284c7;color:#fff;">
+                <th style="padding:6px 10px;text-align:left;border:1px solid #334155;font-weight:800;">DESCRIPCION</th>
+                <th style="padding:6px 10px;text-align:center;border:1px solid #334155;width:60px;">CANT</th>
+                <th style="padding:6px 10px;text-align:right;border:1px solid #334155;">VALORES (IMPONIBLE)</th>
+              </tr>
+              <tr style="background:#fed7aa;color:#7c2d12;">
+                <th colspan="3" style="padding:4px 10px;text-align:left;font-size:11px;font-weight:800;">SUELDOS POR MES</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(quote.laborItems || []).map(item => `
+                <tr style="background:#0f172a;color:#f8fafc;">
+                  <td style="padding:6px 10px;border:1px solid #1e293b;">${escapeHtml(item.role)}</td>
+                  <td style="padding:6px 10px;border:1px solid #1e293b;text-align:center;">${item.count}</td>
+                  <td style="padding:6px 10px;border:1px solid #1e293b;text-align:right;font-weight:600;">$ ${formatNumberCL(item.taxableMonthly)}</td>
+                </tr>
+              `).join("")}
+              <tr style="background:#1e293b;color:#f8fafc;font-weight:700;">
+                <td style="padding:6px 10px;border:1px solid #334155;">SUBTOTAL MENSUAL</td>
+                <td style="padding:6px 10px;border:1px solid #334155;text-align:center;">-</td>
+                <td style="padding:6px 10px;border:1px solid #334155;text-align:right;">$ ${formatNumberCL(quote.laborMonthlySubtotal || 0)}</td>
+              </tr>
+              <tr style="background:#1e293b;color:#38bdf8;font-weight:700;">
+                <td style="padding:6px 10px;border:1px solid #334155;">POR ${quote.months || 4} MESES</td>
+                <td style="padding:6px 10px;border:1px solid #334155;text-align:center;">${quote.months || 4}</td>
+                <td style="padding:6px 10px;border:1px solid #334155;text-align:right;">$ ${formatNumberCL(quote.laborTotal || 0)}</td>
+              </tr>
+              <tr style="background:#334155;color:#fff;font-weight:900;">
+                <td colspan="2" style="padding:8px 10px;border:1px solid #475569;font-size:12px;">TOTAL MANO DE OBRA</td>
+                <td style="padding:8px 10px;border:1px solid #475569;text-align:right;font-size:13px;color:#fed7aa;">$ ${formatNumberCL(quote.laborTotal || 0)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- SECTION 2: GASTOS E INSUMOS -->
+          <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px;border:1px solid #334155;">
+            <thead>
+              <tr style="background:#fdba74;color:#7c2d12;">
+                <th colspan="4" style="padding:6px 10px;text-align:center;font-weight:900;letter-spacing:0.04em;">GASTOS E INSUMOS</th>
+              </tr>
+              <tr style="background:#fed7aa;color:#7c2d12;">
+                <th style="padding:5px 10px;text-align:left;border:1px solid #334155;font-weight:800;">DETALLE</th>
+                <th style="padding:5px 10px;text-align:center;border:1px solid #334155;width:60px;">CANT</th>
+                <th style="padding:5px 10px;text-align:right;border:1px solid #334155;width:100px;">VALOR UNIT</th>
+                <th style="padding:5px 10px;text-align:right;border:1px solid #334155;width:120px;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background:#1e293b;color:#f97316;font-weight:800;">
+                <td colspan="4" style="padding:4px 10px;border:1px solid #334155;font-size:11px;">TRABAJO EN TERRENO & LOGISTICA</td>
+              </tr>
+              ${(quote.fieldItems || []).map(item => `
+                <tr style="background:#0f172a;color:#f8fafc;">
+                  <td style="padding:5px 10px;border:1px solid #1e293b;">${escapeHtml(item.name)}</td>
+                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:center;">${item.qty}</td>
+                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;">$ ${formatNumberCL(item.unitPrice)}</td>
+                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;font-weight:600;">$ ${formatNumberCL(item.total)}</td>
+                </tr>
+              `).join("")}
+
+              <tr style="background:#fed7aa;color:#7c2d12;font-weight:800;">
+                <td colspan="4" style="padding:4px 10px;border:1px solid #334155;font-size:11px;">MATERIALES Y EQUIPOS</td>
+              </tr>
+              ${(quote.materialItems || []).map(item => `
+                <tr style="background:#0f172a;color:#f8fafc;">
+                  <td style="padding:5px 10px;border:1px solid #1e293b;">${escapeHtml(item.name)}</td>
+                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:center;">${item.qty || '-'}</td>
+                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;">${item.unitPrice ? `$ ${formatNumberCL(item.unitPrice)}` : '-'}</td>
+                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;font-weight:600;">$ ${formatNumberCL(item.total)}</td>
+                </tr>
+              `).join("")}
+
+              <tr style="background:#334155;color:#fff;font-weight:900;">
+                <td colspan="3" style="padding:8px 10px;border:1px solid #475569;">SUBTOTAL GASTOS</td>
+                <td style="padding:8px 10px;border:1px solid #475569;text-align:right;font-size:13px;color:#fed7aa;">$ ${formatNumberCL(quote.expensesSubtotal || 0)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- SECTION 3: CENTRO DE COSTOS, ADMIN Y UTILIDAD -->
+          <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #334155;">
+            <tbody>
+              <tr style="background:#1e293b;color:#f8fafc;font-weight:800;">
+                <td style="padding:8px 10px;border:1px solid #334155;">SUB TOTAL CENTRO DE COSTOS</td>
+                <td style="padding:8px 10px;border:1px solid #334155;text-align:right;font-size:13px;">$ ${formatNumberCL(quote.costCenterSubtotal || 0)}</td>
+              </tr>
+              <tr style="background:#fed7aa;color:#7c2d12;font-weight:800;">
+                <td colspan="2" style="padding:4px 10px;font-size:11px;">ADMINISTRACION E IMPREVISTOS</td>
+              </tr>
+              <tr style="background:#0f172a;color:#cbd5e1;">
+                <td style="padding:5px 10px;border:1px solid #1e293b;">COMISION ADMINISTRACION (${quote.adminPercent || 2}%)</td>
+                <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;">$ ${formatNumberCL(quote.adminTotal || 0)}</td>
+              </tr>
+              <tr style="background:#0f172a;color:#cbd5e1;">
+                <td style="padding:5px 10px;border:1px solid #1e293b;">GASTOS IMPREVISTOS (${quote.contingencyPercent || 5}%)</td>
+                <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;">$ ${formatNumberCL(quote.contingencyTotal || 0)}</td>
+              </tr>
+              <tr style="background:#1e293b;color:#cbd5e1;font-weight:700;">
+                <td style="padding:6px 10px;border:1px solid #334155;">SUBTOTAL ADMINISTRACION</td>
+                <td style="padding:6px 10px;border:1px solid #334155;text-align:right;">$ ${formatNumberCL(quote.adminSubtotal || 0)}</td>
+              </tr>
+              <tr style="background:#334155;color:#fff;font-weight:900;">
+                <td style="padding:8px 10px;border:1px solid #475569;font-size:13px;">TOTAL CENTRO DE COSTOS</td>
+                <td style="padding:8px 10px;border:1px solid #475569;text-align:right;font-size:14px;color:#38bdf8;">$ ${formatNumberCL(quote.totalCostCenter || 0)}</td>
+              </tr>
+              <tr style="background:rgba(34,197,94,0.18);color:#4ade80;font-weight:900;">
+                <td style="padding:8px 10px;border:1px solid rgba(34,197,94,0.4);font-size:13px;">UTILIDAD (${quote.profitPercent || 50}%)</td>
+                <td style="padding:8px 10px;border:1px solid rgba(34,197,94,0.4);text-align:right;font-size:14px;">$ ${formatNumberCL(quote.profitAmount || 0)}</td>
+              </tr>
+              <tr style="background:#052e16;color:#22c55e;font-weight:900;border:2px solid #22c55e;">
+                <td style="padding:10px;font-size:14px;letter-spacing:0.02em;">TOTAL NETO DE VENTA</td>
+                <td style="padding:10px;text-align:right;font-size:16px;">$ ${formatNumberCL(quote.totalNet || 0)}</td>
+              </tr>
+              ${quote.discountPercent ? `
+                <tr style="background:#451a03;color:#fbbf24;font-weight:800;">
+                  <td style="padding:8px 10px;border:1px solid #d97706;">FACTOR NEGOCIACIÓN / DESCUENTO (${quote.discountPercent}%)</td>
+                  <td style="padding:8px 10px;border:1px solid #d97706;text-align:right;font-size:14px;">$ ${formatNumberCL(quote.totalNetNegotiated || quote.totalNet)}</td>
+                </tr>
+              ` : ""}
+            </tbody>
+          </table>
+
+        </div>
+
+        <!-- Right Side: Payroll Deductions Breakdown (Calculo Mensual Fonasa/AFP) -->
+        <div>
+          <div style="background:#fef08a;color:#854d0e;padding:8px 12px;font-weight:900;font-size:12px;text-align:center;border-radius:6px 6px 0 0;border:1px solid #ca8a04;">
+            CALCULO MENSUAL LIQUIDO / IMPONIBLE
+          </div>
+          <div style="background:#0f172a;border:1px solid #ca8a04;border-top:none;border-radius:0 0 6px 6px;padding:12px;font-size:11px;">
+            
+            <!-- Ayudante Card -->
+            <div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed #334155;">
+              <div style="font-weight:800;color:#38bdf8;margin-bottom:4px;">AYUDANTE</div>
+              <div style="display:flex;justify-content:space-between;color:#e2e8f0;"><span>Imponible:</span> <strong>$ 865.000</strong></div>
+              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>FONASA (7%):</span> <span>$ 60.550</span></div>
+              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>AFP (~12%):</span> <span>$ 103.800</span></div>
+              <div style="display:flex;justify-content:space-between;color:#4ade80;font-weight:700;margin-top:2px;"><span>Líquido Estimado:</span> <span>$ 700.650</span></div>
+            </div>
+
+            <!-- Operario Card -->
+            <div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed #334155;">
+              <div style="font-weight:800;color:#38bdf8;margin-bottom:4px;">OPERARIO</div>
+              <div style="display:flex;justify-content:space-between;color:#e2e8f0;"><span>Imponible:</span> <strong>$ 1.012.500</strong></div>
+              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>FONASA (7%):</span> <span>$ 70.875</span></div>
+              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>AFP (~12%):</span> <span>$ 121.500</span></div>
+              <div style="display:flex;justify-content:space-between;color:#4ade80;font-weight:700;margin-top:2px;"><span>Líquido Estimado:</span> <span>$ 820.125</span></div>
+            </div>
+
+            <!-- Bono Supervisión -->
+            <div style="margin-bottom:6px;">
+              <div style="font-weight:800;color:#38bdf8;margin-bottom:4px;">BONO SUPERVISIÓN</div>
+              <div style="display:flex;justify-content:space-between;color:#e2e8f0;"><span>Imponible:</span> <strong>$ 247.000</strong></div>
+              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>FONASA:</span> <span>$ 17.290</span></div>
+              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>AFP:</span> <span>$ 29.640</span></div>
+              <div style="display:flex;justify-content:space-between;color:#4ade80;font-weight:700;margin-top:2px;"><span>Líquido Estimado:</span> <span>$ 200.070</span></div>
+            </div>
+
+          </div>
+
+          <!-- Notes / Observations -->
+          ${quote.notes ? `
+            <div style="margin-top:14px;background:#1e293b;border-radius:6px;padding:10px 12px;font-size:11.5px;color:#94a3b8;">
+              <strong style="color:#fff;display:block;margin-bottom:4px;"><i class="fa-solid fa-circle-info" style="color:var(--primary);"></i> Observaciones Técnicas:</strong>
+              ${escapeHtml(quote.notes)}
+            </div>
+          ` : ""}
+
+          <!-- Quick Action Buttons -->
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">
+            <button class="btn btn-primary" onclick="printQuotation('${quote.id}')" style="width:100%;justify-content:center;font-size:12px;">
+              <i class="fa-solid fa-print"></i> Imprimir Cotización Formal
+            </button>
+            ${isDeveloper() ? `
+              <button class="btn btn-secondary" onclick="approveQuotationAndLoadProject('${quote.id}', true)" style="width:100%;justify-content:center;font-size:12px;background:rgba(34,197,94,0.18);color:#4ade80;border-color:rgba(34,197,94,0.4);font-weight:700;">
+                <i class="fa-solid fa-circle-check"></i> ${quote.status === "Aprobada" || quote.status === "Convertida" ? "Ver en Proyectos & Faenas" : "Aprobar Proyecto y Cargar a Faenas"}
+              </button>
+            ` : ""}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+  if (footer) {
+    footer.innerHTML = `
+      <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+    `;
+  }
+
+  modal.style.display = "flex";
+}
+
+// Helper when changing status from the select dropdown
+function onQuotationStatusChange(quoteId, newStatus) {
+  if (!verifyDeveloperPermission("cambiar estado de la cotización")) return;
+  const quote = (DB.quotations || []).find(q => q.id === quoteId);
+  if (!quote) return;
+
+  if (newStatus === "Aprobada") {
+    approveQuotationAndLoadProject(quoteId, true);
+  } else {
+    quote.status = newStatus;
+    saveDB();
+    renderQuotations(document.getElementById("view-root"));
+  }
+}
+
+// Approve quotation, map all fields to Proyectos & Faenas, save project, and load into form
+function approveQuotationAndLoadProject(quoteId, openEditModalAfter = true) {
+  if (!verifyDeveloperPermission("aprobar y cargar cotización a proyecto")) return;
+  
+  const quote = (DB.quotations || []).find(q => q.id === quoteId);
+  if (!quote) return;
+
+  // Mark quote as Aprobada
+  quote.status = "Aprobada";
+
+  DB.projects = DB.projects || [];
+  
+  // Check if project already exists for this quote
+  let project = DB.projects.find(p => p.quoteId === quote.id || (p.quoteCode && p.quoteCode === (quote.code || quote.id)));
+
+  const today = new Date().toISOString().split("T")[0];
+  const endDate = new Date();
+  endDate.setMonth(endDate.getMonth() + (Number(quote.months) || 4));
+  const endFormatted = endDate.toISOString().split("T")[0];
+  const netBudget = Number(quote.totalNet) || Number(quote.totalCostCenter) || 0;
+
+  let targetProjectId = "";
+
+  if (project) {
+    project.name = quote.title;
+    project.client = quote.client || project.client || "Cliente General";
+    project.budget = netBudget;
+    project.status = project.status || "En Ejecución";
+    project.notes = `Cotización Aprobada ${quote.code || quote.id}. Presupuesto Asignado: $ ${formatNumberCL(netBudget)} Neto.`;
+    targetProjectId = project.id;
+  } else {
+    const newProjectId = "PRJ-" + (String(DB.projects.length + 1).padStart(3, "0"));
+    project = {
+      id: newProjectId,
+      quoteId: quote.id,
+      quoteCode: quote.code || quote.id,
+      name: quote.title,
+      client: quote.client || "Cliente General",
+      location: "Faena en Terreno / Planta",
+      manager: "Jefe de Proyecto / Ing. Residente",
+      budget: netBudget,
+      spent: 0,
+      plannedProgress: 0,
+      realProgress: 0,
+      startDate: today,
+      endDate: endFormatted,
+      status: "En Ejecución",
+      notes: `Proyecto cargado automáticamente desde la Cotización Aprobada ${quote.code || quote.id} ($ ${formatNumberCL(netBudget)} Neto).`
+    };
+    DB.projects.unshift(project);
+    targetProjectId = newProjectId;
+  }
+
+  saveDB();
+  closeModal();
+
+  // Navigate to Proyectos & Faenas view
+  navigateTo("proyectos");
+
+  // Open the project edit modal so all boxes/recuadros are loaded and displayed to the user
+  if (openEditModalAfter && targetProjectId) {
+    setTimeout(() => {
+      openEditModal("projects", targetProjectId);
+    }, 120);
+  }
+}
+
+// Convert an approved quotation into an active Project
+function convertQuotationToProject(quoteId) {
+  approveQuotationAndLoadProject(quoteId, true);
+}
+
+// Print formal quotation for client
+function printQuotation(quoteId) {
+  const quote = (DB.quotations || []).find(q => q.id === quoteId);
+  if (!quote) return;
+
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("Por favor habilita las ventanas emergentes (popups) para imprimir la cotización.");
+    return;
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <title>Cotización ${quote.code || quote.id} - CM Industrial</title>
+      <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1e293b; padding: 40px; margin: 0; background: #fff; font-size: 13px; line-height: 1.5; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #f97316; padding-bottom: 16px; margin-bottom: 24px; }
+        .logo { font-size: 24px; font-weight: 900; color: #f97316; }
+        .logo span { color: #0f172a; }
+        .company-info { text-align: right; font-size: 12px; color: #64748b; }
+        .quote-title-box { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #f97316; padding: 14px 18px; margin-bottom: 24px; border-radius: 4px; }
+        .quote-title { font-size: 16px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-bottom: 4px; }
+        .meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; font-size: 12px; background: #f1f5f9; padding: 12px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { background: #0f172a; color: #fff; text-align: left; padding: 8px 10px; font-size: 12px; font-weight: 700; }
+        td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        .section-header { background: #fed7aa; color: #7c2d12; font-weight: 800; }
+        .totals-table { width: 320px; margin-left: auto; border: 1px solid #cbd5e1; }
+        .totals-table td { padding: 6px 12px; }
+        .total-final { background: #f97316; color: #fff; font-weight: 900; font-size: 14px; }
+        .footer-terms { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 11px; color: #64748b; }
+        @media print {
+          body { padding: 0; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div>
+          <div class="logo">CM <span>INDUSTRIAL</span></div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px;">Servicios de Ingeniería, Montajes & Construcción Industrial</div>
+        </div>
+        <div class="company-info">
+          <strong>CM Industrial SpA</strong><br>
+          RUT: 77.890.123-K<br>
+          Quintero / V Región, Chile<br>
+          contacto@cmindustrial.cl
+        </div>
+      </div>
+
+      <div class="quote-title-box">
+        <div class="quote-title">${escapeHtml(quote.title)}</div>
+        <div style="color:#64748b;font-size:12px;">Código: <strong>${escapeHtml(quote.code || quote.id)}</strong> &bull; Fecha: ${quote.createdAt || new Date().toLocaleDateString('es-CL')}</div>
+      </div>
+
+      <div class="meta-grid">
+        <div><strong>Cliente:</strong><br>${escapeHtml(quote.client || "Cliente")}</div>
+        <div><strong>Tiempo Ejecución:</strong><br>${escapeHtml(quote.executionTime || `${quote.months || 4} Meses`)}</div>
+        <div><strong>Validez Oferta:</strong><br>30 Días</div>
+        <div><strong>Forma de Pago:</strong><br>Estado de Pago / Hitos</div>
+      </div>
+
+      <!-- Partidas y Desglose -->
+      <table>
+        <thead>
+          <tr>
+            <th>ITEM / PARTIDA</th>
+            <th style="text-align:center;width:60px;">CANT</th>
+            <th style="text-align:right;width:120px;">VALOR UNIT.</th>
+            <th style="text-align:right;width:130px;">TOTAL NETO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="section-header">
+            <td colspan="4">1. MANO DE OBRA ESPECIALIZADA EN FAENA</td>
+          </tr>
+          ${(quote.laborItems || []).map(item => `
+            <tr>
+              <td>Personal: ${escapeHtml(item.role)} (Duración: ${quote.months || 4} Meses)</td>
+              <td style="text-align:center;">${item.count}</td>
+              <td style="text-align:right;">$ ${formatNumberCL(item.taxableMonthly)}/mes</td>
+              <td style="text-align:right;font-weight:600;">$ ${formatNumberCL(item.taxableMonthly * item.count * (quote.months || 4))}</td>
+            </tr>
+          `).join("")}
+
+          <tr class="section-header">
+            <td colspan="4">2. TRABAJO EN TERRENO, TRASLADOS Y EPP</td>
+          </tr>
+          ${(quote.fieldItems || []).map(item => `
+            <tr>
+              <td>${escapeHtml(item.name)}</td>
+              <td style="text-align:center;">${item.qty}</td>
+              <td style="text-align:right;">$ ${formatNumberCL(item.unitPrice)}</td>
+              <td style="text-align:right;font-weight:600;">$ ${formatNumberCL(item.total)}</td>
+            </tr>
+          `).join("")}
+
+          <tr class="section-header">
+            <td colspan="4">3. MATERIALES, FABRICACIÓN Y EQUIPOS</td>
+          </tr>
+          ${(quote.materialItems || []).map(item => `
+            <tr>
+              <td>${escapeHtml(item.name)}</td>
+              <td style="text-align:center;">${item.qty || 1}</td>
+              <td style="text-align:right;">${item.unitPrice ? `$ ${formatNumberCL(item.unitPrice)}` : '-'}</td>
+              <td style="text-align:right;font-weight:600;">$ ${formatNumberCL(item.total)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+
+      <!-- Resumen de Totales -->
+      <table class="totals-table">
+        <tr>
+          <td><strong>Subtotal Costo Directo:</strong></td>
+          <td style="text-align:right;">$ ${formatNumberCL(quote.costCenterSubtotal || quote.totalCostCenter)}</td>
+        </tr>
+        <tr>
+          <td>Gastos Generales & Admin:</td>
+          <td style="text-align:right;">$ ${formatNumberCL(quote.adminSubtotal || 0)}</td>
+        </tr>
+        <tr class="total-final">
+          <td><strong>TOTAL NETO (+IVA):</strong></td>
+          <td style="text-align:right;">$ ${formatNumberCL(quote.totalNet || 0)}</td>
+        </tr>
+        <tr>
+          <td>IVA (19%):</td>
+          <td style="text-align:right;">$ ${formatNumberCL(Math.round((quote.totalNet || 0) * 0.19))}</td>
+        </tr>
+        <tr style="background:#f1f5f9;font-weight:bold;">
+          <td>TOTAL BRUTO:</td>
+          <td style="text-align:right;">$ ${formatNumberCL(Math.round((quote.totalNet || 0) * 1.19))}</td>
+        </tr>
+      </table>
+
+      <div class="footer-terms">
+        <strong>Condiciones Comerciales:</strong>
+        <ul>
+          <li>Precios expresados en Pesos Chilenos (CLP), no incluyen IVA salvo indicación contraria.</li>
+          <li>Cotización válida por 30 días corridos a contar de la fecha de emisión.</li>
+          <li>Los trabajos se iniciarán previa emisión de Orden de Compra (OC) y firma del acta de entrega de terreno.</li>
+        </ul>
+      </div>
+
+      <div style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
+        <div style="border-top:1px solid #0f172a;width:200px;padding-top:6px;font-size:11px;">
+          <strong>CM Industrial SpA</strong><br>Departamento de Proyectos
+        </div>
+        <div style="border-top:1px solid #0f172a;width:200px;padding-top:6px;font-size:11px;">
+          <strong>Aceptación Cliente</strong><br>Firma & Timbre
+        </div>
+      </div>
+
+      <script>
+        window.onload = function() { window.print(); }
+      </script>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
+// Modal to choose pre-made templates (Secadora de Nueces, Alimentador Silos, En blanco)
+function openQuotationTemplateModal() {
+  const modal = document.getElementById("record-modal");
+  const title = document.getElementById("modal-title");
+  const body = document.getElementById("modal-body");
+  const footer = document.getElementById("modal-footer");
+
+  if (!modal || !title || !body) return;
+
+  title.textContent = "Cargar Plantilla de Cotización Industrial";
+
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <p style="font-size:13px;color:var(--text-sub);margin:0;">Selecciona una plantilla base para comenzar rápidamente tu presupuesto:</p>
+
+      <div class="card" style="padding:14px;background:#0f172a;border:1px solid var(--border-color);cursor:pointer;" onclick="loadTemplateAndOpen('secadora')">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <strong style="color:#fff;font-size:14px;">1. Proyecto Secadora de Nueces (Agrícola)</strong>
+          <span class="badge badge-green">$ 120.159.930 Neto</span>
+        </div>
+        <p style="font-size:12px;color:var(--text-sub);margin:4px 0 0;">
+          Incluye: 2 operarios, 2 ayudantes, bono supervisión (4 meses), planchas acero 3mm, 5 motores, pintura anticorrosiva, colaciones y fletes.
+        </p>
+      </div>
+
+      <div class="card" style="padding:14px;background:#0f172a;border:1px solid var(--border-color);cursor:pointer;" onclick="loadTemplateAndOpen('silos')">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <strong style="color:#fff;font-size:14px;">2. Instalación Alimentador Llenado de Silos (Molino)</strong>
+          <span class="badge badge-blue">$ 101.866.140 Neto</span>
+        </div>
+        <p style="font-size:12px;color:var(--text-sub);margin:4px 0 0;">
+          Incluye: 2 operarios, 2 ayudantes, planchas plegadas 2mm, motores, pintura sintética y traslados.
+        </p>
+      </div>
+
+      <div class="card" style="padding:14px;background:#0f172a;border:1px solid var(--border-color);cursor:pointer;" onclick="openQuotationModal()">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <strong style="color:#fff;font-size:14px;">3. Cotización Personalizada en Blanco</strong>
+          <span class="badge badge-gray">Nueva Hoja</span>
+        </div>
+        <p style="font-size:12px;color:var(--text-sub);margin:4px 0 0;">
+          Comenzar una cotización desde cero agregando tus propias partidas y materiales.
+        </p>
+      </div>
+    </div>
+  `;
+
+  if (footer) {
+    footer.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>`;
+  }
+
+  modal.style.display = "flex";
+}
+
+function loadTemplateAndOpen(templateType) {
+  closeModal();
+  if (templateType === 'secadora') {
+    const newQ = JSON.parse(JSON.stringify(defaultSeedData().quotations[0]));
+    newQ.id = "COT-" + Date.now().toString().slice(-4);
+    newQ.code = "COT-2026-" + Math.floor(100 + Math.random() * 900);
+    newQ.title = newQ.title + " (Copia)";
+    newQ.status = "Borrador";
+    DB.quotations = DB.quotations || [];
+    DB.quotations.push(newQ);
+    saveDB();
+    renderQuotations(document.getElementById("view-root"));
+    openQuotationModal(newQ.id);
+  } else if (templateType === 'silos') {
+    const newQ = JSON.parse(JSON.stringify(defaultSeedData().quotations[1]));
+    newQ.id = "COT-" + Date.now().toString().slice(-4);
+    newQ.code = "COT-2026-" + Math.floor(100 + Math.random() * 900);
+    newQ.title = newQ.title + " (Copia)";
+    newQ.status = "Borrador";
+    DB.quotations = DB.quotations || [];
+    DB.quotations.push(newQ);
+    saveDB();
+    renderQuotations(document.getElementById("view-root"));
+    openQuotationModal(newQ.id);
+  }
+}
+
+// Interactive Quotation Modal Builder with Live Math Recalculation & Manual / Itemized Inputs
+let quoteEntryMode = "itemized"; // "itemized" | "quick"
+
+function openQuotationModal(quoteId = null) {
+  if (!verifyDeveloperPermission("crear o editar cotizaciones")) return;
+
+  const isEdit = Boolean(quoteId);
+  const quote = isEdit ? (DB.quotations || []).find(q => q.id === quoteId) : {
+    id: "COT-" + Date.now().toString().slice(-4),
+    code: "COT-2026-" + String((DB.quotations || []).length + 1).padStart(3, "0"),
+    title: "",
+    client: "",
+    executionTime: "4 Meses",
+    months: 4,
+    status: "Borrador",
+    createdAt: new Date().toISOString().split("T")[0],
+    notes: "",
+    laborItems: [
+      { role: "Operarios", count: 2, taxableMonthly: 2025000 },
+      { role: "Ayudantes", count: 2, taxableMonthly: 1730000 },
+      { role: "Bono Supervisión", count: 1, taxableMonthly: 247000 }
+    ],
+    fieldItems: [
+      { name: "Ropa y EE.PP.", qty: 3, unitPrice: 70000, total: 210000 },
+      { name: "Colaciones (22 días x 5 pers)", qty: 210, unitPrice: 7000, total: 1470000 },
+      { name: "Fletes ida y vuelta", qty: 11, unitPrice: 430000, total: 4730000 },
+      { name: "Traslado (Bencina)", qty: 22, unitPrice: 15000, total: 330000 }
+    ],
+    materialItems: [
+      { name: "Planchas de acero plegado", qty: 1, unitPrice: 20000000, total: 20000000 },
+      { name: "Pintura y diluyente", qty: 50, unitPrice: 60000, total: 3000000 },
+      { name: "Perfiles estructurales", qty: 1, unitPrice: 2800000, total: 2800000 }
+    ],
+    adminPercent: 2,
+    contingencyPercent: 5,
+    profitPercent: 50,
+    discountPercent: 0
+  };
+
+  const modal = document.getElementById("record-modal");
+  const title = document.getElementById("modal-title");
+  const body = document.getElementById("modal-body");
+  const footer = document.getElementById("modal-footer");
+
+  if (!modal || !title || !body) return;
+
+  title.textContent = isEdit ? `Editar Cotización: ${quote.code}` : "Nueva Cotización & Presupuesto";
+
+  // Store active temporary object for live editing
+  window.activeEditingQuote = JSON.parse(JSON.stringify(quote));
+
+  renderQuotationModalBody(quote, isEdit);
+
+  if (footer) {
+    footer.innerHTML = `
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveQuotationRecord('${quote.id}')">
+        <i class="fa-solid fa-floppy-disk"></i> Guardar Cotización
+      </button>
+    `;
+  }
+
+  modal.style.display = "flex";
+  recalculateQuoteLive();
+}
+
+function switchQuoteEntryMode(mode) {
+  quoteEntryMode = mode;
+  const quote = window.activeEditingQuote;
+  renderQuotationModalBody(quote, Boolean(quote && quote.id));
+  recalculateQuoteLive();
+}
+
+function renderQuotationModalBody(quote, isEdit) {
+  const body = document.getElementById("modal-body");
+  if (!body || !quote) return;
+
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:14px;max-height:75vh;overflow-y:auto;padding-right:4px;">
+      
+      <!-- General Data -->
+      <div style="display:grid;grid-template-columns: 1fr 2fr 1fr;gap:10px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Código</label>
+          <input type="text" id="q-code" class="form-control" value="${escapeHtml(quote.code || '')}">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Título del Proyecto / Cotización *</label>
+          <input type="text" id="q-title" class="form-control" placeholder="Ej: Montaje Secadora y Tolvas" value="${escapeHtml(quote.title || '')}">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Cliente</label>
+          <input type="text" id="q-client" class="form-control" placeholder="Ej: Agrícola Val Valle" value="${escapeHtml(quote.client || '')}">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns: repeat(3, 1fr);gap:10px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Meses de Duración</label>
+          <input type="number" id="q-months" class="form-control" min="1" max="36" value="${quote.months || 4}" oninput="recalculateQuoteLive()">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Texto Plazo de Ejecución</label>
+          <input type="text" id="q-time-text" class="form-control" value="${escapeHtml(quote.executionTime || '4 Meses')}">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Estado</label>
+          <select id="q-status" class="form-control">
+            <option value="Borrador" ${quote.status === "Borrador" ? "selected" : ""}>Borrador</option>
+            <option value="Enviada" ${quote.status === "Enviada" ? "selected" : ""}>Enviada al Cliente</option>
+            <option value="Aprobada" ${quote.status === "Aprobada" ? "selected" : ""}>Aprobada</option>
+            <option value="Convertida" ${quote.status === "Convertida" ? "selected" : ""}>Convertida a Obra</option>
+            <option value="Rechazada" ${quote.status === "Rechazada" ? "selected" : ""}>Rechazada</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Mode Selector Tabs -->
+      <div style="display:flex;gap:8px;background:#090d16;padding:6px;border-radius:8px;border:1px solid #1e293b;">
+        <button type="button" class="btn btn-sm ${quoteEntryMode === 'itemized' ? 'btn-primary' : 'btn-secondary'}" onclick="switchQuoteEntryMode('itemized')" style="flex:1;justify-content:center;font-size:12px;">
+          <i class="fa-solid fa-list-check"></i> Desglose Detallado por Partidas (Excel)
+        </button>
+        <button type="button" class="btn btn-sm ${quoteEntryMode === 'quick' ? 'btn-primary' : 'btn-secondary'}" onclick="switchQuoteEntryMode('quick')" style="flex:1;justify-content:center;font-size:12px;">
+          <i class="fa-solid fa-calculator"></i> Ingreso Rápido de Montos Globales
+        </button>
+      </div>
+
+      ${quoteEntryMode === 'quick' ? `
+        <!-- QUICK GLOBAL AMOUNTS INPUT -->
+        <div style="background:#0d1424;border:1px solid #1e293b;border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-size:12.5px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:6px;">
+            <i class="fa-solid fa-bolt"></i> Ingreso Directo de Totales (Separador de Miles & Millones)
+          </div>
+          <div style="display:grid;grid-template-columns: repeat(3, 1fr);gap:12px;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" style="font-size:11px;">Mano de Obra Mensual ($)</label>
+              <div class="currency-input-wrap">
+                <span class="currency-prefix">$</span>
+                <input type="text" inputmode="numeric" id="q-quick-labor" class="form-control" style="text-align:right;" value="${formatNumberCL(quote.laborMonthlySubtotal || (quote.laborItems || []).reduce((acc, it) => acc + ((Number(it.taxableMonthly) || 0) * (Number(it.count) || 1)), 0) || 4002000)}" oninput="handleCurrencyInput(this, 'q-quick-labor-words');syncQuickLabor();recalculateQuoteLive();" autocomplete="off">
+              </div>
+              <div id="q-quick-labor-words" style="margin-top:2px;">
+                ${describeAmountInWords(quote.laborMonthlySubtotal || 4002000)}
+              </div>
+              <span style="font-size:10px;color:var(--text-sub);">Se multiplica por los meses</span>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" style="font-size:11px;">Gastos Terreno & EPP ($)</label>
+              <div class="currency-input-wrap">
+                <span class="currency-prefix">$</span>
+                <input type="text" inputmode="numeric" id="q-quick-field" class="form-control" style="text-align:right;" value="${formatNumberCL((quote.fieldItems || []).reduce((acc, it) => acc + (Number(it.total) || 0), 0) || 6740000)}" oninput="handleCurrencyInput(this, 'q-quick-field-words');syncQuickField();recalculateQuoteLive();" autocomplete="off">
+              </div>
+              <div id="q-quick-field-words" style="margin-top:2px;">
+                ${describeAmountInWords((quote.fieldItems || []).reduce((acc, it) => acc + (Number(it.total) || 0), 0) || 6740000)}
+              </div>
+              <span style="font-size:10px;color:var(--text-sub);">Colaciones, traslados, fletes</span>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" style="font-size:11px;">Materiales & Equipos ($)</label>
+              <div class="currency-input-wrap">
+                <span class="currency-prefix">$</span>
+                <input type="text" inputmode="numeric" id="q-quick-mat" class="form-control" style="text-align:right;" value="${formatNumberCL((quote.materialItems || []).reduce((acc, it) => acc + (Number(it.total) || 0), 0) || 52118000)}" oninput="handleCurrencyInput(this, 'q-quick-mat-words');syncQuickMaterials();recalculateQuoteLive();" autocomplete="off">
+              </div>
+              <div id="q-quick-mat-words" style="margin-top:2px;">
+                ${describeAmountInWords((quote.materialItems || []).reduce((acc, it) => acc + (Number(it.total) || 0), 0) || 52118000)}
+              </div>
+              <span style="font-size:10px;color:var(--text-sub);">Planchas, soldadura, motores</span>
+            </div>
+          </div>
+        </div>
+      ` : `
+        <!-- DETAILED ITEM TABLES -->
+        
+        <!-- 1. MANO DE OBRA -->
+        <div style="background:#0d1424;border:1px solid #1e293b;border-radius:8px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:12.5px;font-weight:700;color:#38bdf8;display:flex;align-items:center;gap:6px;">
+              <i class="fa-solid fa-users-gear"></i> 1. Mano de Obra (Sueldos Imponibles Mensuales)
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuoteLaborRow()" style="font-size:11px;padding:3px 8px;">
+              <i class="fa-solid fa-plus"></i> Añadir Cargo
+            </button>
+          </div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;" id="quote-labor-table">
+            <thead>
+              <tr style="background:#1e293b;color:var(--text-sub);text-align:left;">
+                <th style="padding:6px 8px;">Cargo / Rol</th>
+                <th style="padding:6px 8px;width:70px;text-align:center;">Cant</th>
+                <th style="padding:6px 8px;width:150px;text-align:right;">Sueldo Imponible ($)</th>
+                <th style="padding:6px 8px;width:40px;text-align:center;"></th>
+              </tr>
+            </thead>
+            <tbody id="quote-labor-tbody">
+              ${(quote.laborItems || []).map((it, idx) => `
+                <tr style="border-bottom:1px solid #1e293b;">
+                  <td style="padding:4px 6px;">
+                    <input type="text" class="form-control" style="font-size:12px;padding:4px 8px;" value="${escapeHtml(it.role)}" oninput="quote.laborItems[${idx}].role=this.value;">
+                  </td>
+                  <td style="padding:4px 6px;">
+                    <input type="number" class="form-control" style="font-size:12px;padding:4px 8px;text-align:center;" min="1" value="${it.count}" oninput="quote.laborItems[${idx}].count=Number(this.value)||1;recalculateQuoteLive();">
+                  </td>
+                  <td style="padding:4px 6px;">
+                    <input type="text" inputmode="numeric" id="q-l-taxable-${idx}" class="form-control" style="font-size:12px;padding:4px 8px;text-align:right;font-weight:600;" value="${formatNumberCL(it.taxableMonthly)}" oninput="handleCurrencyInput(this);quote.laborItems[${idx}].taxableMonthly=parseCurrencyNumber(this.value);recalculateQuoteLive();" autocomplete="off">
+                  </td>
+                  <td style="padding:4px 6px;text-align:center;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="removeQuoteLaborRow(${idx})" style="padding:4px 6px;color:var(--danger);font-size:11px;">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 2. GASTOS E INSUMOS EN TERRENO -->
+        <div style="background:#0d1424;border:1px solid #1e293b;border-radius:8px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:12.5px;font-weight:700;color:#f97316;display:flex;align-items:center;gap:6px;">
+              <i class="fa-solid fa-truck-ramp-box"></i> 2. Trabajo en Terreno, EPP, Colaciones & Fletes
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuoteFieldRow()" style="font-size:11px;padding:3px 8px;">
+              <i class="fa-solid fa-plus"></i> Añadir Gasto
+            </button>
+          </div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#1e293b;color:var(--text-sub);text-align:left;">
+                <th style="padding:6px 8px;">Detalle / Partida</th>
+                <th style="padding:6px 8px;width:70px;text-align:center;">Cant</th>
+                <th style="padding:6px 8px;width:125px;text-align:right;">Valor Unit ($)</th>
+                <th style="padding:6px 8px;width:125px;text-align:right;">Total ($)</th>
+                <th style="padding:6px 8px;width:40px;text-align:center;"></th>
+              </tr>
+            </thead>
+            <tbody id="quote-field-tbody">
+              ${(quote.fieldItems || []).map((it, idx) => `
+                <tr style="border-bottom:1px solid #1e293b;">
+                  <td style="padding:4px 6px;">
+                    <input type="text" class="form-control" style="font-size:12px;padding:4px 8px;" value="${escapeHtml(it.name)}" oninput="quote.fieldItems[${idx}].name=this.value;">
+                  </td>
+                  <td style="padding:4px 6px;">
+                    <input type="number" class="form-control" style="font-size:12px;padding:4px 8px;text-align:center;" min="1" value="${it.qty}" oninput="updateQuoteFieldQty(${idx}, this.value);">
+                  </td>
+                  <td style="padding:4px 6px;">
+                    <input type="text" inputmode="numeric" id="q-f-unit-${idx}" class="form-control" style="font-size:12px;padding:4px 8px;text-align:right;font-weight:600;" value="${formatNumberCL(it.unitPrice)}" oninput="handleCurrencyInput(this);updateQuoteFieldUnit(${idx}, this.value);" autocomplete="off">
+                  </td>
+                  <td style="padding:4px 6px;">
+                    <input type="text" inputmode="numeric" id="q-f-tot-${idx}" class="form-control" style="font-size:12px;padding:4px 8px;text-align:right;font-weight:600;color:#38bdf8;" value="${formatNumberCL(it.total)}" oninput="handleCurrencyInput(this);updateQuoteFieldTotal(${idx}, this.value);" autocomplete="off">
+                  </td>
+                  <td style="padding:4px 6px;text-align:center;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="removeQuoteFieldRow(${idx})" style="padding:4px 6px;color:var(--danger);font-size:11px;">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. MATERIALES, FABRICACIÓN Y EQUIPOS -->
+        <div style="background:#0d1424;border:1px solid #1e293b;border-radius:8px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:12.5px;font-weight:700;color:#fed7aa;display:flex;align-items:center;gap:6px;">
+              <i class="fa-solid fa-cubes-stacked"></i> 3. Materiales, Planchas Plegadas, Soldadura & Equipos
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuoteMaterialRow()" style="font-size:11px;padding:3px 8px;">
+              <i class="fa-solid fa-plus"></i> Añadir Material
+            </button>
+          </div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#1e293b;color:var(--text-sub);text-align:left;">
+                <th style="padding:6px 8px;">Material / Equipo</th>
+                <th style="padding:6px 8px;width:70px;text-align:center;">Cant</th>
+                <th style="padding:6px 8px;width:125px;text-align:right;">Valor Unit ($)</th>
+                <th style="padding:6px 8px;width:125px;text-align:right;">Total ($)</th>
+                <th style="padding:6px 8px;width:40px;text-align:center;"></th>
+              </tr>
+            </thead>
+            <tbody id="quote-mat-tbody">
+              ${(quote.materialItems || []).map((it, idx) => `
+                <tr style="border-bottom:1px solid #1e293b;">
+                  <td style="padding:4px 6px;">
+                    <input type="text" class="form-control" style="font-size:12px;padding:4px 8px;" value="${escapeHtml(it.name)}" oninput="quote.materialItems[${idx}].name=this.value;">
+                  </td>
+                  <td style="padding:4px 6px;">
+                    <input type="number" class="form-control" style="font-size:12px;padding:4px 8px;text-align:center;" min="1" value="${it.qty || 1}" oninput="updateQuoteMaterialQty(${idx}, this.value);">
+                  </td>
+                  <td style="padding:4px 6px;">
+                    <input type="text" inputmode="numeric" id="q-m-unit-${idx}" class="form-control" style="font-size:12px;padding:4px 8px;text-align:right;font-weight:600;" value="${formatNumberCL(it.unitPrice || 0)}" oninput="handleCurrencyInput(this);updateQuoteMaterialUnit(${idx}, this.value);" autocomplete="off">
+                  </td>
+                  <td style="padding:4px 6px;">
+                    <input type="text" inputmode="numeric" id="q-m-tot-${idx}" class="form-control" style="font-size:12px;padding:4px 8px;text-align:right;font-weight:600;color:#38bdf8;" value="${formatNumberCL(it.total || 0)}" oninput="handleCurrencyInput(this);updateQuoteMaterialTotal(${idx}, this.value);" autocomplete="off">
+                  </td>
+                  <td style="padding:4px 6px;text-align:center;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="removeQuoteMaterialRow(${idx})" style="padding:4px 6px;color:var(--danger);font-size:11px;">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `}
+
+      <!-- Percentages Configuration -->
+      <div style="background:#090d16;border:1px solid #1e293b;border-radius:8px;padding:12px;display:grid;grid-template-columns: repeat(4, 1fr);gap:10px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">Comisión Admin (%)</label>
+          <input type="number" id="q-admin-pct" class="form-control" value="${quote.adminPercent || 2}" oninput="recalculateQuoteLive()">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">Imprevistos (%)</label>
+          <input type="number" id="q-contingency-pct" class="form-control" value="${quote.contingencyPercent || 5}" oninput="recalculateQuoteLive()">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;color:#a855f7;font-weight:700;">Margen Utilidad (%)</label>
+          <input type="number" id="q-profit-pct" class="form-control" value="${quote.profitPercent || 50}" oninput="recalculateQuoteLive()">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;color:#f59e0b;">Desc. Negociación (%)</label>
+          <input type="number" id="q-discount-pct" class="form-control" value="${quote.discountPercent || 0}" oninput="recalculateQuoteLive()">
+        </div>
+      </div>
+
+      <!-- Live Calculation Card -->
+      <div id="quote-live-summary" style="background:#022c22;border:1px solid #059669;border-radius:8px;padding:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <!-- Filled dynamically by recalculateQuoteLive() -->
+      </div>
+
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">Observaciones y Condiciones Comerciales</label>
+        <textarea id="q-notes" class="form-control" rows="2" placeholder="Detalles de alcance, exclusiones, plazos...">${escapeHtml(quote.notes || '')}</textarea>
+      </div>
+
+    </div>
+  `;
+}
+
+// Helpers for row additions
+function addQuoteLaborRow() {
+  const quote = window.activeEditingQuote;
+  if (!quote) return;
+  quote.laborItems = quote.laborItems || [];
+  quote.laborItems.push({ role: "Nuevo Cargo", count: 1, taxableMonthly: 900000 });
+  renderQuotationModalBody(quote, Boolean(quote && quote.id));
+  recalculateQuoteLive();
+}
+
+function removeQuoteLaborRow(idx) {
+  const quote = window.activeEditingQuote;
+  if (!quote || !quote.laborItems) return;
+  quote.laborItems.splice(idx, 1);
+  renderQuotationModalBody(quote, Boolean(quote && quote.id));
+  recalculateQuoteLive();
+}
+
+function addQuoteFieldRow() {
+  const quote = window.activeEditingQuote;
+  if (!quote) return;
+  quote.fieldItems = quote.fieldItems || [];
+  quote.fieldItems.push({ name: "Nuevo Gasto Terreno", qty: 1, unitPrice: 150000, total: 150000 });
+  renderQuotationModalBody(quote, Boolean(quote && quote.id));
+  recalculateQuoteLive();
+}
+
+function removeQuoteFieldRow(idx) {
+  const quote = window.activeEditingQuote;
+  if (!quote || !quote.fieldItems) return;
+  quote.fieldItems.splice(idx, 1);
+  renderQuotationModalBody(quote, Boolean(quote && quote.id));
+  recalculateQuoteLive();
+}
+
+function addQuoteMaterialRow() {
+  const quote = window.activeEditingQuote;
+  if (!quote) return;
+  quote.materialItems = quote.materialItems || [];
+  quote.materialItems.push({ name: "Nuevo Material / Insumo", qty: 1, unitPrice: 500000, total: 500000 });
+  renderQuotationModalBody(quote, Boolean(quote && quote.id));
+  recalculateQuoteLive();
+}
+
+function removeQuoteMaterialRow(idx) {
+  const quote = window.activeEditingQuote;
+  if (!quote || !quote.materialItems) return;
+  quote.materialItems.splice(idx, 1);
+  renderQuotationModalBody(quote, Boolean(quote && quote.id));
+  recalculateQuoteLive();
+}
+
+function updateQuoteFieldQty(idx, val) {
+  const quote = window.activeEditingQuote;
+  if (!quote || !quote.fieldItems || !quote.fieldItems[idx]) return;
+  const qty = Number(val) || 1;
+  quote.fieldItems[idx].qty = qty;
+  const unitPrice = quote.fieldItems[idx].unitPrice || 0;
+  quote.fieldItems[idx].total = qty * unitPrice;
+  const totEl = document.getElementById(`q-f-tot-${idx}`);
+  if (totEl) totEl.value = formatNumberCL(quote.fieldItems[idx].total);
+  recalculateQuoteLive();
+}
+
+function updateQuoteFieldUnit(idx, val) {
+  const quote = window.activeEditingQuote;
+  if (!quote || !quote.fieldItems || !quote.fieldItems[idx]) return;
+  const unitPrice = parseCurrencyNumber(val);
+  quote.fieldItems[idx].unitPrice = unitPrice;
+  const qty = Number(quote.fieldItems[idx].qty) || 1;
+  quote.fieldItems[idx].total = qty * unitPrice;
+  const totEl = document.getElementById(`q-f-tot-${idx}`);
+  if (totEl) totEl.value = formatNumberCL(quote.fieldItems[idx].total);
+  recalculateQuoteLive();
+}
+
+function updateQuoteFieldTotal(idx, val) {
+  const quote = window.activeEditingQuote;
+  if (!quote || !quote.fieldItems || !quote.fieldItems[idx]) return;
+  quote.fieldItems[idx].total = parseCurrencyNumber(val);
+  recalculateQuoteLive();
+}
+
+function updateQuoteMaterialQty(idx, val) {
+  const quote = window.activeEditingQuote;
+  if (!quote || !quote.materialItems || !quote.materialItems[idx]) return;
+  const qty = Number(val) || 1;
+  quote.materialItems[idx].qty = qty;
+  const unitPrice = quote.materialItems[idx].unitPrice || 0;
+  if (unitPrice > 0) {
+    quote.materialItems[idx].total = qty * unitPrice;
+    const totEl = document.getElementById(`q-m-tot-${idx}`);
+    if (totEl) totEl.value = formatNumberCL(quote.materialItems[idx].total);
+  }
+  recalculateQuoteLive();
+}
+
+function updateQuoteMaterialUnit(idx, val) {
+  const quote = window.activeEditingQuote;
+  if (!quote || !quote.materialItems || !quote.materialItems[idx]) return;
+  const unitPrice = parseCurrencyNumber(val);
+  quote.materialItems[idx].unitPrice = unitPrice;
+  const qty = Number(quote.materialItems[idx].qty) || 1;
+  quote.materialItems[idx].total = qty * unitPrice;
+  const totEl = document.getElementById(`q-m-tot-${idx}`);
+  if (totEl) totEl.value = formatNumberCL(quote.materialItems[idx].total);
+  recalculateQuoteLive();
+}
+
+function updateQuoteMaterialTotal(idx, val) {
+  const quote = window.activeEditingQuote;
+  if (!quote || !quote.materialItems || !quote.materialItems[idx]) return;
+  quote.materialItems[idx].total = parseCurrencyNumber(val);
+  recalculateQuoteLive();
+}
+
+function syncQuickLabor() {
+  const quote = window.activeEditingQuote;
+  if (!quote) return;
+  const val = parseCurrencyNumber(document.getElementById("q-quick-labor")?.value);
+  quote.laborMonthlySubtotal = val;
+  quote.laborItems = [{ role: "Dotación Mano de Obra", count: 1, taxableMonthly: val }];
+}
+
+function syncQuickField() {
+  const quote = window.activeEditingQuote;
+  if (!quote) return;
+  const val = parseCurrencyNumber(document.getElementById("q-quick-field")?.value);
+  quote.fieldItems = [{ name: "Gastos de Terreno y EPP", qty: 1, unitPrice: val, total: val }];
+}
+
+function syncQuickMaterials() {
+  const quote = window.activeEditingQuote;
+  if (!quote) return;
+  const val = parseCurrencyNumber(document.getElementById("q-quick-mat")?.value);
+  quote.materialItems = [{ name: "Materiales y Equipos", qty: 1, unitPrice: val, total: val }];
+}
+
+function recalculateQuoteLive() {
+  const quote = window.activeEditingQuote;
+  if (!quote) return;
+
+  const months = Math.max(1, Number(document.getElementById("q-months")?.value || quote.months || 4));
+  const adminPct = Number(document.getElementById("q-admin-pct")?.value ?? quote.adminPercent ?? 2);
+  const contingencyPct = Number(document.getElementById("q-contingency-pct")?.value ?? quote.contingencyPercent ?? 5);
+  const profitPct = Number(document.getElementById("q-profit-pct")?.value ?? quote.profitPercent ?? 50);
+  const discountPct = Number(document.getElementById("q-discount-pct")?.value ?? quote.discountPercent ?? 0);
+
+  // 1. Mano de obra
+  let laborMonthlySubtotal = quote.laborMonthlySubtotal;
+  if (quoteEntryMode === 'itemized' || !laborMonthlySubtotal) {
+    laborMonthlySubtotal = (quote.laborItems || []).reduce((acc, it) => acc + ((Number(it.taxableMonthly) || 0) * (Number(it.count) || 1)), 0);
+  }
+  const laborTotal = laborMonthlySubtotal * months;
+
+  // 2. Gastos & Materiales
+  const fieldTotal = (quote.fieldItems || []).reduce((acc, it) => acc + (Number(it.total) || 0), 0);
+  const matTotal = (quote.materialItems || []).reduce((acc, it) => acc + (Number(it.total) || 0), 0);
+  const expensesSubtotal = fieldTotal + matTotal;
+
+  // 3. Subtotal Centro de Costos
+  const costCenterSubtotal = laborTotal + expensesSubtotal;
+
+  // 4. Admin & Contingency
+  const adminTotal = Math.round(costCenterSubtotal * (adminPct / 100));
+  const contingencyTotal = Math.round(costCenterSubtotal * (contingencyPct / 100));
+  const adminSubtotal = adminTotal + contingencyTotal;
+
+  // 5. Total Centro de Costos
+  const totalCostCenter = costCenterSubtotal + adminSubtotal;
+
+  // 6. Utilidad
+  const profitAmount = Math.round(totalCostCenter * (profitPct / 100));
+
+  // 7. Total Neto
+  const totalNet = totalCostCenter + profitAmount;
+
+  // 8. Descuento
+  const discountAmount = Math.round(totalNet * (discountPct / 100));
+  const totalNetNegotiated = totalNet - discountAmount;
+
+  // Update object
+  quote.months = months;
+  quote.laborMonthlySubtotal = laborMonthlySubtotal;
+  quote.laborTotal = laborTotal;
+  quote.expensesSubtotal = expensesSubtotal;
+  quote.costCenterSubtotal = costCenterSubtotal;
+  quote.adminPercent = adminPct;
+  quote.adminTotal = adminTotal;
+  quote.contingencyPercent = contingencyPct;
+  quote.contingencyTotal = contingencyTotal;
+  quote.adminSubtotal = adminSubtotal;
+  quote.totalCostCenter = totalCostCenter;
+  quote.profitPercent = profitPct;
+  quote.profitAmount = profitAmount;
+  quote.totalNet = totalNet;
+  quote.discountPercent = discountPct;
+  quote.discountAmount = discountAmount;
+  quote.totalNetNegotiated = totalNetNegotiated;
+
+  // Render live summary
+  const summaryBox = document.getElementById("quote-live-summary");
+  if (summaryBox) {
+    summaryBox.innerHTML = `
+      <div>
+        <div style="font-size:11px;color:#a7f3d0;text-transform:uppercase;font-weight:700;">TOTAL COSTO DIRECTO</div>
+        <div style="font-size:16px;font-weight:800;color:#fff;">$ ${formatNumberCL(totalCostCenter)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#a7f3d0;text-transform:uppercase;font-weight:700;">UTILIDAD (${profitPct}%)</div>
+        <div style="font-size:16px;font-weight:800;color:#34d399;">$ ${formatNumberCL(profitAmount)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:#a7f3d0;text-transform:uppercase;font-weight:700;">TOTAL NETO VENTA</div>
+        <div style="font-size:20px;font-weight:900;color:#4ade80;">$ ${formatNumberCL(totalNet)}</div>
+        ${discountPct > 0 ? `
+          <div style="font-size:11px;color:#fbbf24;font-weight:700;">Con Desc ${discountPct}%: $ ${formatNumberCL(totalNetNegotiated)}</div>
+        ` : ""}
+      </div>
+    `;
+  }
+}
+
+function saveQuotationRecord(quoteId) {
+  if (!verifyDeveloperPermission("guardar cotización")) return;
+  const quote = window.activeEditingQuote;
+  if (!quote) return;
+
+  quote.code = document.getElementById("q-code")?.value.trim() || quote.code;
+  quote.title = document.getElementById("q-title")?.value.trim() || "Cotización sin título";
+  quote.client = document.getElementById("q-client")?.value.trim() || "Cliente General";
+  quote.executionTime = document.getElementById("q-time-text")?.value.trim() || `${quote.months} Meses`;
+  const prevStatus = quote.status;
+  quote.status = document.getElementById("q-status")?.value || quote.status;
+  quote.notes = document.getElementById("q-notes")?.value.trim() || "";
+
+  DB.quotations = DB.quotations || [];
+  const idx = DB.quotations.findIndex(q => q.id === quoteId);
+
+  if (idx >= 0) {
+    DB.quotations[idx] = quote;
+  } else {
+    DB.quotations.unshift(quote);
+  }
+
+  saveDB();
+
+  // If status is Aprobada, trigger automatic sync and loading into Proyectos & Faenas
+  if (quote.status === "Aprobada") {
+    closeModal();
+    approveQuotationAndLoadProject(quote.id, true);
+    return;
+  }
+
+  closeModal();
+  renderQuotations(document.getElementById("view-root"));
+}
+
+function deleteQuotation(quoteId) {
+  if (!verifyDeveloperPermission("eliminar cotización")) return;
+  const quote = (DB.quotations || []).find(q => q.id === quoteId);
+  if (!quote) return;
+
+  if (confirm(`¿Estás seguro de eliminar la cotización "${quote.title}" (${quote.code})?`)) {
+    DB.quotations = (DB.quotations || []).filter(q => q.id !== quoteId);
+    saveDB();
+    renderQuotations(document.getElementById("view-root"));
+  }
+}
+
+// ==========================================
+// SIMULADOR DE COSTOS & COTIZACIÓN MANUAL (NO AFECTA BASE DE DATOS)
+// ==========================================
+function openQuotationSimulatorModal() {
+  const modal = document.getElementById("record-modal");
+  const title = document.getElementById("modal-title");
+  const body = document.getElementById("modal-body");
+  const footer = document.getElementById("modal-footer");
+
+  if (!modal || !title || !body) return;
+
+  title.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;">
+      <i class="fa-solid fa-calculator" style="color:var(--primary);"></i>
+      <span>Simulador Manual de Cotizaciones (Modo Pruebas / Sin Guardar)</span>
+    </div>
+  `;
+
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:14px;max-height:75vh;overflow-y:auto;padding-right:4px;">
+      
+      <div style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:8px;padding:12px;font-size:12.5px;color:#fed7aa;display:flex;align-items:center;gap:10px;">
+        <i class="fa-solid fa-shield-halved" style="font-size:18px;color:var(--primary);"></i>
+        <div>
+          <strong>Entorno Seguro de Simulación:</strong> Puedes escribir cualquier valor, cantidad o costo aquí para hacer pruebas en vivo con el profesor o clientes. <u>Ningún cambio alterará la base de datos real</u> a menos que decidas exportarlo o guardarlo como nueva cotización oficial.
+        </div>
+      </div>
+
+      <!-- Quick Inputs Grid -->
+      <div style="display:grid;grid-template-columns: repeat(3, 1fr);gap:12px;background:#0d1424;padding:14px;border-radius:8px;border:1px solid #1e293b;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">Mano de Obra Mensual ($)</label>
+          <div class="currency-input-wrap">
+            <span class="currency-prefix">$</span>
+            <input type="text" inputmode="numeric" id="sim-labor-month" class="form-control" style="text-align:right;" value="${formatNumberCL(4002000)}" oninput="handleCurrencyInput(this, 'sim-labor-words');recalcSimulator();" autocomplete="off">
+          </div>
+          <div id="sim-labor-words" style="margin-top:2px;">
+            ${describeAmountInWords(4002000)}
+          </div>
+          <span style="font-size:10px;color:var(--text-sub);">Ej: 2 Op + 2 Ayud + Bono</span>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">Plazo de Ejecución (Meses)</label>
+          <input type="number" id="sim-months" class="form-control" value="4" min="1" max="24" oninput="recalcSimulator()">
+          <span style="font-size:10px;color:var(--text-sub);">Multiplicador de M.O.</span>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">Total Mano de Obra ($)</label>
+          <input type="text" id="sim-labor-total" class="form-control" value="$ 16.008.000" readonly style="background:#1e293b;font-weight:700;color:#38bdf8;">
+        </div>
+      </div>
+
+      <!-- Costs Breakdown Inputs -->
+      <div style="display:grid;grid-template-columns: repeat(2, 1fr);gap:12px;background:#0d1424;padding:14px;border-radius:8px;border:1px solid #1e293b;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">Gastos Terreno & EPP & Fletes ($)</label>
+          <div class="currency-input-wrap">
+            <span class="currency-prefix">$</span>
+            <input type="text" inputmode="numeric" id="sim-field-expenses" class="form-control" style="text-align:right;" value="${formatNumberCL(6740000)}" oninput="handleCurrencyInput(this, 'sim-field-words');recalcSimulator();" autocomplete="off">
+          </div>
+          <div id="sim-field-words" style="margin-top:2px;">
+            ${describeAmountInWords(6740000)}
+          </div>
+          <span style="font-size:10px;color:var(--text-sub);">Colaciones, traslados, fletes y ropa</span>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">Materiales, Planchas & Equipos ($)</label>
+          <div class="currency-input-wrap">
+            <span class="currency-prefix">$</span>
+            <input type="text" inputmode="numeric" id="sim-materials" class="form-control" style="text-align:right;" value="${formatNumberCL(52118000)}" oninput="handleCurrencyInput(this, 'sim-mat-words');recalcSimulator();" autocomplete="off">
+          </div>
+          <div id="sim-mat-words" style="margin-top:2px;">
+            ${describeAmountInWords(52118000)}
+          </div>
+          <span style="font-size:10px;color:var(--text-sub);">Acero, soldadura, pintura, motores</span>
+        </div>
+      </div>
+
+      <!-- Percentages Configuration -->
+      <div style="display:grid;grid-template-columns: repeat(4, 1fr);gap:10px;background:#090d16;padding:12px;border-radius:8px;border:1px solid #1e293b;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">% Administración</label>
+          <input type="number" id="sim-admin-pct" class="form-control" value="2" min="0" max="30" oninput="recalcSimulator()">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">% Imprevistos</label>
+          <input type="number" id="sim-contingency-pct" class="form-control" value="5" min="0" max="30" oninput="recalcSimulator()">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">% Utilidad Bruta</label>
+          <input type="number" id="sim-profit-pct" class="form-control" value="50" min="0" max="100" oninput="recalcSimulator()">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">% Descuento Negociado</label>
+          <input type="number" id="sim-discount-pct" class="form-control" value="5" min="0" max="50" oninput="recalcSimulator()">
+        </div>
+      </div>
+
+      <!-- Live Calculation Results Card -->
+      <div style="background:#022c22;border:2px solid #059669;border-radius:10px;padding:16px;color:#fff;">
+        <div style="font-size:13px;font-weight:800;color:#6ee7b7;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <i class="fa-solid fa-chart-simple"></i> Resultado del Cálculo en Tiempo Real
+        </div>
+
+        <div style="display:grid;grid-template-columns: repeat(2, 1fr);gap:12px;font-size:13px;margin-bottom:14px;border-bottom:1px dashed #065f46;padding-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;">
+            <span style="color:#a7f3d0;">Subtotal Gastos e Insumos:</span>
+            <strong id="sim-res-expenses" style="color:#fff;">$ 58.858.000</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="color:#a7f3d0;">Subtotal Centro de Costos:</span>
+            <strong id="sim-res-cost-center" style="color:#fff;">$ 74.866.000</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="color:#a7f3d0;">Comisión Admin + Imprevistos:</span>
+            <strong id="sim-res-admin" style="color:#fff;">$ 5.240.620</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="color:#a7f3d0;">Total Costo Directo Total:</span>
+            <strong id="sim-res-total-cost" style="color:#38bdf8;">$ 80.106.620</strong>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;background:#064e3b;padding:12px 16px;border-radius:8px;">
+          <div>
+            <div style="font-size:11px;color:#6ee7b7;font-weight:700;text-transform:uppercase;">Utilidad Calculada</div>
+            <div id="sim-res-profit" style="font-size:18px;font-weight:900;color:#34d399;">$ 40.053.310</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px;color:#6ee7b7;font-weight:700;text-transform:uppercase;">TOTAL NETO DE VENTA</div>
+            <div id="sim-res-net" style="font-size:24px;font-weight:900;color:#4ade80;">$ 120.159.930</div>
+            <div id="sim-res-discount" style="font-size:11px;color:#fde047;font-weight:700;margin-top:2px;">Con Descuento (5%): $ 114.151.934</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  `;
+
+  if (footer) {
+    footer.innerHTML = `
+      <button class="btn btn-secondary" onclick="closeModal()">Cerrar Simulador</button>
+      <button class="btn btn-primary" onclick="convertSimulationToFormalQuote()" style="font-size:12px;">
+        <i class="fa-solid fa-file-export"></i> Guardar esta Simulación como Cotización
+      </button>
+    `;
+  }
+
+  modal.style.display = "flex";
+  recalcSimulator();
+}
+
+function recalcSimulator() {
+  const laborMonth = parseCurrencyNumber(document.getElementById("sim-labor-month")?.value);
+  const months = Number(document.getElementById("sim-months")?.value) || 1;
+  const laborTotal = laborMonth * months;
+  
+  const laborTotalEl = document.getElementById("sim-labor-total");
+  if (laborTotalEl) laborTotalEl.value = `$ ${formatNumberCL(laborTotal)}`;
+
+  const fieldExpenses = parseCurrencyNumber(document.getElementById("sim-field-expenses")?.value);
+  const materials = parseCurrencyNumber(document.getElementById("sim-materials")?.value);
+  const expensesSubtotal = fieldExpenses + materials;
+
+  const costCenterSubtotal = laborTotal + expensesSubtotal;
+
+  const adminPct = Number(document.getElementById("sim-admin-pct")?.value) || 0;
+  const contingencyPct = Number(document.getElementById("sim-contingency-pct")?.value) || 0;
+  const profitPct = Number(document.getElementById("sim-profit-pct")?.value) || 0;
+  const discountPct = Number(document.getElementById("sim-discount-pct")?.value) || 0;
+
+  const adminTotal = Math.round(costCenterSubtotal * (adminPct / 100));
+  const contingencyTotal = Math.round(costCenterSubtotal * (contingencyPct / 100));
+  const adminSubtotal = adminTotal + contingencyTotal;
+
+  const totalCostCenter = costCenterSubtotal + adminSubtotal;
+  const profitAmount = Math.round(totalCostCenter * (profitPct / 100));
+  const totalNet = totalCostCenter + profitAmount;
+  const discountAmount = Math.round(totalNet * (discountPct / 100));
+  const totalNetNegotiated = totalNet - discountAmount;
+
+  // Update live elements
+  const elExpenses = document.getElementById("sim-res-expenses");
+  if (elExpenses) elExpenses.textContent = `$ ${formatNumberCL(expensesSubtotal)}`;
+
+  const elCostCenter = document.getElementById("sim-res-cost-center");
+  if (elCostCenter) elCostCenter.textContent = `$ ${formatNumberCL(costCenterSubtotal)}`;
+
+  const elAdmin = document.getElementById("sim-res-admin");
+  if (elAdmin) elAdmin.textContent = `$ ${formatNumberCL(adminSubtotal)}`;
+
+  const elTotalCost = document.getElementById("sim-res-total-cost");
+  if (elTotalCost) elTotalCost.textContent = `$ ${formatNumberCL(totalCostCenter)}`;
+
+  const elProfit = document.getElementById("sim-res-profit");
+  if (elProfit) elProfit.textContent = `$ ${formatNumberCL(profitAmount)}`;
+
+  const elNet = document.getElementById("sim-res-net");
+  if (elNet) elNet.textContent = `$ ${formatNumberCL(totalNet)}`;
+
+  const elDisc = document.getElementById("sim-res-discount");
+  if (elDisc) {
+    if (discountPct > 0) {
+      elDisc.style.display = "block";
+      elDisc.textContent = `Con Descuento (${discountPct}%): $ ${formatNumberCL(totalNetNegotiated)}`;
+    } else {
+      elDisc.style.display = "none";
+    }
+  }
+
+  // Store transient calculation
+  window.lastSimulationResult = {
+    laborMonth,
+    months,
+    laborTotal,
+    fieldExpenses,
+    materials,
+    expensesSubtotal,
+    costCenterSubtotal,
+    adminPct,
+    contingencyPct,
+    profitPct,
+    discountPct,
+    adminSubtotal,
+    totalCostCenter,
+    profitAmount,
+    totalNet,
+    totalNetNegotiated
+  };
+}
+
+function convertSimulationToFormalQuote() {
+  if (!verifyDeveloperPermission("guardar cotizaciones")) return;
+  const sim = window.lastSimulationResult;
+  if (!sim) return;
+
+  const titlePrompt = prompt("Ingresa el título para guardar esta cotización oficial:", "SIMULACIÓN INDUSTRIAL " + new Date().toLocaleDateString('es-CL'));
+  if (!titlePrompt) return;
+
+  const newQuote = {
+    id: "COT-" + Date.now().toString().slice(-4),
+    code: "COT-2026-" + String((DB.quotations || []).length + 1).padStart(3, "0"),
+    title: titlePrompt,
+    client: "Cliente Simulado",
+    executionTime: `${sim.months} Meses`,
+    months: sim.months,
+    status: "Borrador",
+    createdAt: new Date().toISOString().split("T")[0],
+    notes: "Generado desde el simulador de costos manual.",
+    laborItems: [
+      { role: "Dotación Mano de Obra", count: 1, taxableMonthly: sim.laborMonth }
+    ],
+    laborMonthlySubtotal: sim.laborMonth,
+    laborTotal: sim.laborTotal,
+    fieldItems: [
+      { name: "Gastos de Terreno, EPP y Logística", qty: 1, unitPrice: sim.fieldExpenses, total: sim.fieldExpenses }
+    ],
+    materialItems: [
+      { name: "Materiales, Planchas y Equipos", qty: 1, unitPrice: sim.materials, total: sim.materials }
+    ],
+    expensesSubtotal: sim.expensesSubtotal,
+    costCenterSubtotal: sim.costCenterSubtotal,
+    adminPercent: sim.adminPct,
+    adminTotal: Math.round(sim.costCenterSubtotal * (sim.adminPct / 100)),
+    contingencyPercent: sim.contingencyPct,
+    contingencyTotal: Math.round(sim.costCenterSubtotal * (sim.contingencyPct / 100)),
+    adminSubtotal: sim.adminSubtotal,
+    totalCostCenter: sim.totalCostCenter,
+    profitPercent: sim.profitPct,
+    profitAmount: sim.profitAmount,
+    totalNet: sim.totalNet,
+    discountPercent: sim.discountPct,
+    discountAmount: Math.round(sim.totalNet * (sim.discountPct / 100)),
+    totalNetNegotiated: sim.totalNetNegotiated
+  };
+
+  DB.quotations = DB.quotations || [];
+  DB.quotations.unshift(newQuote);
+  saveDB();
+  closeModal();
+  renderQuotations(document.getElementById("view-root"));
+  alert(`¡Cotización guardada exitosamente como "${newQuote.title}"!`);
 }
 
 // 2. PROYECTOS VIEW
@@ -3397,13 +5142,89 @@ function openEditModal(entity, id) {
 function closeModal() {
   stopToolCamera();
   stopDocCamera();
-  document.getElementById("crud-modal").classList.remove("active");
+  const crudModal = document.getElementById("crud-modal");
+  if (crudModal) {
+    crudModal.classList.remove("active");
+    crudModal.style.display = "";
+  }
+  const recordModal = document.getElementById("record-modal");
+  if (recordModal) {
+    recordModal.classList.remove("active");
+    recordModal.style.display = "";
+  }
+}
+
+function populateProjectFormFromQuote(quoteId) {
+  if (!quoteId) return;
+  const quote = (DB.quotations || []).find(q => q.id === quoteId);
+  if (!quote) return;
+
+  const nameEl = document.getElementById("f_name");
+  if (nameEl) nameEl.value = quote.title || "";
+
+  const clientEl = document.getElementById("f_client");
+  if (clientEl) clientEl.value = quote.client || "";
+
+  const budgetEl = document.getElementById("f_budget");
+  if (budgetEl) {
+    const netAmount = Number(quote.totalNet) || Number(quote.totalCostCenter) || 0;
+    budgetEl.value = formatNumberCL(netAmount);
+    const budgetHelper = document.getElementById("f_budget_helper");
+    if (budgetHelper) budgetHelper.innerHTML = describeAmountInWords(netAmount);
+  }
+
+  const startEl = document.getElementById("f_start");
+  if (startEl && !startEl.value) {
+    startEl.value = new Date().toISOString().split("T")[0];
+  }
+
+  const endEl = document.getElementById("f_end");
+  if (endEl) {
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + (Number(quote.months) || 4));
+    endEl.value = endDate.toISOString().split("T")[0];
+  }
+
+  const locEl = document.getElementById("f_location");
+  if (locEl && (!locEl.value || locEl.value === "Faena en Terreno / Planta")) {
+    locEl.value = "Faena en Terreno / Planta";
+  }
+
+  const mgrEl = document.getElementById("f_manager");
+  if (mgrEl && (!mgrEl.value || mgrEl.value === "Jefe de Proyecto / Ing. Residente")) {
+    mgrEl.value = "Jefe de Proyecto / Ing. Residente";
+  }
+
+  const statusEl = document.getElementById("f_status");
+  if (statusEl) {
+    statusEl.value = "En Ejecución";
+  }
 }
 
 function getEntityFormHTML(entity, data) {
   if (entity === "projects") {
+    const quotes = DB.quotations || [];
     return `
       <div class="form-grid">
+        ${quotes.length > 0 ? `
+          <div class="form-group full" style="background:rgba(249, 115, 22, 0.08);border:1px solid rgba(249, 115, 22, 0.3);border-radius:8px;padding:10px 14px;margin-bottom:6px;">
+            <label class="form-label" style="color:var(--primary);font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12.5px;">
+              <i class="fa-solid fa-file-circle-check"></i> Cargar Datos desde Cotización Aprobada:
+            </label>
+            <select id="f_load_from_quote" class="form-control" onchange="populateProjectFormFromQuote(this.value)" style="border-color:rgba(249,115,22,0.4);font-size:12px;">
+              <option value="">-- Selecciona una cotización para rellenar los recuadros automáticamente --</option>
+              ${quotes.map(q => `
+                <option value="${q.id}">
+                  ${escapeHtml(q.code || q.id)} &bull; ${escapeHtml(q.title)} ($ ${formatNumberCL(q.totalNet || 0)} Neto &bull; ${escapeHtml(q.status || 'Borrador')})
+                </option>
+              `).join("")}
+            </select>
+            <div style="font-size:11px;color:var(--text-sub);margin-top:4px;">
+              Al seleccionar una cotización se rellenan al instante los recuadros: Nombre, Cliente/Faena, Presupuesto Neto Asignado y Fechas estimadas.
+            </div>
+          </div>
+        ` : ""}
+
         <div class="form-group">
           <label class="form-label">Código / ID</label>
           <input type="text" id="f_id" class="form-control" value="${data.id || 'PRJ-' + String(DB.projects.length + 1).padStart(3, '0')}" required>
