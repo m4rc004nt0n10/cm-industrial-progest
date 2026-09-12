@@ -547,7 +547,16 @@ function initCloudSync(force = false) {
           } catch (e) {}
 
           updateCloudStatusBadge("synced", "Nube Conectada");
-          
+
+          // If the currently logged-in user's role was changed elsewhere (e.g. by an
+          // admin in the Usuarios panel), refresh their session and permission-based UI
+          // immediately instead of waiting for a manual logout/login.
+          const roleChanged = syncSessionRoleFromDB();
+          if (roleChanged) {
+            if (typeof renderSidebarUserCard === "function") renderSidebarUserCard();
+            if (typeof updateNavPermissions === "function") updateNavPermissions();
+          }
+
           if (typeof renderCurrentView === "function") {
             const layout = document.getElementById("app-layout");
             if (layout && layout.style.display !== "none") {
@@ -818,6 +827,34 @@ function setSession(user) {
 function logout() {
   currentSession = null;
   sessionStorage.removeItem("cm_progest_session");
+}
+
+// Keeps the active session's role in sync with the latest data coming from Firestore,
+// so a role change made by an admin/developer takes effect immediately for a user
+// who is already logged in, without requiring them to log out and back in.
+function syncSessionRoleFromDB() {
+  const session = getSession();
+  if (!session || !session.user || !Array.isArray(DB && DB.users)) return false;
+
+  const match = DB.users.find(u =>
+    (u.id && u.id === session.user.id) ||
+    (u.email && session.user.email && u.email.toLowerCase() === session.user.email.toLowerCase())
+  );
+
+  if (!match) return false;
+
+  const roleChanged = (match.role || "Usuario") !== session.user.role;
+  if (!roleChanged) return false;
+
+  currentSession.user.role = match.role || "Usuario";
+  currentSession.user.name = match.name || session.user.name;
+  currentSession.user.avatar = match.avatar || session.user.avatar;
+
+  try {
+    sessionStorage.setItem("cm_progest_session", JSON.stringify(currentSession));
+  } catch (e) {}
+
+  return true;
 }
 
 // RBAC Permissions Helpers
