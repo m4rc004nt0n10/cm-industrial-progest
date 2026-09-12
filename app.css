@@ -886,15 +886,36 @@ tr:hover td {
 }
 
 /* ==========================================================================
-   RESPONSIVE DESIGN SYSTEM (Mobile, Tablet, Desktop)
+   RESPONSIVE DESIGN SYSTEM (Mobile, Tablet, Laptop, Desktop)
    ========================================================================== */
 
-/* Tablet and below (<= 1024px) */
+/* Universal Responsive Fixes & Touch Targets */
+button, select, input, .btn, .nav-item, .status-pill-btn {
+  touch-action: manipulation;
+}
+
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
+  }
+}
+
+/* Laptops & Desktops Large (<= 1280px) */
+@media (max-width: 1280px) {
+  .kpi-grid,
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+  }
+}
+
+/* Tablets Landscape & Below (<= 1024px) */
 @media (max-width: 1024px) {
   #sidebar {
     transform: translateX(-100%);
-    z-index: 90;
-    box-shadow: 6px 0 25px rgba(0, 0, 0, 0.6);
+    z-index: 95;
+    box-shadow: 8px 0 30px rgba(0, 0, 0, 0.7);
+    width: 280px;
   }
   #sidebar.mobile-open {
     transform: translateX(0);
@@ -904,23 +925,24 @@ tr:hover td {
   }
   #main-content {
     margin-left: 0;
+    width: 100%;
   }
   .mobile-menu-toggle {
     display: inline-flex;
   }
   .topbar {
     padding: 0 16px;
-    height: 58px;
+    height: 60px;
   }
   .topbar-title-desktop {
     display: none;
   }
   .topbar-title-tablet {
     display: inline;
-    font-size: 13.5px;
+    font-size: 14px;
   }
   .view-container {
-    padding: 18px 16px;
+    padding: 16px;
   }
   .charts-grid {
     grid-template-columns: 1fr;
@@ -928,15 +950,41 @@ tr:hover td {
   }
   .kpi-grid,
   .stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
   }
   .table-scroll-hint {
     display: flex !important;
   }
+
+  /* Cotización Excel View / Sheet layout in Tablet */
+  #quote-details-container {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  #quote-details-container > div {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 }
 
-/* Tablets Portrait & Large Phones (<= 768px) */
+/* Tablets Portrait (<= 850px) */
+@media (max-width: 850px) {
+  .modal-box {
+    max-width: 95%;
+    width: 95%;
+    margin: 12px auto;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .form-group.full {
+    grid-column: span 1;
+  }
+}
+
+/* Tablets Portrait & Large Mobile (<= 768px) */
 @media (max-width: 768px) {
   .table-toolbar {
     flex-direction: column;
@@ -970,27 +1018,17 @@ tr:hover td {
     width: 100%;
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
   }
   .toolbar-btn-group > * {
-    flex: 1;
+    flex: 1 1 calc(50% - 4px);
     justify-content: center;
-    width: 100%;
+    min-width: 130px;
   }
   .search-box {
     max-width: 100%;
     width: 100%;
     min-width: 0;
-  }
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .form-group.full {
-    grid-column: span 1;
-  }
-  .modal-box {
-    max-width: 96%;
-    width: 96%;
   }
 
   /* Responsive Banners */
@@ -1024,13 +1062,19 @@ tr:hover td {
     grid-template-columns: 1fr;
     gap: 12px;
   }
+
+  /* Quick Quotation Grid Breakdown */
+  .quote-category-cards {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
 }
 
 /* Mobile Phones (<= 640px) */
 @media (max-width: 640px) {
   .topbar {
-    padding: 0 12px;
-    height: 54px;
+    padding: 0 10px;
+    height: 56px;
   }
   .topbar-title-tablet {
     display: none;
@@ -1040,35 +1084,36 @@ tr:hover td {
     font-size: 14px;
   }
   .topbar-role-wrapper {
-    gap: 6px;
+    gap: 4px;
   }
   .role-name-full {
     display: none;
   }
   .role-name-short {
     display: inline;
+    font-size: 11px;
   }
   .switch-label-full {
     display: none;
   }
   .topbar-switch-btn {
-    padding: 6px 10px;
+    padding: 6px 8px;
     font-size: 11px;
   }
   .topbar-alert-btn {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
   }
   .view-container {
-    padding: 12px 10px;
+    padding: 12px 8px;
   }
 
-  /* 2-Column KPI grid for comfortable 360px-420px mobile displays */
+  /* 2-Column KPI grid for compact mobile displays */
   .kpi-grid,
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
   .kpi-card,
   .stat-card {
@@ -1094,7 +1139,7 @@ tr:hover td {
 
   /* Chart boxes */
   .chart-box {
-    padding: 14px 12px;
+    padding: 14px 10px;
     border-radius: 10px;
   }
   .chart-header {
@@ -1104,62 +1149,69 @@ tr:hover td {
     margin-bottom: 10px;
   }
   .chart-body canvas {
-    max-height: 220px !important;
+    max-height: 200px !important;
   }
 
-  /* Tables */
+  /* Tables & Horizontal Scroll Touch */
   .data-table-container {
-    border-radius: 10px;
-    margin-bottom: 16px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border-color);
   }
   .table-toolbar {
-    padding: 12px;
+    padding: 10px;
   }
   th, td {
-    padding: 10px 12px;
-    font-size: 12px;
+    padding: 8px 10px;
+    font-size: 11.5px;
+    white-space: nowrap;
   }
 
-  /* Modals */
+  /* Modals (Mobile Bottom-Sheet Style) */
   .modal-backdrop {
-    padding: 8px;
+    padding: 0;
     align-items: flex-end;
   }
   .modal-box {
     max-width: 100%;
     width: 100%;
-    max-height: 94vh;
-    border-radius: 14px 14px 0 0;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
     margin: 0;
+    border-bottom: none;
   }
   .modal-header {
-    padding: 14px 16px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
   }
   .modal-body {
-    padding: 16px 14px;
+    padding: 14px 12px;
+    max-height: calc(92vh - 120px);
   }
   .modal-footer {
-    padding: 12px 16px;
+    padding: 12px 14px;
     flex-direction: column-reverse;
     gap: 8px;
+    border-top: 1px solid var(--border-color);
+    background: #0d121f;
   }
   .modal-footer .btn {
     width: 100%;
     justify-content: center;
-    padding: 10px 14px;
-    font-size: 13px;
+    padding: 11px 14px;
+    font-size: 13.5px;
   }
   .modal-calc-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
 
   /* Lightbox in Mobile */
   #lightbox-img-container {
-    max-height: 280px !important;
+    max-height: 260px !important;
   }
   #lightbox-img {
-    max-height: 260px !important;
+    max-height: 240px !important;
   }
 
   /* Mobile labor tab pills */
@@ -1174,23 +1226,24 @@ tr:hover td {
 
   /* Auth screen responsive card */
   #auth-screen {
-    padding: 14px;
+    padding: 10px;
   }
   #auth-card {
-    padding: 22px 18px !important;
+    padding: 20px 16px !important;
+    border-radius: 12px;
   }
 
   /* Gantt */
   .gantt-wrapper {
-    padding: 12px 10px;
-    border-radius: 10px;
+    padding: 10px 8px;
+    border-radius: 8px;
   }
 
   /* Alert items */
   .alert-card-item {
     flex-direction: column;
     align-items: stretch !important;
-    gap: 12px !important;
+    gap: 10px !important;
   }
   .alert-card-item .btn {
     width: 100%;
@@ -1198,32 +1251,40 @@ tr:hover td {
   }
 }
 
-/* Small Mobile Phones (<= 480px) */
-@media (max-width: 480px) {
+/* Ultra Small Mobile Phones (<= 420px) */
+@media (max-width: 420px) {
+  .kpi-grid,
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .kpi-value,
+  .stat-value {
+    font-size: 14px;
+  }
   .toolbar-filters-row {
     grid-template-columns: 1fr;
   }
   .toolbar-btn-group {
     flex-direction: column;
   }
+  .toolbar-btn-group > * {
+    width: 100%;
+  }
   .modal-calc-grid {
     grid-template-columns: 1fr;
   }
-  .kpi-title,
-  .stat-label {
-    font-size: 9px;
-  }
-  .kpi-value,
-  .stat-value {
-    font-size: 15px;
+  .topbar-brand-title {
+    display: none;
   }
 }
 
-/* Sub-filter status pills for Workforce Control */
+/* Sub-filter status pills for Workforce & Projects Control */
 .status-pill-bar {
   display: flex;
   gap: 8px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 4px 2px 10px;
   margin-bottom: 14px;
   scrollbar-width: thin;
@@ -1242,6 +1303,7 @@ tr:hover td {
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .status-pill-btn:hover {
   background: rgba(255, 255, 255, 0.08);
