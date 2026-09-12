@@ -644,6 +644,111 @@ function loadDemoData() {
   saveDB();
 }
 
+// Automatic Project Status Calculation Engine
+function calculateAutoProjectStatus(project) {
+  if (!project) return "Planificación";
+
+  // If user explicitly marked it as "Detenido", respect manual pause
+  if (project.status === "Detenido" && project.manualStatusOverride) {
+    return "Detenido";
+  }
+
+  const realProgress = Number(project.realProgress) || 0;
+  
+  // 1. Completion rule
+  if (realProgress >= 100) {
+    return "Finalizado";
+  }
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const startStr = project.startDate || "2026-01-01";
+  const endStr = project.endDate || "2026-12-31";
+
+  // 2. Overdue rule
+  if (todayStr > endStr && realProgress < 100) {
+    return "Vencido";
+  }
+
+  // 3. Not started yet rule
+  if (todayStr < startStr && realProgress === 0) {
+    return "Planificación";
+  }
+
+  // 4. Active execution rule
+  return "En Ejecución";
+}
+
+// Helper to get detailed badge and automated explanation for a project's status
+function getProjectStatusDetails(project) {
+  const status = project.status || calculateAutoProjectStatus(project);
+  const realProgress = Number(project.realProgress) || 0;
+  const todayStr = new Date().toISOString().split("T")[0];
+  const startStr = project.startDate || "2026-01-01";
+  const endStr = project.endDate || "2026-12-31";
+
+  switch (status) {
+    case "Finalizado":
+      return {
+        label: "Finalizado",
+        badgeClass: "badge-green",
+        icon: "fa-circle-check",
+        color: "#10b981",
+        description: `Completado al 100% (${project.spent ? '$ ' + formatNumberCL(project.spent) + ' invertidos' : 'Obra entregada'})`
+      };
+    case "Vencido":
+      return {
+        label: "Fuera de Plazo",
+        badgeClass: "badge-red",
+        icon: "fa-triangle-exclamation",
+        color: "#ef4444",
+        description: `Fecha límite superada (${endStr}) con avance del ${realProgress}%`
+      };
+    case "Planificación":
+      return {
+        label: "Planificación",
+        badgeClass: "badge-blue",
+        icon: "fa-calendar-clock",
+        color: "#38bdf8",
+        description: `Inicio programado para ${startStr} (Avance: 0%)`
+      };
+    case "Detenido":
+      return {
+        label: "Detenido",
+        badgeClass: "badge-gray",
+        icon: "fa-circle-pause",
+        color: "#9ca3af",
+        description: "Faena pausada por administración o terreno"
+      };
+    case "En Ejecución":
+    default:
+      return {
+        label: "En Ejecución",
+        badgeClass: "badge-orange",
+        icon: "fa-person-digging",
+        color: "#f97316",
+        description: `Obra en progreso activo (${realProgress}% de avance real)`
+      };
+  }
+}
+
+function syncAllProjectsAutoStatus() {
+  if (!DB || !Array.isArray(DB.projects)) return;
+  let changed = false;
+  DB.projects.forEach(p => {
+    // If not manually locked as paused, compute auto status
+    if (!p.manualStatusOverride || p.status !== "Detenido") {
+      const autoStatus = calculateAutoProjectStatus(p);
+      if (p.status !== autoStatus) {
+        p.status = autoStatus;
+        changed = true;
+      }
+    }
+  });
+  if (changed) {
+    saveDB();
+  }
+}
+
 // Smart traffic light calculation for projects
 function getProjectHealth(project, settings) {
   const cfg = (settings && settings.trafficLight) || {
@@ -659,8 +764,8 @@ function getProjectHealth(project, settings) {
   const end = new Date(project.endDate);
   const diffDays = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
 
-  if (project.status === "Finalizado") {
-    return { color: "green", text: "Finalizado", gap, diffDays, code: "OK" };
+  if (project.status === "Finalizado" || project.realProgress >= 100) {
+    return { color: "green", text: "Finalizado (100%)", gap, diffDays, code: "OK" };
   }
 
   // Critical conditions

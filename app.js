@@ -344,6 +344,7 @@ function renderSidebarUserCard() {
 
 // 1. DASHBOARD VIEW WITH 10 KPIS & 4 CHARTS
 function renderDashboard(container) {
+  syncAllProjectsAutoStatus();
   const totalBudget = DB.projects.reduce((acc, p) => acc + (p.budget || 0), 0);
   const totalSpent = DB.projects.reduce((acc, p) => acc + (p.spent || 0), 0);
   const margin = totalBudget - totalSpent;
@@ -538,9 +539,17 @@ function renderDashboard(container) {
             ` : DB.projects.map(p => {
               const h = getProjectHealth(p, DB.settings);
               const badgeClass = h.color === 'red' ? 'badge-red' : h.color === 'yellow' ? 'badge-yellow' : 'badge-green';
+              const st = getProjectStatusDetails(p);
               return `
                 <tr>
-                  <td><span class="badge ${badgeClass}"><i class="fa-solid fa-circle" style="font-size:7px;"></i> ${h.text}</span></td>
+                  <td>
+                    <span class="badge ${badgeClass}"><i class="fa-solid fa-circle" style="font-size:7px;"></i> ${h.text}</span>
+                    <div style="margin-top:4px;">
+                      <span class="badge ${st.badgeClass}" style="font-size:10px;padding:2px 6px;">
+                        <i class="fa-solid ${st.icon}"></i> ${st.label}
+                      </span>
+                    </div>
+                  </td>
                   <td><strong>${p.name}</strong><br><small style="color:var(--text-sub);">${p.id} · ${p.manager}</small></td>
                   <td>${p.client}</td>
                   <td>${fmtMoney(p.budget)}</td>
@@ -2492,8 +2501,53 @@ function convertSimulationToFormalQuote() {
 }
 
 // 2. PROYECTOS VIEW
+let activeProjectStatusFilter = "todos";
+
+function toggleProjectPause(projectId) {
+  if (!verifyDeveloperPermission("cambiar estado del proyecto")) return;
+  const p = (DB.projects || []).find(proj => proj.id === projectId);
+  if (!p) return;
+
+  if (p.status === "Detenido") {
+    p.manualStatusOverride = false;
+    p.status = calculateAutoProjectStatus(p);
+  } else {
+    p.manualStatusOverride = true;
+    p.status = "Detenido";
+  }
+  saveDB();
+  renderProjects(document.getElementById("view-root"));
+}
+
+function setProjectStatusFilter(filter) {
+  activeProjectStatusFilter = filter;
+  renderProjects(document.getElementById("view-root"));
+}
+
 function renderProjects(container) {
+  syncAllProjectsAutoStatus();
   const userIsDev = isDeveloper();
+  const projects = DB.projects || [];
+
+  // Categorize counts
+  const totalPrj = projects.length;
+  const enEjecucion = projects.filter(p => (p.status || calculateAutoProjectStatus(p)) === "En Ejecución").length;
+  const enPlan = projects.filter(p => (p.status || calculateAutoProjectStatus(p)) === "Planificación").length;
+  const vencidos = projects.filter(p => (p.status || calculateAutoProjectStatus(p)) === "Vencido").length;
+  const finalizados = projects.filter(p => (p.status || calculateAutoProjectStatus(p)) === "Finalizado").length;
+  const detenidos = projects.filter(p => p.status === "Detenido").length;
+
+  // Filtered list
+  const filteredProjects = projects.filter(p => {
+    const curStatus = p.status || calculateAutoProjectStatus(p);
+    if (activeProjectStatusFilter === "todos") return true;
+    if (activeProjectStatusFilter === "ejecucion") return curStatus === "En Ejecución";
+    if (activeProjectStatusFilter === "planificacion") return curStatus === "Planificación";
+    if (activeProjectStatusFilter === "vencido") return curStatus === "Vencido";
+    if (activeProjectStatusFilter === "finalizado") return curStatus === "Finalizado";
+    if (activeProjectStatusFilter === "detenido") return curStatus === "Detenido";
+    return true;
+  });
 
   container.innerHTML = `
     ${!userIsDev ? `
@@ -2513,11 +2567,67 @@ function renderProjects(container) {
       </div>
     ` : ""}
 
+    <!-- Automated Status KPI Summary Cards -->
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 18px;">
+      <div class="stat-card" style="cursor:pointer;${activeProjectStatusFilter === 'todos' ? 'border-color:var(--primary);' : ''}" onclick="setProjectStatusFilter('todos')">
+        <div class="stat-label">TOTAL PROYECTOS</div>
+        <div class="stat-value" style="color:#fff;">${totalPrj}</div>
+        <div style="font-size:11px;color:var(--text-sub);margin-top:2px;">Cartera total en obra</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer;${activeProjectStatusFilter === 'ejecucion' ? 'border-color:#f97316;' : ''}" onclick="setProjectStatusFilter('ejecucion')">
+        <div class="stat-label" style="color:#f97316;"><i class="fa-solid fa-bolt"></i> EN EJECUCIÓN</div>
+        <div class="stat-value" style="color:#f97316;">${enEjecucion}</div>
+        <div style="font-size:11px;color:var(--text-sub);margin-top:2px;">Faenas activas</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer;${activeProjectStatusFilter === 'planificacion' ? 'border-color:#38bdf8;' : ''}" onclick="setProjectStatusFilter('planificacion')">
+        <div class="stat-label" style="color:#38bdf8;"><i class="fa-solid fa-calendar"></i> PLANIFICACIÓN</div>
+        <div class="stat-value" style="color:#38bdf8;">${enPlan}</div>
+        <div style="font-size:11px;color:var(--text-sub);margin-top:2px;">Inicio pendiente</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer;${activeProjectStatusFilter === 'vencido' ? 'border-color:#ef4444;' : ''}" onclick="setProjectStatusFilter('vencido')">
+        <div class="stat-label" style="color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> FUERA DE PLAZO</div>
+        <div class="stat-value" style="color:#ef4444;">${vencidos}</div>
+        <div style="font-size:11px;color:var(--text-sub);margin-top:2px;">Fecha límite superada</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer;${activeProjectStatusFilter === 'finalizado' ? 'border-color:#10b981;' : ''}" onclick="setProjectStatusFilter('finalizado')">
+        <div class="stat-label" style="color:#10b981;"><i class="fa-solid fa-circle-check"></i> FINALIZADOS</div>
+        <div class="stat-value" style="color:#10b981;">${finalizados}</div>
+        <div style="font-size:11px;color:var(--text-sub);margin-top:2px;">Completados al 100%</div>
+      </div>
+    </div>
+
+    <!-- Status Quick Filter Pills -->
+    <div class="status-pill-bar">
+      <button class="status-pill-btn ${activeProjectStatusFilter === 'todos' ? 'active' : ''}" onclick="setProjectStatusFilter('todos')">
+        <i class="fa-solid fa-layer-group"></i> Todos (${totalPrj})
+      </button>
+      <button class="status-pill-btn ${activeProjectStatusFilter === 'ejecucion' ? 'active' : ''}" onclick="setProjectStatusFilter('ejecucion')">
+        <i class="fa-solid fa-person-digging" style="color:#f97316;"></i> En Ejecución (${enEjecucion})
+      </button>
+      <button class="status-pill-btn ${activeProjectStatusFilter === 'planificacion' ? 'active' : ''}" onclick="setProjectStatusFilter('planificacion')">
+        <i class="fa-solid fa-calendar-clock" style="color:#38bdf8;"></i> Planificación (${enPlan})
+      </button>
+      <button class="status-pill-btn ${activeProjectStatusFilter === 'vencido' ? 'active' : ''}" onclick="setProjectStatusFilter('vencido')">
+        <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i> Fuera de Plazo (${vencidos})
+      </button>
+      <button class="status-pill-btn ${activeProjectStatusFilter === 'finalizado' ? 'active' : ''}" onclick="setProjectStatusFilter('finalizado')">
+        <i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Finalizados (${finalizados})
+      </button>
+      ${detenidos > 0 ? `
+        <button class="status-pill-btn ${activeProjectStatusFilter === 'detenido' ? 'active' : ''}" onclick="setProjectStatusFilter('detenido')">
+          <i class="fa-solid fa-circle-pause" style="color:#9ca3af;"></i> Detenidos (${detenidos})
+        </button>
+      ` : ""}
+    </div>
+
     <div class="data-table-container">
       <div class="table-toolbar">
         <div class="toolbar-title-group">
-          <h2 style="font-size:18px;font-weight:700;">Proyectos Industriales</h2>
-          <span class="badge badge-orange">${DB.projects.length} Registros</span>
+          <h2 style="font-size:18px;font-weight:700;">Proyectos Industriales & Faenas</h2>
+          <span class="badge badge-orange">${filteredProjects.length} de ${totalPrj} Registros</span>
+          <span style="font-size:11px;color:var(--text-sub);display:inline-flex;align-items:center;gap:4px;">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--primary);"></i> Estado automatizado por fechas y avance real
+          </span>
         </div>
         <div class="toolbar-actions-group">
           <div class="search-box">
@@ -2541,52 +2651,84 @@ function renderProjects(container) {
               <th>Nombre & Cliente</th>
               <th>Ubicación & Faena</th>
               <th>Jefe Proyecto</th>
-              <th>Presupuesto</th>
+              <th>Presupuesto Asignado</th>
               <th>Gasto Real</th>
               <th>Avance Físico</th>
-              <th>Plazo</th>
-              <th>Estado</th>
+              <th>Plazo Contractual</th>
+              <th>Estado Inteligente</th>
+              <th>Semáforo Salud</th>
               <th style="text-align:${userIsDev ? 'right' : 'center'};">${userIsDev ? 'Acciones' : 'Permiso'}</th>
             </tr>
           </thead>
           <tbody>
-            ${DB.projects.length === 0 ? `
+            ${filteredProjects.length === 0 ? `
               <tr>
-                <td colspan="10" style="text-align:center;padding:48px 20px;">
+                <td colspan="11" style="text-align:center;padding:48px 20px;">
                   <i class="fa-solid fa-folder-open" style="font-size:32px;color:var(--text-sub);margin-bottom:12px;display:block;"></i>
-                  <h3 style="font-size:15px;color:#fff;margin-bottom:6px;">Sin proyectos registrados</h3>
-                  <p style="color:var(--text-sub);font-size:13px;max-width:400px;margin:0 auto 16px;">Comienza agregando tu primer proyecto u obra industrial con sus datos reales.</p>
+                  <h3 style="font-size:15px;color:#fff;margin-bottom:6px;">No se encontraron proyectos con este filtro</h3>
+                  <p style="color:var(--text-sub);font-size:13px;max-width:400px;margin:0 auto 16px;">Intenta seleccionando "Todos" o agrega un nuevo proyecto industrial.</p>
                   ${userIsDev ? `
-                    <button class="btn btn-primary btn-sm" onclick="openCreateModal('projects')"><i class="fa-solid fa-plus"></i> Registrar Primer Proyecto</button>
+                    <button class="btn btn-primary btn-sm" onclick="openCreateModal('projects')"><i class="fa-solid fa-plus"></i> Registrar Nuevo Proyecto</button>
                   ` : ""}
                 </td>
               </tr>
-            ` : DB.projects.map(p => {
+            ` : filteredProjects.map(p => {
               const h = getProjectHealth(p, DB.settings);
-              const badgeClass = h.color === 'red' ? 'badge-red' : h.color === 'yellow' ? 'badge-yellow' : 'badge-green';
+              const healthBadge = h.color === 'red' ? 'badge-red' : h.color === 'yellow' ? 'badge-yellow' : 'badge-green';
+              const stDetails = getProjectStatusDetails(p);
+
               return `
                 <tr>
                   <td><strong>${p.id}</strong></td>
-                  <td><strong>${p.name}</strong><br><small style="color:var(--text-sub);">${p.client}</small></td>
-                  <td>${p.location}</td>
-                  <td>${p.manager}</td>
-                  <td>${fmtMoney(p.budget)}</td>
+                  <td>
+                    <strong>${p.name}</strong><br>
+                    <small style="color:var(--text-sub);">${p.client}</small>
+                  </td>
+                  <td>${p.location || 'En Terreno'}</td>
+                  <td>${p.manager || 'No asignado'}</td>
+                  <td><strong>${fmtMoney(p.budget)}</strong></td>
                   <td>${fmtMoney(p.spent)}</td>
                   <td style="min-width:130px;">
                     <div style="display:flex;justify-content:space-between;font-size:11px;">
-                      <span>R: ${p.realProgress}%</span>
+                      <span style="font-weight:700;color:${p.realProgress >= 100 ? 'var(--success)' : '#fff'};">R: ${p.realProgress}%</span>
                       <span style="color:var(--text-sub);">P: ${p.plannedProgress}%</span>
                     </div>
                     <div class="prog-bar-bg">
-                      <div class="prog-bar-fill" style="width:${p.realProgress}%;background:${p.realProgress >= p.plannedProgress ? 'var(--success)' : 'var(--danger)'};"></div>
+                      <div class="prog-bar-fill" style="width:${Math.min(100, p.realProgress)}%;background:${p.realProgress >= p.plannedProgress ? 'var(--success)' : 'var(--danger)'};"></div>
                     </div>
                   </td>
-                  <td><small>${p.startDate} al<br>${p.endDate}</small></td>
-                  <td><span class="badge ${badgeClass}">${h.text}</span></td>
+                  <td>
+                    <small>
+                      ${p.startDate} al ${p.endDate}<br>
+                      <span style="color:${h.diffDays < 0 && p.realProgress < 100 ? 'var(--danger)' : 'var(--text-sub)'};">
+                        (${h.diffDays > 0 ? h.diffDays + ' días restantes' : p.realProgress >= 100 ? 'Cumplido' : 'Plazo Vencido'})
+                      </span>
+                    </small>
+                  </td>
+                  <td>
+                    <span class="badge ${stDetails.badgeClass}" title="${stDetails.description}" style="cursor:help;">
+                      <i class="fa-solid ${stDetails.icon}"></i> ${stDetails.label}
+                    </span>
+                    ${!p.manualStatusOverride ? `
+                      <span style="font-size:9.5px;color:var(--primary);margin-left:2px;" title="Calculado automáticamente"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto</span>
+                    ` : `
+                      <span style="font-size:9.5px;color:var(--text-sub);margin-left:2px;" title="Modificado manualmente"><i class="fa-solid fa-hand"></i> Manual</span>
+                    `}
+                  </td>
+                  <td>
+                    <span class="badge ${healthBadge}">
+                      <i class="fa-solid fa-circle" style="font-size:7px;"></i> ${h.text}
+                    </span>
+                  </td>
                   <td style="text-align:${userIsDev ? 'right' : 'center'};">
                     ${userIsDev ? `
-                      <button class="btn btn-secondary btn-sm" onclick="openEditModal('projects', '${p.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                      <button class="btn btn-danger btn-sm" onclick="deleteRecord('projects', '${p.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                      <div style="display:inline-flex;gap:4px;">
+                        <button class="btn btn-secondary btn-sm" onclick="toggleProjectPause('${p.id}')" title="${p.status === 'Detenido' ? 'Reanudar Faena (Auto)' : 'Pausar Faena (Manual)'}">
+                          <i class="fa-solid ${p.status === 'Detenido' ? 'fa-play' : 'fa-pause'}" style="color:${p.status === 'Detenido' ? 'var(--success)' : 'var(--warning)'};"></i>
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="openEditModal('projects', '${p.id}')" title="Editar proyecto y avance"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteRecord('projects', '${p.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                      </div>
                     ` : `
                       <span class="badge badge-gray" style="font-size:10px;"><i class="fa-solid fa-lock"></i> Solo Lectura</span>
                     `}
@@ -5288,13 +5430,20 @@ function getEntityFormHTML(entity, data) {
           <input type="date" id="f_end" class="form-control" value="${data.endDate || '2026-06-30'}">
         </div>
         <div class="form-group">
-          <label class="form-label">Estado</label>
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Estado del Proyecto</span>
+            <span style="font-size:11px;color:var(--primary);font-weight:700;"><i class="fa-solid fa-wand-magic-sparkles"></i> Automatizado</span>
+          </label>
           <select id="f_status" class="form-control">
-            <option ${data.status === 'En Ejecución' ? 'selected' : ''}>En Ejecución</option>
-            <option ${data.status === 'Planificación' ? 'selected' : ''}>Planificación</option>
-            <option ${data.status === 'Detenido' ? 'selected' : ''}>Detenido</option>
-            <option ${data.status === 'Finalizado' ? 'selected' : ''}>Finalizado</option>
+            <option value="Automático" ${(!data.status || !data.manualStatusOverride) ? 'selected' : ''}>🤖 Automático (según fechas y avance real)</option>
+            <option value="En Ejecución" ${(data.status === 'En Ejecución' && data.manualStatusOverride) ? 'selected' : ''}>⚡ En Ejecución</option>
+            <option value="Planificación" ${(data.status === 'Planificación' && data.manualStatusOverride) ? 'selected' : ''}>📅 Planificación</option>
+            <option value="Detenido" ${(data.status === 'Detenido') ? 'selected' : ''}>⏸️ Detenido / Pausado</option>
+            <option value="Finalizado" ${(data.status === 'Finalizado' && data.manualStatusOverride) ? 'selected' : ''}>✅ Finalizado</option>
           </select>
+          <div style="font-size:11px;color:var(--text-sub);margin-top:4px;">
+            En modo <strong>Automático</strong>, el sistema calcula el estado en tiempo real (Planificación si aún no inicia, En Ejecución en faena activa, Fuera de Plazo si venció el término y Finalizado al llegar a 100%).
+          </div>
         </div>
       </div>
     `;
@@ -6063,7 +6212,15 @@ async function saveModalRecord() {
     record.realProgress = Number(document.getElementById("f_real").value) || 0;
     record.startDate = document.getElementById("f_start").value;
     record.endDate = document.getElementById("f_end").value;
-    record.status = document.getElementById("f_status").value;
+
+    const rawStatus = document.getElementById("f_status") ? document.getElementById("f_status").value : "Automático";
+    if (rawStatus === "Automático" || !rawStatus) {
+      record.manualStatusOverride = false;
+      record.status = calculateAutoProjectStatus(record);
+    } else {
+      record.status = rawStatus;
+      record.manualStatusOverride = true;
+    }
 
     if (!activeModalRecord) DB.projects.push(record);
   } else if (activeModalEntity === "expenses") {
