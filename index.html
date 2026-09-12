@@ -1,200 +1,314 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0b0f19">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="mobile-web-app-capable" content="yes">
-  <title>CM Industrial</title>
-  <meta name="description" content="Plataforma integral de gestión de proyectos industriales: presupuestos, mano de obra, inventario de herramientas, control documental, semáforo inteligente y Gantt.">
-  <meta property="og:title" content="CM Industrial">
-  <meta property="og:description" content="Plataforma integral de gestión de proyectos industriales: presupuestos, mano de obra, inventario de herramientas, control documental, semáforo inteligente y Gantt.">
-  
-  <!-- Fonts & Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  
-  <!-- Stylesheet -->
-  <link rel="stylesheet" href="app.css">
-  
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f19">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>CM Industrial</title>
+<meta name="description" content="Plataforma integral de gestión de proyectos industriales: presupuestos, mano de obra, inventario de herramientas, control documental, semáforo inteligente y Gantt.">
+<meta property="og:title" content="CM Industrial">
+<meta property="og:description" content="Plataforma integral de gestión de proyectos industriales: presupuestos, mano de obra, inventario de herramientas, control documental, semáforo inteligente y Gantt.">
+<!-- Fonts & Icons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- Stylesheet -->
+<link rel="stylesheet" href="app.css">
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
-  <!-- Auth Screen: role selection, login form, or registration form -->
-  <div id="auth-screen" style="position:fixed;inset:0;background:var(--bg-main);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;">
-    <div style="width:100%;max-width:440px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:30px 28px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-        <div style="width:42px;height:42px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;font-weight:900;box-shadow:0 0 12px rgba(249,115,22,0.4);">CM</div>
-        <div>
-          <div style="font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.02em;">CM INDUSTRIAL</div>
-          <div style="font-size:11px;color:var(--text-sub);">Control de Obras & Perfiles de Acceso</div>
-        </div>
-      </div>
+<!-- Auth Screen: role selection, login form, or registration form -->
+<div id="auth-screen" style="position:fixed;inset:0;background:var(--bg-main);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;">
+<div style="width:100%;max-width:440px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;padding:30px 28px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+<div style="width:42px;height:42px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;font-weight:900;box-shadow:0 0 12px rgba(249,115,22,0.4);">CM</div>
+<div>
+<div style="font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.02em;">CM INDUSTRIAL</div>
+<div style="font-size:11px;color:var(--text-sub);">Control de Obras & Perfiles de Acceso</div>
+</div>
+</div>
 
-      <!-- Secure Login form -->
-      <div id="auth-login-form">
-        <h3 style="font-size:16px;font-weight:700;margin-bottom:4px;color:#fff;">Iniciar Sesión</h3>
-        <p style="font-size:12px;color:var(--text-sub);margin-bottom:18px;">Ingresa tus credenciales autorizadas para acceder al sistema:</p>
+<!-- Secure Login form -->
+<div id="auth-login-form">
+<h3 style="font-size:16px;font-weight:700;margin-bottom:4px;color:#fff;">Iniciar Sesión</h3>
+<p style="font-size:12px;color:var(--text-sub);margin-bottom:18px;">Ingresa tus credenciales autorizadas para acceder al sistema:</p>
+<div class="form-group" style="margin-bottom:12px;">
+<label class="form-label" style="font-size:11px;">Correo Electrónico</label>
+<input type="email" id="auth-email" class="form-control" placeholder="tu-correo@cmindustrial.cl" autocomplete="username">
+</div>
+<div class="form-group" style="margin-bottom:10px;">
+<label class="form-label" style="font-size:11px;">Contraseña</label>
+<input type="password" id="auth-password" class="form-control" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter'){attemptLogin();}">
+</div>
+<div id="auth-login-error" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:12px;"></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px 16px;font-weight:700;" onclick="attemptLogin()">
+<i class="fa-solid fa-right-to-bracket"></i> Ingresar al Sistema
+</button>
+<div style="margin-top:16px;text-align:center;border-top:1px solid var(--border-color);padding-top:12px;">
+<button type="button" class="btn btn-secondary btn-sm" onclick="showAuthScreen(true)" style="border:none;background:transparent;color:var(--text-sub);font-size:11.5px;">
+<i class="fa-solid fa-user-plus"></i> Registrar nueva cuenta con rol personalizado
+</button>
+</div>
+</div>
 
-        <div class="form-group" style="margin-bottom:12px;">
-          <label class="form-label" style="font-size:11px;">Correo Electrónico</label>
-          <input type="email" id="auth-email" class="form-control" placeholder="tu-correo@cmindustrial.cl" autocomplete="username">
-        </div>
-        <div class="form-group" style="margin-bottom:10px;">
-          <label class="form-label" style="font-size:11px;">Contraseña</label>
-          <input type="password" id="auth-password" class="form-control" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter'){attemptLogin();}">
-        </div>
-        <div id="auth-login-error" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:12px;"></div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px 16px;font-weight:700;" onclick="attemptLogin()">
-          <i class="fa-solid fa-right-to-bracket"></i> Ingresar al Sistema
-        </button>
+<!-- Account registration form -->
+<div id="auth-setup-form" style="display:none;">
+<h3 style="font-size:15px;font-weight:700;margin-bottom:4px;color:#fff;">Registrar Cuenta</h3>
+<p style="font-size:12px;color:var(--text-sub);margin-bottom:16px;">Configura tu cuenta de usuario para acceder al sistema.</p>
+<div class="form-group" style="margin-bottom:10px;">
+<label class="form-label" style="font-size:11px;">Nombre Completo</label>
+<input type="text" id="setup-name" class="form-control" placeholder="Ej: Marcela Pardo" autocomplete="name">
+</div>
+<div class="form-group" style="margin-bottom:10px;">
+<label class="form-label" style="font-size:11px;">Correo Electrónico</label>
+<input type="email" id="setup-email" class="form-control" placeholder="marcela@cmindustrial.cl" autocomplete="username">
+</div>
+<div class="form-group" style="margin-bottom:10px;">
+<label class="form-label" style="font-size:11px;">Rol Asignado</label>
+<select id="setup-role" class="form-control">
+<option value="Usuario">Usuario (Solo consulta / Bloqueo de edición)</option>
+</select>
+</div>
+<div class="form-group" style="margin-bottom:8px;">
+<label class="form-label" style="font-size:11px;">Contraseña</label>
+<input type="password" id="setup-password" class="form-control" placeholder="Mínimo 4 caracteres" autocomplete="new-password" onkeydown="if(event.key==='Enter'){createFirstUser();}">
+</div>
+<div id="auth-setup-error" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:8px;"></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="createFirstUser()">Crear Usuario e Ingresar</button>
+<div style="margin-top:12px;text-align:center;">
+<button type="button" class="btn btn-secondary btn-sm" onclick="showAuthScreen(false)" style="border:none;background:transparent;color:var(--text-sub);font-size:11px;">
+<i class="fa-solid fa-arrow-left"></i> Volver a opciones de inicio
+</button>
+</div>
+</div>
 
-        <div style="margin-top:16px;text-align:center;border-top:1px solid var(--border-color);padding-top:12px;">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="showAuthScreen(true)" style="border:none;background:transparent;color:var(--text-sub);font-size:11.5px;">
-            <i class="fa-solid fa-user-plus"></i> Registrar nueva cuenta con rol personalizado
-          </button>
-        </div>
-      </div>
+</div>
+</div>
 
-      <!-- Account registration form -->
-      <div id="auth-setup-form" style="display:none;">
-        <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;color:#fff;">Registrar Cuenta</h3>
-        <p style="font-size:12px;color:var(--text-sub);margin-bottom:16px;">Configura tu usuario indicando si ingresarás como Desarrollador o Usuario.</p>
-        <div class="form-group" style="margin-bottom:10px;">
-          <label class="form-label" style="font-size:11px;">Nombre Completo</label>
-          <input type="text" id="setup-name" class="form-control" placeholder="Ej: Marcela Pardo" autocomplete="name">
-        </div>
-        <div class="form-group" style="margin-bottom:10px;">
-          <label class="form-label" style="font-size:11px;">Correo Electrónico</label>
-          <input type="email" id="setup-email" class="form-control" placeholder="marcela@cmindustrial.cl" autocomplete="username">
-        </div>
-        <div class="form-group" style="margin-bottom:10px;">
-          <label class="form-label" style="font-size:11px;">Rol Asignado</label>
-          <select id="setup-role" class="form-control">
-            <option value="Desarrollador">Desarrollador (Control total y permisos de edición)</option>
-            <option value="Usuario">Usuario (Solo consulta / Bloqueo de edición)</option>
-            <option value="Administrador">Administrador (Control total)</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin-bottom:8px;">
-          <label class="form-label" style="font-size:11px;">Contraseña</label>
-          <input type="password" id="setup-password" class="form-control" placeholder="Mínimo 4 caracteres" autocomplete="new-password" onkeydown="if(event.key==='Enter'){createFirstUser();}">
-        </div>
-        <div id="auth-setup-error" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:8px;"></div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="createFirstUser()">Crear Usuario e Ingresar</button>
+<div id="app-layout" style="display:none;">
+<!-- Mobile Sidebar Backdrop Overlay -->
+<div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleMobileSidebar(false)"></div>
 
-        <div style="margin-top:12px;text-align:center;">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="showAuthScreen(false)" style="border:none;background:transparent;color:var(--text-sub);font-size:11px;">
-            <i class="fa-solid fa-arrow-left"></i> Volver a opciones de inicio
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+<!-- Sidebar Navigation Drawer -->
+<aside id="sidebar">
+<div class="sidebar-header" style="padding:16px 18px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:38px;height:38px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:900;box-shadow:0 0 12px rgba(249,115,22,0.4);flex-shrink:0;">
+CM
+</div>
+<div>
+<div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:-0.02em;">CM INDUSTRIAL</div>
+<div style="font-size:11px;color:var(--text-sub);">Control de Obras & Faenas</div>
+</div>
+</div>
+<button id="sidebar-close-btn" class="btn btn-secondary btn-sm sidebar-close-btn" onclick="toggleMobileSidebar(false)" title="Cerrar Menú" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;padding:6px 10px;">
+<i class="fa-solid fa-xmark"></i>
+</button>
+</div>
 
-  <div id="app-layout" style="display:none;">
-    <!-- Mobile Sidebar Backdrop Overlay -->
-    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleMobileSidebar(false)"></div>
+<!-- Navigation Links -->
+<nav style="padding:14px 10px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
+<div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:4px 12px 6px;">Operaciones</div>
+<button class="btn btn-secondary nav-item active" data-view="dashboard" onclick="navigateTo('dashboard')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+<i class="fa-solid fa-chart-pie" style="width:20px;"></i> Dashboard KPIs
+</button>
+<button class="btn btn-secondary nav-item" data-view="cotizaciones" onclick="navigateTo('cotizaciones')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+<i class="fa-solid fa-file-invoice-dollar" style="width:20px;color:var(--primary);"></i> Cotizaciones & Costos
+</button>
+<button class="btn btn-secondary nav-item" data-view="proyectos" onclick="navigateTo('proyectos')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+<i class="fa-solid fa-briefcase" style="width:20px;"></i> Proyectos & Faenas
+</button>
+<button class="btn btn-secondary nav-item" data-view="gantt" onclick="navigateTo('gantt')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+<i class="fa-solid fa-timeline" style="width:20px;"></i> Cronograma Gantt
+</button>
+<button class="btn btn-secondary nav-item" data-view="gastos" onclick="navigateTo('gastos')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+<i class="fa-solid fa-receipt" style="width:20px;"></i> Gastos & Compras
+</button>
+<div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:12px 12px 6px;">Recursos & Terreno</div>
+<button class="btn btn-secondary nav-item" data-view="trabajadores" onclick="navigateTo('trabajadores')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+<i class="fa-solid fa-hard-hat" style="width:20px;"></i> Mano de Obra
+</button>
+<button class="btn btn-secondary nav-item" data-view="horas_extras" onclick="navigateTo('horas_extras')" style="justify-content:flex-start;width:100%;border:none;background:transparent;padding-left:24px;font-size:12.5px;">
+<i class="fa-solid fa-business-time" style="width:18px;color:var(--warning);"></i> Horas Extras & Turnos
+</button>
+<button class="btn btn-secondary nav-item" data-view="herramientas" onclick="navigateTo('herramientas')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+<i class="fa-solid fa-wrench" style="width:20px;"></i> Herramientas / Equipos
+</button>
+<button class="btn btn-secondary nav-item" data-view="documentos" onclick="navigateTo('documentos')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+<i class="fa-solid fa-folder-open" style="width:20px;"></i> Control Documental
+</button>
+<div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:12px 12px 6px;">Control & Sistema</div>
+<button class="btn btn-secondary nav-item" id="nav-item-usuarios" data-view="usuarios" onclick="navigateTo('usuarios')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+<i class="fa-solid fa-users" style="width:20px;"></i> <span>Usuarios</span>
+</button>
+<button class="btn btn-secondary nav-item" id="nav-item-alertas" data-view="alertas" onclick="navigateTo('alertas')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+<i class="fa-solid fa-bell" style="width:20px;color:var(--danger);"></i> <span>Alertas Proactivas</span>
+</button>
+<button class="btn btn-secondary nav-item" id="nav-item-config" data-view="config" onclick="navigateTo('config')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
+<i class="fa-solid fa-sliders" style="width:20px;"></i> <span>Configuración / DB</span>
+</button>
+</nav>
 
-    <!-- Sidebar Navigation Drawer -->
-    <aside id="sidebar">
-      <div class="sidebar-header" style="padding:16px 18px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:38px;height:38px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:900;box-shadow:0 0 12px rgba(249,115,22,0.4);flex-shrink:0;">
-            CM
-          </div>
-          <div>
-            <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:-0.02em;">CM INDUSTRIAL</div>
-            <div style="font-size:11px;color:var(--text-sub);">Control de Obras & Faenas</div>
-          </div>
-        </div>
-        <button id="sidebar-close-btn" class="btn btn-secondary btn-sm sidebar-close-btn" onclick="toggleMobileSidebar(false)" title="Cerrar Menú" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;padding:6px 10px;">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
+<!-- User card in sidebar footer (rendered dynamically by app.js from DB.users) -->
+<div id="sidebar-user-card" style="padding:14px 16px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;background:#0b0f19;"></div>
+</aside>
 
-      <!-- Navigation Links -->
-      <nav style="padding:14px 10px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
-        <div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:4px 12px 6px;">Operaciones</div>
-        
-        <button class="btn btn-secondary nav-item active" data-view="dashboard" onclick="navigateTo('dashboard')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-chart-pie" style="width:20px;"></i> Dashboard KPIs
-        </button>
+<!-- Main Content Area -->
+<div id="main-content">
+<!-- Top Bar -->
+<header class="topbar">
+<div class="topbar-left">
+<button id="mobile-menu-btn" class="btn btn-secondary btn-sm mobile-menu-toggle" onclick="toggleMobileSidebar(true)" title="Menú de Navegación">
+<i class="fa-solid fa-bars"></i>
+</button>
+<div class="topbar-brand">
+<i class="fa-solid fa-industry topbar-brand-icon"></i>
+<span class="topbar-title-desktop">Plataforma de Control de Obras y Proyectos Industriales</span>
+<span class="topbar-title-tablet">CM Industrial • Control de Obras</span>
+<span class="topbar-title-mobile">CM Industrial</span>
+</div>
+</div>
+<div class="topbar-right">
+<div id="cloud-sync-status-badge" class="badge badge-green" style="font-size:11px;display:inline-flex;align-items:center;gap:5px;" title="Sincronización en tiempo real activa">
+<i class="fa-solid fa-cloud-check"></i> Nube Conectada
+</div>
+<div id="topbar-role-badge"></div>
+<button class="btn btn-secondary btn-sm topbar-alert-btn" onclick="navigateTo('alertas')" title="Centro de Alertas">
+<i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i>
+</button>
+</div>
+</header>
 
-        <button class="btn btn-secondary nav-item" data-view="cotizaciones" onclick="navigateTo('cotizaciones')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-file-invoice-dollar" style="width:20px;color:var(--primary);"></i> Cotizaciones & Costos
-        </button>
+<!-- View Root -->
+<main id="view-root" class="view-container">
+<!-- Rendered dynamically by app.js -->
+</main>
+</div>
+</div>
 
-        <button class="btn btn-secondary nav-item" data-view="proyectos" onclick="navigateTo('proyectos')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-briefcase" style="width:20px;"></i> Proyectos & Faenas
-        </button>
+<!-- Dedicated Record & Quotation Modal -->
+<div id="record-modal" class="modal-backdrop">
+<div class="modal-box modal-box-lg">
+<div class="modal-header">
+<h3 id="modal-title" style="font-size:15px;font-weight:700;">Presupuesto & Cotización</h3>
+<button class="btn btn-secondary btn-sm" onclick="closeModal()" style="border:none;"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<div class="modal-body" id="modal-body">
+</div>
+<div class="modal-footer" id="modal-footer">
+<button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+</div>
+</div>
+</div>
 
-        <button class="btn btn-secondary nav-item" data-view="gantt" onclick="navigateTo('gantt')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-timeline" style="width:20px;"></i> Cronograma Gantt
-        </button>
+<!-- Universal CRUD Modal -->
+<div id="crud-modal" class="modal-backdrop">
+<div class="modal-box">
+<div class="modal-header">
+<h3 id="crud-modal-title" style="font-size:15px;font-weight:700;">Editar Registro</h3>
+<button class="btn btn-secondary btn-sm" onclick="closeModal()" style="border:none;"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<div class="modal-body" id="crud-modal-body">
+<div id="modal-body-content"></div>
+</div>
+<div class="modal-footer" id="crud-modal-footer">
+<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+<button class="btn btn-primary" onclick="saveModalRecord()"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
+</div>
+</div>
+</div>
 
-        <button class="btn btn-secondary nav-item" data-view="gastos" onclick="navigateTo('gastos')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-receipt" style="width:20px;"></i> Gastos & Compras
-        </button>
+<!-- Lightbox Modal for Equipment & Invoices/Receipts Photos/Docs -->
+<div id="photo-lightbox-modal" class="modal-backdrop" onclick="closePhotoLightbox(event)">
+<div id="lightbox-card" class="modal-box" style="max-width:620px;" onclick="event.stopPropagation()">
+<div class="modal-header">
+<div style="display:flex;align-items:center;gap:10px;">
+<i id="lightbox-header-icon" class="fa-solid fa-camera" style="color:var(--primary);"></i>
+<h3 id="lightbox-title" style="font-size:15px;font-weight:700;">Visor de Imagen / Documento</h3>
+</div>
+<button id="lightbox-close-btn" class="btn btn-secondary btn-sm" onclick="closePhotoLightbox()" style="border:none;"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<div class="modal-body" style="padding:16px;text-align:center;">
+<div id="lightbox-img-container" style="background:#080c14;border:1px solid var(--border-color);border-radius:10px;overflow:hidden;max-height:480px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+<img id="lightbox-img" src="" alt="Fotografía" style="max-width:100%;max-height:460px;object-fit:contain;">
+</div>
+<div id="lightbox-pdf-container" style="display:none;background:#0d121f;border:1px dashed var(--border-color);border-radius:10px;padding:24px;margin-bottom:14px;text-align:center;">
+<i class="fa-solid fa-file-pdf" style="font-size:48px;color:#ef4444;margin-bottom:12px;"></i>
+<div id="lightbox-pdf-name" style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;">Documento PDF</div>
+<div style="font-size:12px;color:var(--text-sub);margin-bottom:16px;">Documento técnico o factura en formato PDF listo para visualizar o descargar.</div>
+<a id="lightbox-pdf-view-btn" href="#" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir PDF en Nueva Pestaña</a>
+</div>
+<div id="lightbox-meta" style="font-size:13px;color:var(--text-muted);text-align:left;background:#0d121f;border:1px solid var(--border-color);border-radius:8px;padding:12px;">
+</div>
+</div>
+<div class="modal-footer" style="justify-content:space-between;">
+<a id="lightbox-download-link" href="#" download="archivo.jpg" class="btn btn-secondary btn-sm"><i class="fa-solid fa-download"></i> Descargar Archivo</a>
+<button id="lightbox-done-btn" class="btn btn-primary btn-sm" onclick="closePhotoLightbox()">Cerrar</button>
+</div>
+</div>
+</div>
 
-        <div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:12px 12px 6px;">Recursos & Terreno</div>
+<!-- Firebase SDK (App, Auth, Firestore Compat v10) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-        <button class="btn btn-secondary nav-item" data-view="trabajadores" onclick="navigateTo('trabajadores')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-hard-hat" style="width:20px;"></i> Mano de Obra
-        </button>
+<!-- Firebase Configuration & Initialization -->
+<script>
+const firebaseConfig = {
+apiKey: "AIzaSyAH6N2OfvpQvx0SWHqcks81WLRzmSBClBw",
+authDomain: "aplicacion-web-95635.firebaseapp.com",
+projectId: "aplicacion-web-95635",
+storageBucket: "aplicacion-web-95635.firebasestorage.app",
+messagingSenderId: "252659714101",
+appId: "1:252659714101:web:89ee95fbaf52eeadfc897c",
+measurementId: "G-ZJ1XH1Z5T4"
+};
+try {
+if (typeof firebase !== 'undefined') {
+if (!firebase.apps || !firebase.apps.length) {
+firebase.initializeApp(firebaseConfig);
+}
+window.firebaseAuth = firebase.auth();
+window.firebaseDb = firebase.firestore();
+console.log("Firebase Firestore & Auth initialized with user project: aplicacion-web-95635");
+}
+} catch (e) {
+console.warn("Firebase initialization note:", e);
+}
+</script>
 
-        <button class="btn btn-secondary nav-item" data-view="horas_extras" onclick="navigateTo('horas_extras')" style="justify-content:flex-start;width:100%;border:none;background:transparent;padding-left:24px;font-size:12.5px;">
-          <i class="fa-solid fa-business-time" style="width:18px;color:var(--warning);"></i> Horas Extras & Turnos
-        </button>
+<!-- Mobile Navigation Helper -->
+<script>
+function toggleMobileSidebar(forceState) {
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("sidebar-overlay");
+if (!sidebar) return;
+const willOpen = typeof forceState === "boolean" ? forceState : !sidebar.classList.contains("mobile-open");
+if (willOpen) {
+sidebar.classList.add("mobile-open");
+if (overlay) overlay.classList.add("active");
+document.body.classList.add("mobile-nav-locked");
+} else {
+sidebar.classList.remove("mobile-open");
+if (overlay) overlay.classList.remove("active");
+document.body.classList.remove("mobile-nav-locked");
+}
+}
+window.toggleMobileSidebar = toggleMobileSidebar;
+</script>
 
-        <button class="btn btn-secondary nav-item" data-view="herramientas" onclick="navigateTo('herramientas')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-wrench" style="width:20px;"></i> Herramientas / Equipos
-        </button>
-
-        <button class="btn btn-secondary nav-item" data-view="documentos" onclick="navigateTo('documentos')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-folder-open" style="width:20px;"></i> Control Documental
-        </button>
-
-        <div style="font-size:10px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:0.08em;padding:12px 12px 6px;">Control & Sistema</div>
-
-        <button class="btn btn-secondary nav-item" id="nav-item-usuarios" data-view="usuarios" onclick="navigateTo('usuarios')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-users" style="width:20px;"></i> <span>Usuarios</span>
-        </button>
-
-        <button class="btn btn-secondary nav-item" id="nav-item-alertas" data-view="alertas" onclick="navigateTo('alertas')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-bell" style="width:20px;color:var(--danger);"></i> <span>Alertas Proactivas</span>
-        </button>
-
-        <button class="btn btn-secondary nav-item" id="nav-item-config" data-view="config" onclick="navigateTo('config')" style="justify-content:flex-start;width:100%;border:none;background:transparent;">
-          <i class="fa-solid fa-sliders" style="width:20px;"></i> <span>Configuración / DB</span>
-        </button>
-      </nav>
-
-      <!-- User card in sidebar footer (rendered dynamically by app.js from DB.users) -->
-      <div id="sidebar-user-card" style="padding:14px 16px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;background:#0b0f19;"></div>
-    </aside>
-
-    <!-- Main Content Area -->
-    <div id="main-content">
-      <!-- Top Bar -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <button id="mobile-menu-btn" class="btn btn-secondary btn-sm mobile-menu-toggle" onclick="toggleMobileSidebar(true)" title="Menú de Navegación">
-            <i class="fa-solid fa-bars"></i>
-          </button>
-          <div class="topbar-brand">
-            <i class="fa-solid fa-industry topbar-brand-icon"></i>
-            <span class="topbar-title-desktop">Plataforma de Control de Obras y Proyectos Industriales</span>
-            <span class="topbar-title-tablet">CM Industrial • Control de Obras</span>
-            <span class="topbar-title-mobile">CM Industrial</span>
-          </div>
-        </div>
+<!-- Scripts -->
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
 
         <div class="topbar-right">
           <div id="cloud-sync-status-badge" class="badge badge-green" style="font-size:11px;display:inline-flex;align-items:center;gap:5px;" title="Sincronización en tiempo real activa">
