@@ -1502,10 +1502,9 @@ function printQuotation(quoteId) {
           <div style="font-size:12px;color:#64748b;margin-top:2px;">Servicios de Ingeniería, Montajes & Construcción Industrial</div>
         </div>
         <div class="company-info">
-          <strong>CM Industrial SpA</strong><br>
-          RUT: 77.890.123-K<br>
-          Quintero / V Región, Chile<br>
-          contacto@cmindustrial.cl
+          <strong>CM Industrial LTDA</strong><br>
+          RUT: 76503216-4<br>
+          Dirección: Arica 4160, Estación Central
         </div>
       </div>
 
@@ -1605,7 +1604,7 @@ function printQuotation(quoteId) {
 
       <div style="margin-top:40px;display:flex;justify-content:space-between;text-align:center;">
         <div style="border-top:1px solid #0f172a;width:200px;padding-top:6px;font-size:11px;">
-          <strong>CM Industrial SpA</strong><br>Departamento de Proyectos
+          <strong>CM Industrial LTDA</strong><br>Departamento de Proyectos
         </div>
         <div style="border-top:1px solid #0f172a;width:200px;padding-top:6px;font-size:11px;">
           <strong>Aceptación Cliente</strong><br>Firma & Timbre
