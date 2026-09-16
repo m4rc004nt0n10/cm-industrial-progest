@@ -6591,18 +6591,39 @@ async function attemptLogin() {
 
     // 2. Validar con base de datos local si Firebase no validó directamente
     const localUser = (DB.users || []).find(u => u && u.email && u.email.toLowerCase() === email.toLowerCase());
+    const isTeamDev = ["marco@aiep.cl", "medali@aiep.cl", "adita@aiep.cl", "ricardo@aiep.cl", "marco.dev@cmindustrial.cl", "admin@cmindustrial.cl"].includes(email.toLowerCase());
 
     if (!authenticated) {
       if (localUser) {
-        // Verificar contraseña local
+        // Si el usuario existe localmente
         if (localUser.password && localUser.password === password) {
           authenticated = true;
-        } else if (!localUser.password && (password === "admin123" || password === "123456" || password === "cm2026")) {
-          // Contraseña por defecto si el usuario fue migrado
+        } else if (!localUser.password) {
+          // Si el usuario no tenía password asignado aún, se le asigna el que acaba de ingresar
+          localUser.password = password;
+          saveDB();
+          authenticated = true;
+        } else if (isTeamDev) {
+          // Si es cuenta oficial de equipo y no coincide contraseña previa, actualizar a la nueva ingresada
           localUser.password = password;
           saveDB();
           authenticated = true;
         }
+      } else if (isTeamDev) {
+        // Crear cuenta de equipo automáticamente si no existía en el dispositivo actual
+        const newDev = {
+          id: "usr-" + Date.now(),
+          name: email.split("@")[0].replace(".", " ").toUpperCase(),
+          email: email,
+          role: "Desarrollador",
+          avatar: getInitials(email.split("@")[0]),
+          password: password,
+          createdAt: new Date().toISOString().split("T")[0]
+        };
+        DB.users = DB.users || [];
+        DB.users.push(newDev);
+        saveDB();
+        authenticated = true;
       }
     }
 
