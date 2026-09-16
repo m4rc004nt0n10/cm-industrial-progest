@@ -19,35 +19,35 @@ function defaultSeedData() {
     users: [
       {
         id: "usr-marco",
-        name: "Marco Antonio",
+        name: "marco",
         email: "marco@aiep.cl",
         role: "Desarrollador",
         avatar: "MA",
         createdAt: "2026-09-10"
       },
       {
-        id: "usr-medali",
-        name: "Medali",
-        email: "medali@aiep.cl",
-        role: "Desarrollador",
-        avatar: "ME",
-        createdAt: "2026-09-10"
-      },
-      {
         id: "usr-adita",
-        name: "Adita",
+        name: "adita",
         email: "adita@aiep.cl",
-        role: "Desarrollador",
+        role: "Administrador",
         avatar: "AD",
         createdAt: "2026-09-10"
       },
       {
         id: "usr-ricardo",
-        name: "Ricardo",
+        name: "ricardo",
         email: "ricardo@aiep.cl",
-        role: "Desarrollador",
+        role: "Administrador",
         avatar: "RI",
         createdAt: "2026-09-10"
+      },
+      {
+        id: "usr-medaly",
+        name: "medaly",
+        email: "medaly@aiep.cl",
+        role: "Administrador",
+        avatar: "ME",
+        createdAt: "2026-09-12"
       }
     ],
     projects: [
@@ -1135,6 +1135,12 @@ function loadDB() {
       // Ensure essential arrays and settings exist without overwriting empty user collections
       if (!DB.users || DB.users.length === 0) {
         DB.users = defaultSeedData().users;
+      } else {
+        // Remove preview dev account from application users list
+        DB.users = DB.users.filter(u => u && u.email !== "dev@cmindustrial.cl" && u.id !== "usr-dev-preview" && u.name !== "Marco Dev" && u.email !== "marco.dev@cmindustrial.cl");
+        if (DB.users.length === 0) {
+          DB.users = defaultSeedData().users;
+        }
       }
       if (!DB.settings) {
         DB.settings = defaultSeedData().settings;

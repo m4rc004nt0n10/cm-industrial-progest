@@ -332,7 +332,7 @@ function renderSidebarUserCard() {
 
   card.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-      <div style="width:34px;height:34px;border-radius:50%;background:#e0f2fe;border:1px solid ${userIsDev ? '#0284c7' : '#f59e0b'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${userIsDev ? '#0284c7' : '#d97706'};flex-shrink:0;">
+      <div style="width:34px;height:34px;border-radius:50%;background:#38bdf8;border:1px solid #0284c7;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#000000;flex-shrink:0;">
         ${user.avatar || getInitials(user.name)}
       </div>
       <div style="min-width:0;">
@@ -411,17 +411,17 @@ function renderDashboard(container) {
             <i class="fa-solid fa-user-lock"></i>
           </div>
           <div class="mode-banner-text">
-            <div class="mode-banner-title">Perfil: Usuario (Modo Consulta Protegido)</div>
-            <div class="mode-banner-sub">Tienes acceso para revisar indicadores y estados en tiempo real. Las acciones de modificación, creación y eliminación están reservadas para cuentas de Desarrollador.</div>
+            <div class="mode-banner-title">Modo Consulta</div>
+            <div class="mode-banner-sub">Visualización de indicadores y reportes del sistema.</div>
           </div>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="switchActiveRole('Desarrollador')">
-          <i class="fa-solid fa-code"></i> Entrar como Desarrollador
+          <i class="fa-solid fa-code"></i> Modo Desarrollador
         </button>
       </div>
     ` : ""}
 
-    <!-- Top Dashboard Filter Toolbar (Afecta KPIs y Gráficos) -->
+    <!-- Top Dashboard Filter Toolbar -->
     <div class="dashboard-filter-card">
       <div class="dashboard-filter-info">
         <div class="dashboard-filter-icon">
@@ -429,20 +429,19 @@ function renderDashboard(container) {
         </div>
         <div class="dashboard-filter-text">
           <div class="dashboard-filter-title-row">
-            <span class="dashboard-filter-title">Alcance del Dashboard:</span>
+            <span class="dashboard-filter-title">Alcance:</span>
             <span class="badge ${isFiltered ? 'badge-blue' : 'badge-green'} dashboard-filter-badge" title="${isFiltered ? (filteredProject ? filteredProject.name : activeDashboardProjectFilter) : 'Vista General Consolidada'}">
-              ${isFiltered ? (filteredProject ? filteredProject.name : activeDashboardProjectFilter) : 'Vista General Consolidada'}
+              ${isFiltered ? (filteredProject ? filteredProject.name : activeDashboardProjectFilter) : 'Vista General'}
             </span>
           </div>
-          <div class="dashboard-filter-desc">Filtra los 10 KPIs y los gráficos por proyecto específico o visualiza el consolidado general de la empresa</div>
         </div>
       </div>
 
       <div class="dashboard-filter-controls">
-        <label for="dashboard-project-select" class="dashboard-filter-label">Seleccionar Proyecto:</label>
+        <label for="dashboard-project-select" class="dashboard-filter-label">Proyecto:</label>
         <div class="dashboard-filter-inputs">
           <select id="dashboard-project-select" class="form-control dashboard-project-select" onchange="onDashboardProjectFilterChange(this.value)">
-            <option value="todos" ${activeDashboardProjectFilter === 'todos' ? 'selected' : ''}>📊 Vista General (Todos los Proyectos)</option>
+            <option value="todos" ${activeDashboardProjectFilter === 'todos' ? 'selected' : ''}>📊 Vista General</option>
             ${DB.projects.map(p => `
               <option value="${p.id}" ${activeDashboardProjectFilter === p.id ? 'selected' : ''}>
                 ${p.id} - ${p.name}
@@ -450,8 +449,8 @@ function renderDashboard(container) {
             `).join("")}
           </select>
           ${isFiltered ? `
-            <button class="btn btn-secondary btn-sm dashboard-filter-reset-btn" onclick="onDashboardProjectFilterChange('todos')" title="Ver resumen general de todos los proyectos">
-              <i class="fa-solid fa-rotate-left"></i> <span>Ver General</span>
+            <button class="btn btn-secondary btn-sm dashboard-filter-reset-btn" onclick="onDashboardProjectFilterChange('todos')" title="Ver vista general">
+              <i class="fa-solid fa-rotate-left"></i> <span>Vista General</span>
             </button>
           ` : ''}
         </div>
@@ -915,18 +914,18 @@ function renderQuotations(container) {
     <!-- Module Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
       <div>
-        <h1 style="font-size:22px;font-weight:800;color:#fff;margin:0 0 4px;display:flex;align-items:center;gap:10px;">
+        <h1 style="font-size:22px;font-weight:800;color:var(--primary);margin:0 0 4px;display:flex;align-items:center;gap:10px;">
           <i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary);"></i>
           Cotizaciones & Presupuestos
         </h1>
         <p style="font-size:13px;color:var(--text-sub);margin:0;">
-          Calculadora de costos según estructura CM Industrial (Mano de Obra, Insumos, Materiales, Administración, Imprevistos y Margen de Utilidad).
+          Estructuración de costos, márgenes de utilidad y presupuestos.
         </p>
       </div>
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary" onclick="openQuotationSimulatorModal()" style="font-size:13px;border-color:var(--primary);color:#fed7aa;" title="Simulador manual sin alterar datos reales">
-          <i class="fa-solid fa-calculator" style="color:var(--primary);"></i> Simulador Manual (Sin alterar datos)
+        <button class="btn btn-secondary" onclick="openQuotationSimulatorModal()" style="font-size:13px;border-color:var(--primary);color:var(--primary);" title="Simulador manual sin alterar datos reales">
+          <i class="fa-solid fa-calculator" style="color:var(--primary);"></i> Simulador Manual
         </button>
         <button class="btn btn-secondary" onclick="openQuotationTemplateModal()" style="font-size:13px;">
           <i class="fa-solid fa-file-import"></i> Plantillas Rápidas
@@ -2603,6 +2602,7 @@ function convertSimulationToFormalQuote() {
 
 // 2. PROYECTOS VIEW
 let activeProjectStatusFilter = "todos";
+let activeProjectObraFilter = "todas";
 
 function toggleProjectPause(projectId) {
   if (!verifyDeveloperPermission("cambiar estado del proyecto")) return;
@@ -2625,6 +2625,11 @@ function setProjectStatusFilter(filter) {
   renderProjects(document.getElementById("view-root"));
 }
 
+function setProjectObraFilter(obraId) {
+  activeProjectObraFilter = obraId;
+  renderProjects(document.getElementById("view-root"));
+}
+
 function renderProjects(container) {
   syncAllProjectsAutoStatus();
   const userIsDev = isDeveloper();
@@ -2638,16 +2643,23 @@ function renderProjects(container) {
   const finalizados = projects.filter(p => (p.status || calculateAutoProjectStatus(p)) === "Finalizado").length;
   const detenidos = projects.filter(p => p.status === "Detenido").length;
 
-  // Filtered list
+  // Filtered list by status and obra
   const filteredProjects = projects.filter(p => {
     const curStatus = p.status || calculateAutoProjectStatus(p);
-    if (activeProjectStatusFilter === "todos") return true;
-    if (activeProjectStatusFilter === "ejecucion") return curStatus === "En Ejecución";
-    if (activeProjectStatusFilter === "planificacion") return curStatus === "Planificación";
-    if (activeProjectStatusFilter === "vencido") return curStatus === "Vencido";
-    if (activeProjectStatusFilter === "finalizado") return curStatus === "Finalizado";
-    if (activeProjectStatusFilter === "detenido") return curStatus === "Detenido";
-    return true;
+    
+    let matchStatus = true;
+    if (activeProjectStatusFilter === "ejecucion") matchStatus = (curStatus === "En Ejecución");
+    else if (activeProjectStatusFilter === "planificacion") matchStatus = (curStatus === "Planificación");
+    else if (activeProjectStatusFilter === "vencido") matchStatus = (curStatus === "Vencido");
+    else if (activeProjectStatusFilter === "finalizado") matchStatus = (curStatus === "Finalizado");
+    else if (activeProjectStatusFilter === "detenido") matchStatus = (curStatus === "Detenido");
+
+    let matchObra = true;
+    if (activeProjectObraFilter !== "todas") {
+      matchObra = (p.id === activeProjectObraFilter);
+    }
+
+    return matchStatus && matchObra;
   });
 
   container.innerHTML = `
@@ -2658,8 +2670,8 @@ function renderProjects(container) {
             <i class="fa-solid fa-lock"></i>
           </div>
           <div class="mode-banner-text">
-            <div class="mode-banner-title">Modo Consulta: Proyectos Industriales</div>
-            <div class="mode-banner-sub">Como perfil Usuario puedes explorar el estado y costos de todos los proyectos. Para crear o modificar proyectos, ingresa como Desarrollador.</div>
+            <div class="mode-banner-title">Modo Consulta</div>
+            <div class="mode-banner-sub">Visualización general de proyectos y faenas.</div>
           </div>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="switchActiveRole('Desarrollador')">
@@ -2731,6 +2743,21 @@ function renderProjects(container) {
           </span>
         </div>
         <div class="toolbar-actions-group">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <select id="filter-project-obra" class="form-control" style="font-size:12px;padding:6px 10px;height:34px;min-width:180px;max-width:240px;background:var(--bg-subtle, #ffffff);border:1px solid var(--border-color);border-radius:6px;" onchange="setProjectObraFilter(this.value)" title="Filtrar por obra específica">
+              <option value="todas" ${activeProjectObraFilter === 'todas' ? 'selected' : ''}>🏢 Todas las Obras (${projects.length})</option>
+              ${projects.map(p => `
+                <option value="${p.id}" ${activeProjectObraFilter === p.id ? 'selected' : ''}>
+                  ${p.id} - ${p.name}
+                </option>
+              `).join("")}
+            </select>
+            ${activeProjectObraFilter !== 'todas' ? `
+              <button class="btn btn-secondary btn-sm" onclick="setProjectObraFilter('todas')" title="Mostrar todas las obras" style="height:34px;padding:0 8px;font-size:11px;">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            ` : ''}
+          </div>
           <div class="search-box">
             <i class="fa-solid fa-search search-icon"></i>
             <input type="text" id="proj-search" class="search-input" placeholder="Buscar proyecto, cliente..." oninput="filterTable('proj-table', this.value)">
@@ -2935,8 +2962,8 @@ function renderExpenses(container) {
             <i class="fa-solid fa-lock"></i>
           </div>
           <div class="mode-banner-text">
-            <div class="mode-banner-title">Modo Consulta: Gastos & Adquisiciones</div>
-            <div class="mode-banner-sub">Como perfil Usuario puedes revisar compras y facturación. El registro y eliminación de gastos requiere perfil de Desarrollador.</div>
+            <div class="mode-banner-title">Modo Consulta</div>
+            <div class="mode-banner-sub">Visualización de gastos y adquisiciones.</div>
           </div>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="switchActiveRole('Desarrollador')">
@@ -3288,8 +3315,8 @@ function renderWorkers(container) {
             <i class="fa-solid fa-lock"></i>
           </div>
           <div class="mode-banner-text">
-            <div class="mode-banner-title">Modo Consulta: Control de Mano de Obra & Horas Extras</div>
-            <div class="mode-banner-sub">Como perfil Usuario puedes revisar las jornadas, dotación, horas normales y horas extras. Para agregar nuevo personal, editar perfiles o quitar colaboradores, ingresa como Desarrollador.</div>
+            <div class="mode-banner-title">Modo Consulta</div>
+            <div class="mode-banner-sub">Visualización de dotación y control horario.</div>
           </div>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="switchActiveRole('Desarrollador')">
@@ -3492,7 +3519,7 @@ function renderWorkers(container) {
                 <tr data-prj="${w.projectId || 'General'}" data-status="${w.status || 'Activo'}">
                   <td><strong>${w.rut}</strong></td>
                   <td>
-                    <div style="font-weight:700;color:#fff;">${w.name}</div>
+                    <div style="font-weight:700;color:var(--text-main);">${w.name}</div>
                     <small style="color:var(--text-muted);"><i class="fa-solid fa-phone" style="font-size:10px;"></i> ${w.phone || 'Sin tel.'}</small>
                   </td>
                   <td>
@@ -3521,7 +3548,7 @@ function renderWorkers(container) {
                     </small>
                   </td>
                   <td style="text-align:center;">
-                    <strong style="color:#fff;font-size:13px;">${regHours}</strong>
+                    <strong style="color:var(--text-main);font-size:13px;">${regHours}</strong>
                     <div style="font-size:10px;color:var(--text-muted);">hrs ord.</div>
                   </td>
                   <td style="text-align:center;">
@@ -3695,7 +3722,7 @@ function renderWorkers(container) {
               return `
                 <tr data-prj="${o.projectId}" data-wrk="${o.workerId}" data-status="${o.status}">
                   <td>
-                    <div style="font-weight:700;color:#fff;white-space:nowrap;">
+                    <div style="font-weight:700;color:var(--text-main);white-space:nowrap;">
                       <i class="fa-solid fa-calendar-day" style="color:var(--primary);font-size:11px;margin-right:4px;"></i>
                       ${o.date}
                     </div>
@@ -3779,8 +3806,8 @@ function renderTools(container) {
             <i class="fa-solid fa-lock"></i>
           </div>
           <div class="mode-banner-text">
-            <div class="mode-banner-title">Modo Consulta: Inventario de Maquinaria</div>
-            <div class="mode-banner-sub">Como perfil Usuario puedes ver la asignación y calibración de equipos. Para ingresar o dar de baja equipos, ingresa como Desarrollador.</div>
+            <div class="mode-banner-title">Modo Consulta</div>
+            <div class="mode-banner-sub">Visualización de inventario de equipos.</div>
           </div>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="switchActiveRole('Desarrollador')">
@@ -3890,8 +3917,8 @@ function renderDocuments(container) {
             <i class="fa-solid fa-lock"></i>
           </div>
           <div class="mode-banner-text">
-            <div class="mode-banner-title">Modo Consulta: Control Documental & Facturación</div>
-            <div class="mode-banner-sub">Como perfil Usuario puedes verificar vigencias, facturas/boletas asociadas a proyectos y carpetas de calidad. La carga y modificación requiere perfil Desarrollador.</div>
+            <div class="mode-banner-title">Modo Consulta</div>
+            <div class="mode-banner-sub">Visualización de documentos y facturación.</div>
           </div>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="switchActiveRole('Desarrollador')">
@@ -4105,15 +4132,14 @@ function renderUsers(container) {
     return;
   }
 
+  const displayUsers = (DB.users || []).filter(u => u && u.email !== "dev@cmindustrial.cl" && u.id !== "usr-dev-preview" && u.name !== "Marco Dev" && u.email !== "marco.dev@cmindustrial.cl");
+
   container.innerHTML = `
-    <div style="margin-bottom:16px;">
-      <p style="font-size:13px;color:var(--text-sub);">Directorio de personas que usan la plataforma. Roles disponibles: Desarrollador, Administrador y Usuario.</p>
-    </div>
     <div class="data-table-container">
       <div class="table-toolbar">
         <div class="toolbar-title-group">
           <h2 style="font-size:18px;font-weight:700;">Usuarios del Sistema</h2>
-          <span class="badge badge-orange">${DB.users.length} Registrados</span>
+          <span class="badge badge-orange">${displayUsers.length} Registrados</span>
         </div>
         <div class="toolbar-actions-group">
           <div class="search-box">
@@ -4139,13 +4165,13 @@ function renderUsers(container) {
           </tr>
         </thead>
         <tbody>
-          ${DB.users.map(u => {
+          ${displayUsers.map(u => {
             const roleBadge = u.role === "Administrador" ? "badge-orange" : u.role === "Desarrollador" ? "badge-blue" : "badge-gray";
             return `
               <tr>
                 <td>
                   <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:30px;height:30px;border-radius:50%;background:#1e293b;border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-main);flex-shrink:0;">${u.avatar || getInitials(u.name)}</div>
+                    <div style="width:32px;height:32px;border-radius:50%;background:#38bdf8;border:1px solid #0284c7;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#000000;flex-shrink:0;">${u.avatar || getInitials(u.name)}</div>
                     <strong>${u.name}</strong>
                   </div>
                 </td>
@@ -4162,7 +4188,7 @@ function renderUsers(container) {
         </tbody>
       </table>
       </div>
-      ${DB.users.length === 0 ? `
+      ${displayUsers.length === 0 ? `
         <div style="padding:32px;text-align:center;">
           <i class="fa-solid fa-users" style="font-size:32px;color:var(--text-sub);margin-bottom:12px;"></i>
           <h3 style="font-size:15px;">Aún no hay usuarios registrados</h3>
@@ -6719,27 +6745,24 @@ async function attemptLogin() {
   }
 }
 
-function quickLoginDev(devEmail = "dev@cmindustrial.cl", devName = "Marco Dev") {
+function quickLoginDev(devEmail = "marco@aiep.cl", devName = "marco") {
   const emailInput = document.getElementById("auth-email");
   const passInput = document.getElementById("auth-password");
   if (emailInput) emailInput.value = devEmail;
   if (passInput) passInput.value = "admin123";
 
-  // Crear o cargar sesión de desarrollador para avance
+  // Cargar cuenta de desarrollador oficial
   let user = (DB.users || []).find(u => u && u.email && u.email.toLowerCase() === devEmail.toLowerCase());
   if (!user) {
     user = {
-      id: "usr-dev-preview",
-      name: devName,
-      email: devEmail,
+      id: "usr-marco",
+      name: "marco",
+      email: "marco@aiep.cl",
       role: "Desarrollador",
-      avatar: getInitials(devName),
+      avatar: "MA",
       password: "admin123",
-      createdAt: new Date().toISOString().split("T")[0]
+      createdAt: "2026-09-10"
     };
-    DB.users = DB.users || [];
-    DB.users.push(user);
-    saveDB();
   } else {
     user.role = "Desarrollador";
   }
