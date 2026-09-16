@@ -346,6 +346,9 @@ function renderSidebarUserCard() {
   `;
 }
 
+// Dashboard project filter state
+let activeDashboardProjectFilter = "todos";
+
 // 1. DASHBOARD VIEW WITH 10 KPIS & 4 CHARTS
 function renderDashboard(container) {
   syncAllProjectsAutoStatus();
@@ -460,12 +463,42 @@ function renderDashboard(container) {
       </div>
     </div>
 
+    <!-- Charts Filter Toolbar -->
+    <div class="card" style="padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#ffffff;border:1px solid #bae6fd;border-radius:12px;box-shadow:0 2px 4px rgba(2,132,199,0.04);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;color:#0284c7;font-size:14px;">
+          <i class="fa-solid fa-filter"></i>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#0f172a;">Filtrar Gráficos por Proyecto</div>
+          <div style="font-size:11px;color:#64748b;">Visualiza presupuestos, avances físicos, distribución de gastos y cronograma por faena específica</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <label for="dashboard-project-select" style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">Proyecto:</label>
+        <select id="dashboard-project-select" class="form-control" style="font-size:12px;padding:6px 12px;min-width:240px;background:#f8fafc;border:1px solid #cbd5e1;font-weight:600;color:#0f172a;" onchange="onDashboardProjectFilterChange(this.value)">
+          <option value="todos" ${activeDashboardProjectFilter === 'todos' ? 'selected' : ''}>📊 Todos los Proyectos (Vista Consolidada)</option>
+          ${DB.projects.map(p => `
+            <option value="${p.id}" ${activeDashboardProjectFilter === p.id ? 'selected' : ''}>
+              ${p.id} - ${p.name}
+            </option>
+          `).join("")}
+        </select>
+        ${activeDashboardProjectFilter !== "todos" ? `
+          <button class="btn btn-secondary btn-sm" onclick="onDashboardProjectFilterChange('todos')" style="font-size:11px;padding:5px 10px;color:#0284c7;" title="Ver todos los proyectos">
+            <i class="fa-solid fa-rotate-left"></i> Restablecer
+          </button>
+        ` : ''}
+      </div>
+    </div>
+
     <!-- 4 Main Charts -->
     <div class="charts-grid">
       <!-- Chart 1: Presupuesto vs Gasto -->
       <div class="chart-box">
         <div class="chart-header">
-          <div class="chart-title"><i class="fa-solid fa-chart-column" style="color:var(--primary);"></i> Presupuesto vs Gasto por Proyecto</div>
+          <div class="chart-title"><i class="fa-solid fa-chart-column" style="color:var(--primary);"></i> Presupuesto vs Gasto ${activeDashboardProjectFilter !== 'todos' ? '(Filtrado)' : 'por Proyecto'}</div>
         </div>
         <div style="height:250px;position:relative;">
           <canvas id="chart-budget-spent"></canvas>
@@ -485,7 +518,7 @@ function renderDashboard(container) {
       <!-- Chart 3: Distribución de Gastos -->
       <div class="chart-box">
         <div class="chart-header">
-          <div class="chart-title"><i class="fa-solid fa-chart-pie" style="color:var(--warning);"></i> Gastos por Categoría</div>
+          <div class="chart-title"><i class="fa-solid fa-chart-pie" style="color:var(--warning);"></i> Gastos por Categoría ${activeDashboardProjectFilter !== 'todos' ? '(Filtrado)' : ''}</div>
         </div>
         <div style="height:250px;position:relative;">
           <canvas id="chart-categories"></canvas>
@@ -587,24 +620,49 @@ function renderDashboard(container) {
   mountDashboardCharts();
 }
 
+function onDashboardProjectFilterChange(projectId) {
+  activeDashboardProjectFilter = projectId || "todos";
+  const container = document.getElementById("view-root");
+  if (container && currentView === "dashboard") {
+    renderDashboard(container);
+  }
+}
+window.onDashboardProjectFilterChange = onDashboardProjectFilterChange;
+
 function mountDashboardCharts() {
+  // Destruir instancias previas para evitar superposiciones o fugas de memoria
+  if (chartInstances.budget) { chartInstances.budget.destroy(); chartInstances.budget = null; }
+  if (chartInstances.progress) { chartInstances.progress.destroy(); chartInstances.progress = null; }
+  if (chartInstances.categories) { chartInstances.categories.destroy(); chartInstances.categories = null; }
+  if (chartInstances.timeline) { chartInstances.timeline.destroy(); chartInstances.timeline = null; }
+
+  // Filtrar dataset de proyectos y gastos según selección
+  const isFiltered = activeDashboardProjectFilter && activeDashboardProjectFilter !== "todos";
+  const projectsData = isFiltered 
+    ? DB.projects.filter(p => p.id === activeDashboardProjectFilter)
+    : DB.projects;
+
+  const expensesData = isFiltered
+    ? DB.expenses.filter(e => e.projectId === activeDashboardProjectFilter)
+    : DB.expenses;
+
   // Chart 1: Presupuesto vs Gasto
   const ctx1 = document.getElementById("chart-budget-spent");
   if (ctx1 && typeof Chart !== "undefined") {
     chartInstances.budget = new Chart(ctx1, {
       type: "bar",
       data: {
-        labels: DB.projects.map(p => p.id),
+        labels: projectsData.map(p => (isFiltered ? p.name : p.id)),
         datasets: [
           {
             label: "Presupuesto ($)",
-            data: DB.projects.map(p => p.budget),
+            data: projectsData.map(p => p.budget),
             backgroundColor: "#0284c7",
             borderRadius: 6
           },
           {
             label: "Gasto ($)",
-            data: DB.projects.map(p => p.spent),
+            data: projectsData.map(p => p.spent),
             backgroundColor: "#38bdf8",
             borderRadius: 6
           }
@@ -643,17 +701,17 @@ function mountDashboardCharts() {
     chartInstances.progress = new Chart(ctx2, {
       type: "bar",
       data: {
-        labels: DB.projects.map(p => p.id),
+        labels: projectsData.map(p => (isFiltered ? p.name : p.id)),
         datasets: [
           {
             label: "Planificado (%)",
-            data: DB.projects.map(p => p.plannedProgress),
+            data: projectsData.map(p => p.plannedProgress),
             backgroundColor: "#cbd5e1",
             borderRadius: 6
           },
           {
             label: "Real (%)",
-            data: DB.projects.map(p => p.realProgress),
+            data: projectsData.map(p => p.realProgress),
             backgroundColor: "#10b981",
             borderRadius: 6
           }
@@ -677,18 +735,24 @@ function mountDashboardCharts() {
   const ctx3 = document.getElementById("chart-categories");
   if (ctx3 && typeof Chart !== "undefined") {
     const catMap = {};
-    DB.expenses.forEach(e => {
-      catMap[e.category] = (catMap[e.category] || 0) + e.amount;
+    expensesData.forEach(e => {
+      catMap[e.category] = (catMap[e.category] || 0) + (Number(e.amount) || 0);
     });
+
+    const hasCategories = Object.keys(catMap).length > 0;
+    const catLabels = hasCategories ? Object.keys(catMap) : ["Sin gastos registrados"];
+    const catValues = hasCategories ? Object.values(catMap) : [0];
 
     chartInstances.categories = new Chart(ctx3, {
       type: "doughnut",
       data: {
-        labels: Object.keys(catMap),
+        labels: catLabels,
         datasets: [
           {
-            data: Object.values(catMap),
-            backgroundColor: ["#0284c7", "#0ea5e9", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"],
+            data: catValues,
+            backgroundColor: hasCategories 
+              ? ["#0284c7", "#0ea5e9", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#64748b"] 
+              : ["#e2e8f0"],
             borderWidth: 2,
             borderColor: "#ffffff"
           }
@@ -716,7 +780,7 @@ function mountDashboardCharts() {
   if (ctx4 && typeof Chart !== "undefined") {
     const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
     const monthlyTotals = {};
-    DB.expenses.forEach(e => {
+    expensesData.forEach(e => {
       if (!e.date) return;
       const key = e.date.slice(0, 7); // "YYYY-MM"
       monthlyTotals[key] = (monthlyTotals[key] || 0) + (Number(e.amount) || 0);
@@ -729,14 +793,16 @@ function mountDashboardCharts() {
       return `${monthNames[Number(mm) - 1]} ${y}`;
     });
 
+    const hasTimeline = timelineLabels.length > 0;
+
     chartInstances.timeline = new Chart(ctx4, {
       type: "line",
       data: {
-        labels: timelineLabels,
+        labels: hasTimeline ? timelineLabels : ["Sin historial"],
         datasets: [
           {
-            label: "Gasto Acumulado ($)",
-            data: timelineData,
+            label: isFiltered ? "Gasto Acumulado en Proyecto ($)" : "Gasto Acumulado Total ($)",
+            data: hasTimeline ? timelineData : [0],
             borderColor: "#10b981",
             backgroundColor: "rgba(16, 185, 129, 0.12)",
             fill: true,
