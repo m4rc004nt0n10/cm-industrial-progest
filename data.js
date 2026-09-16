@@ -50,12 +50,387 @@ function defaultSeedData() {
         createdAt: "2026-09-10"
       }
     ],
-    projects: [],
-    expenses: [],
-    workers: [],
-    overtime: [],
-    tools: [],
-    documents: [],
+    projects: [
+      {
+        id: "PRJ-001",
+        name: "Montaje Electromecánico Subestación Ventanas",
+        client: "Minera Andina SpA",
+        location: "Quintero, V Región",
+        manager: "Ing. Rodrigo Silva",
+        budget: 450000000,
+        spent: 310000000,
+        plannedProgress: 75,
+        realProgress: 72,
+        startDate: "2026-01-15",
+        endDate: "2026-11-30",
+        status: "En Ejecución"
+      },
+      {
+        id: "PRJ-002",
+        name: "Mantenimiento Integral Planta Chancado",
+        client: "Codelco División Norte",
+        location: "Calama, II Región",
+        manager: "Ing. Marcela Pardo",
+        budget: 280000000,
+        spent: 245000000,
+        plannedProgress: 60,
+        realProgress: 42,
+        startDate: "2026-02-01",
+        endDate: "2026-10-15",
+        status: "En Ejecución"
+      },
+      {
+        id: "PRJ-003",
+        name: "Sistema de Impulsión de Agua Concentradora",
+        client: "Antofagasta Minerals",
+        location: "Sierra Gorda",
+        manager: "Ing. Cristian Morales",
+        budget: 620000000,
+        spent: 180000000,
+        plannedProgress: 35,
+        realProgress: 36,
+        startDate: "2026-04-01",
+        endDate: "2026-12-20",
+        status: "En Ejecución"
+      },
+      {
+        id: "PRJ-004",
+        name: "Fabricación & Montaje Secadora de Nueces",
+        client: "Agrícola Val Valle",
+        location: "San Felipe, V Región",
+        manager: "Ing. Marco Antonio",
+        budget: 114151934,
+        spent: 42300000,
+        plannedProgress: 40,
+        realProgress: 38,
+        startDate: "2026-05-10",
+        endDate: "2026-10-30",
+        status: "En Ejecución"
+      },
+      {
+        id: "PRJ-005",
+        name: "Instalación de Alimentador Llenado de Silos",
+        client: "Molino Industrial SpA",
+        location: "Rancagua, VI Región",
+        manager: "Ing. Rodrigo Silva",
+        budget: 96772833,
+        spent: 102500000,
+        plannedProgress: 80,
+        realProgress: 75,
+        startDate: "2026-03-01",
+        endDate: "2026-09-25",
+        status: "En Ejecución"
+      }
+    ],
+    expenses: [
+      {
+        id: "EXP-101",
+        folio: "F-4582",
+        projectId: "PRJ-001",
+        category: "Materiales",
+        amount: 85000000,
+        supplier: "Aceros Industriales del Pacífico",
+        date: "2026-05-12",
+        status: "Aprobado",
+        note: "Vigas estructurales y pernos de alta resistencia"
+      },
+      {
+        id: "EXP-102",
+        folio: "F-4599",
+        projectId: "PRJ-002",
+        category: "Servicios",
+        amount: 42000000,
+        supplier: "Grúas & Montajes del Norte",
+        date: "2026-06-05",
+        status: "Aprobado",
+        note: "Arriendo grúa telescópica 70T para tolva"
+      },
+      {
+        id: "EXP-103",
+        folio: "F-4610",
+        projectId: "PRJ-003",
+        category: "Equipamiento",
+        amount: 54000000,
+        supplier: "Bombas y Tuberías Mineras S.A.",
+        date: "2026-06-20",
+        status: "Aprobado",
+        note: "Válvulas de retención y acoples victaulic"
+      },
+      {
+        id: "EXP-104",
+        folio: "F-4635",
+        projectId: "PRJ-004",
+        category: "Materiales",
+        amount: 29205000,
+        supplier: "Maestranza & Aceros Plegados Chile",
+        date: "2026-07-15",
+        status: "Aprobado",
+        note: "Planchas de acero plegado 3mm para tolva y ductos"
+      },
+      {
+        id: "EXP-105",
+        folio: "F-4652",
+        projectId: "PRJ-005",
+        category: "Equipamiento",
+        amount: 35000000,
+        supplier: "Motores & Reductores del Valle",
+        date: "2026-08-01",
+        status: "Aprobado",
+        note: "Motorreductores y correas de transmisión reforzadas"
+      },
+      {
+        id: "EXP-106",
+        folio: "F-4670",
+        projectId: "PRJ-001",
+        category: "Mano de Obra",
+        amount: 38500000,
+        supplier: "Nómina Especialistas Soldadura",
+        date: "2026-08-20",
+        status: "Aprobado",
+        note: "Turnos soldadores calificados 6G montaje subestación"
+      },
+      {
+        id: "EXP-107",
+        folio: "F-4688",
+        projectId: "PRJ-002",
+        category: "Transporte",
+        amount: 14200000,
+        supplier: "Transportes Faena Norte SpA",
+        date: "2026-09-02",
+        status: "Aprobado",
+        note: "Fletes de carga sobredimensionada y escolta vial"
+      }
+    ],
+    workers: [
+      {
+        id: "WRK-001",
+        rut: "15.420.890-K",
+        name: "Carlos Morales",
+        role: "Soldador Calificado 6G",
+        projectId: "PRJ-001",
+        phone: "+56 9 8451 2291",
+        email: "carlos.morales@cmindustrial.cl",
+        certifications: "ASME IX, Oxicorte, Altura",
+        medExamExpiry: "2026-12-30",
+        workSchedule: "40 hrs/semana (Turno 5x2)",
+        hourlyRate: 14500,
+        hoursWorked: 160,
+        overtimeHours: 21.5,
+        status: "Activo en Obra"
+      },
+      {
+        id: "WRK-002",
+        rut: "16.890.123-4",
+        name: "Matías Alarcón",
+        role: "Técnico Electricista SEC",
+        projectId: "PRJ-001",
+        phone: "+56 9 7312 9044",
+        email: "matias.alarcon@cmindustrial.cl",
+        certifications: "Licencia Clase A SEC, Espacios Confinados",
+        medExamExpiry: "2026-10-15",
+        workSchedule: "Turno 7x7 (Faena Minera 12 hrs/día)",
+        hourlyRate: 13000,
+        hoursWorked: 168,
+        overtimeHours: 15.0,
+        status: "Activo en Obra"
+      },
+      {
+        id: "WRK-003",
+        rut: "14.230.981-2",
+        name: "Hernán Sepúlveda",
+        role: "Rigger / Maniobrista",
+        projectId: "PRJ-002",
+        phone: "+56 9 6621 0032",
+        email: "hernan.sepulveda@cmindustrial.cl",
+        certifications: "Rigger Alta Tensión Certificado",
+        medExamExpiry: "2026-08-01",
+        workSchedule: "40 hrs/semana (Turno 5x2)",
+        hourlyRate: 11500,
+        hoursWorked: 152,
+        overtimeHours: 12.5,
+        status: "Disponible (En Base)"
+      },
+      {
+        id: "WRK-004",
+        rut: "17.654.321-8",
+        name: "Rodrigo Fuentes",
+        role: "Mecánico Montajista",
+        projectId: "PRJ-003",
+        phone: "+56 9 5543 8812",
+        email: "rodrigo.fuentes@cmindustrial.cl",
+        certifications: "Torque Controlado, Trabajo en Caliente",
+        medExamExpiry: "2026-11-20",
+        workSchedule: "Turno 4x3 (Jornada 10 hrs/día)",
+        hourlyRate: 12000,
+        hoursWorked: 160,
+        overtimeHours: 18.0,
+        status: "Activo en Obra"
+      },
+      {
+        id: "WRK-005",
+        rut: "18.321.456-9",
+        name: "Jorge Valenzuela",
+        role: "Operario Armador Estructural",
+        projectId: "PRJ-004",
+        phone: "+56 9 4432 1198",
+        email: "jorge.valenzuela@cmindustrial.cl",
+        certifications: "Plegado de Acero, Esmeril Angular",
+        medExamExpiry: "2026-12-15",
+        workSchedule: "40 hrs/semana (Turno 5x2)",
+        hourlyRate: 11000,
+        hoursWorked: 160,
+        overtimeHours: 8.0,
+        status: "Activo en Obra"
+      }
+    ],
+    overtime: [
+      {
+        id: "OVT-101",
+        workerId: "WRK-001",
+        projectId: "PRJ-001",
+        date: "2026-08-28",
+        workSchedule: "40 hrs/semana (Turno 5x2)",
+        regularHours: 8,
+        overtimeHours: 3.5,
+        hourlyRate: 14500,
+        overtimeRate: 21750,
+        overtimeTotal: 76125,
+        totalDayPay: 192125,
+        reason: "Soldadura urgente de tubería de relave fuera de turno",
+        supervisor: "Ing. Residente",
+        status: "Aprobado"
+      },
+      {
+        id: "OVT-102",
+        workerId: "WRK-001",
+        projectId: "PRJ-001",
+        date: "2026-09-02",
+        workSchedule: "40 hrs/semana (Turno 5x2)",
+        regularHours: 8,
+        overtimeHours: 4.0,
+        hourlyRate: 14500,
+        overtimeRate: 21750,
+        overtimeTotal: 87000,
+        totalDayPay: 203000,
+        reason: "Prueba hidrostática y pase de raíz en spool principal",
+        supervisor: "Ing. Residente",
+        status: "Aprobado"
+      },
+      {
+        id: "OVT-103",
+        workerId: "WRK-004",
+        projectId: "PRJ-003",
+        date: "2026-09-08",
+        workSchedule: "Turno 4x3 (Jornada 10 hrs/día)",
+        regularHours: 10,
+        overtimeHours: 3.0,
+        hourlyRate: 12000,
+        overtimeRate: 18000,
+        overtimeTotal: 54000,
+        totalDayPay: 174000,
+        reason: "Alineación láser de bomba centrífuga de impulsión",
+        supervisor: "Ing. Cristian Morales",
+        status: "Aprobado"
+      }
+    ],
+    tools: [
+      {
+        id: "TLS-001",
+        code: "GEN-01",
+        name: "Generador Diésel Insonorizado 150 kVA",
+        brand: "Cummins Power",
+        serialNumber: "CP-88421",
+        projectId: "PRJ-001",
+        responsible: "Carlos Morales",
+        nextMaintenance: "2026-09-30",
+        lastMaintenance: "2026-06-01",
+        status: "En Faena",
+        photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="25" y="35" width="190" height="110" rx="8" fill="%231e293b" stroke="%23f97316" stroke-width="2"/><rect x="35" y="45" width="80" height="90" rx="4" fill="%23334155"/><line x1="45" y1="55" x2="105" y2="55" stroke="%2394a3b8" stroke-width="3"/><line x1="45" y1="65" x2="105" y2="65" stroke="%2394a3b8" stroke-width="3"/><line x1="45" y1="75" x2="105" y2="75" stroke="%2394a3b8" stroke-width="3"/><line x1="45" y1="85" x2="105" y2="85" stroke="%2394a3b8" stroke-width="3"/><rect x="130" y="45" width="75" height="50" rx="4" fill="%230f172a" stroke="%2338bdf8" stroke-width="1.5"/><circle cx="150" cy="70" r="10" fill="%2322c55e"/><circle cx="180" cy="70" r="10" fill="%23ef4444"/><rect x="130" y="105" width="75" height="30" rx="3" fill="%23334155"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%23f97316" font-weight="bold" text-anchor="middle">GEN-01: Cummins 150 kVA</text></svg>'
+      },
+      {
+        id: "TLS-002",
+        code: "SOL-04",
+        name: "Máquina Soldadora Multiproceso MIG/TIG 400A",
+        brand: "Miller Electric",
+        serialNumber: "ML-54910",
+        projectId: "PRJ-001",
+        responsible: "Carlos Morales",
+        nextMaintenance: "2026-11-15",
+        lastMaintenance: "2026-07-10",
+        status: "En Faena",
+        photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="40" y="40" width="160" height="100" rx="6" fill="%231e293b" stroke="%2338bdf8" stroke-width="2"/><circle cx="85" cy="90" r="22" fill="%230f172a" stroke="%23f97316" stroke-width="2"/><circle cx="155" cy="90" r="18" fill="%230f172a"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%2338bdf8" font-weight="bold" text-anchor="middle">SOL-04: Miller MIG/TIG 400A</text></svg>'
+      },
+      {
+        id: "TLS-003",
+        code: "ALN-02",
+        name: "Alineador Láser de Ejes y Poleas",
+        brand: "Easy-Laser XT440",
+        serialNumber: "EL-33290",
+        projectId: "PRJ-003",
+        responsible: "Rodrigo Fuentes",
+        nextMaintenance: "2026-10-05",
+        lastMaintenance: "2026-04-12",
+        status: "En Faena",
+        photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="50" y="45" width="140" height="90" rx="8" fill="%231e293b" stroke="%2310b981" stroke-width="2"/><line x1="60" y1="90" x2="180" y2="90" stroke="%23ef4444" stroke-dasharray="4" stroke-width="2"/><circle cx="120" cy="90" r="12" fill="%2310b981" opacity="0.3"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%2310b981" font-weight="bold" text-anchor="middle">ALN-02: Easy-Laser XT440</text></svg>'
+      },
+      {
+        id: "TLS-004",
+        code: "CMP-01",
+        name: "Compresor de Aire Portátil 185 CFM",
+        brand: "Atlas Copco",
+        serialNumber: "AC-99214",
+        projectId: "PRJ-002",
+        responsible: "Hernán Sepúlveda",
+        nextMaintenance: "2026-09-15",
+        lastMaintenance: "2026-05-20",
+        status: "En Mantenimiento",
+        photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="35" y="45" width="170" height="90" rx="6" fill="%231e293b" stroke="%23f59e0b" stroke-width="2"/><circle cx="75" cy="135" r="14" fill="%23475569"/><circle cx="165" cy="135" r="14" fill="%23475569"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%23f59e0b" font-weight="bold" text-anchor="middle">CMP-01: Atlas Copco 185 CFM</text></svg>'
+      }
+    ],
+    documents: [
+      {
+        id: "DOC-001",
+        code: "PTS-MEC-01",
+        name: "Procedimiento de Trabajo Seguro - Montaje Estructuras",
+        type: "Seguridad / Prevención",
+        projectId: "PRJ-001",
+        date: "2026-06-10",
+        expiryDate: "2026-12-31",
+        status: "Vigente",
+        amount: 0,
+        supplier: "Depto. HSE & Prevención",
+        fileName: "PTS-MEC-01_Seguridad.pdf",
+        fileType: "pdf"
+      },
+      {
+        id: "DOC-002",
+        code: "CRT-SLD-6G",
+        name: "Calificación de Procedimiento y Soldador ASME IX 6G",
+        type: "Calidad / Certificación",
+        projectId: "PRJ-001",
+        date: "2026-01-20",
+        expiryDate: "2026-12-30",
+        status: "Vigente",
+        amount: 0,
+        supplier: "CESMEC / Bureau Veritas",
+        fileName: "Certificado_ASME_IX_CarlosMorales.pdf",
+        fileType: "pdf"
+      },
+      {
+        id: "DOC-003",
+        code: "POL-SEG-MIN",
+        name: "Póliza de Responsabilidad Civil & Todo Riesgo Faena",
+        type: "Legal / Seguros",
+        projectId: "PRJ-002",
+        date: "2026-02-01",
+        expiryDate: "2026-09-20",
+        status: "Por Vencer",
+        amount: 4500000,
+        supplier: "Seguros Generales BCI",
+        fileName: "Poliza_RC_CodelcoNorte.pdf",
+        fileType: "pdf"
+      }
+    ],
     quotations: [
       {
         id: "COT-001",
@@ -534,13 +909,14 @@ function initCloudSync(force = false) {
           if (Array.isArray(remoteData.users) && remoteData.users.length > 0) {
             DB.users = remoteData.users;
           }
-          DB.projects = Array.isArray(remoteData.projects) ? remoteData.projects : [];
-          DB.expenses = Array.isArray(remoteData.expenses) ? remoteData.expenses : [];
-          DB.workers = Array.isArray(remoteData.workers) ? remoteData.workers : [];
-          DB.overtime = Array.isArray(remoteData.overtime) ? remoteData.overtime : [];
-          DB.tools = Array.isArray(remoteData.tools) ? remoteData.tools : [];
-          DB.documents = Array.isArray(remoteData.documents) ? remoteData.documents : [];
-          DB.quotations = Array.isArray(remoteData.quotations) ? remoteData.quotations : (DB.quotations || defaultSeedData().quotations || []);
+          const seed = defaultSeedData();
+          DB.projects = Array.isArray(remoteData.projects) && remoteData.projects.length > 0 ? remoteData.projects : (DB.projects && DB.projects.length > 0 ? DB.projects : seed.projects);
+          DB.expenses = Array.isArray(remoteData.expenses) && remoteData.expenses.length > 0 ? remoteData.expenses : (DB.expenses && DB.expenses.length > 0 ? DB.expenses : seed.expenses);
+          DB.workers = Array.isArray(remoteData.workers) && remoteData.workers.length > 0 ? remoteData.workers : (DB.workers && DB.workers.length > 0 ? DB.workers : seed.workers);
+          DB.overtime = Array.isArray(remoteData.overtime) && remoteData.overtime.length > 0 ? remoteData.overtime : (DB.overtime && DB.overtime.length > 0 ? DB.overtime : seed.overtime);
+          DB.tools = Array.isArray(remoteData.tools) && remoteData.tools.length > 0 ? remoteData.tools : (DB.tools && DB.tools.length > 0 ? DB.tools : seed.tools);
+          DB.documents = Array.isArray(remoteData.documents) && remoteData.documents.length > 0 ? remoteData.documents : (DB.documents && DB.documents.length > 0 ? DB.documents : seed.documents);
+          DB.quotations = Array.isArray(remoteData.quotations) && remoteData.quotations.length > 0 ? remoteData.quotations : (DB.quotations && DB.quotations.length > 0 ? DB.quotations : seed.quotations);
           
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
@@ -611,13 +987,30 @@ function loadDB() {
       if (!DB.settings) {
         DB.settings = defaultSeedData().settings;
       }
-      DB.projects = DB.projects || [];
-      DB.expenses = DB.expenses || [];
-      DB.workers = DB.workers || [];
-      DB.tools = DB.tools || [];
-      DB.documents = DB.documents || [];
-      DB.overtime = DB.overtime || [];
-      DB.quotations = DB.quotations || defaultSeedData().quotations || [];
+      
+      const seed = defaultSeedData();
+      if (!DB.projects || DB.projects.length === 0) {
+        DB.projects = seed.projects;
+      }
+      if (!DB.expenses || DB.expenses.length === 0) {
+        DB.expenses = seed.expenses;
+      }
+      if (!DB.workers || DB.workers.length === 0) {
+        DB.workers = seed.workers;
+      }
+      if (!DB.tools || DB.tools.length === 0) {
+        DB.tools = seed.tools;
+      }
+      if (!DB.documents || DB.documents.length === 0) {
+        DB.documents = seed.documents;
+      }
+      if (!DB.overtime || DB.overtime.length === 0) {
+        DB.overtime = seed.overtime;
+      }
+      if (!DB.quotations || DB.quotations.length === 0) {
+        DB.quotations = seed.quotations;
+      }
+      saveDB();
     } else {
       DB = defaultSeedData();
       saveDB();
@@ -653,6 +1046,32 @@ function loadDemoData() {
   saveDB();
 }
 
+// Automatic Progress Calculation based on elapsed project timeline
+function calculateAutoProjectProgress(project) {
+  if (!project) return 0;
+  if (project.status === "Finalizado") return 100;
+  if (!project.startDate || !project.endDate) return 0;
+
+  const start = new Date(project.startDate + "T00:00:00");
+  const end = new Date(project.endDate + "T23:59:59");
+  const now = new Date();
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+
+  // Before start date
+  if (now < start) return 0;
+
+  // After or on end date
+  if (now >= end) return 100;
+
+  const totalDuration = end.getTime() - start.getTime();
+  if (totalDuration <= 0) return 100;
+
+  const elapsed = now.getTime() - start.getTime();
+  const rawPct = (elapsed / totalDuration) * 100;
+  return Math.min(100, Math.max(0, Math.round(rawPct * 10) / 10));
+}
+
 // Automatic Project Status Calculation Engine
 function calculateAutoProjectStatus(project) {
   if (!project) return "Planificación";
@@ -662,24 +1081,24 @@ function calculateAutoProjectStatus(project) {
     return "Detenido";
   }
 
-  const realProgress = Number(project.realProgress) || 0;
-  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const start = project.startDate ? new Date(project.startDate + "T00:00:00") : new Date("2026-01-01T00:00:00");
+  const end = project.endDate ? new Date(project.endDate + "T23:59:59") : new Date("2026-12-31T23:59:59");
+
   // 1. Completion rule
-  if (realProgress >= 100) {
+  if (project.status === "Finalizado" || (Number(project.realProgress) >= 100 && today >= end)) {
     return "Finalizado";
   }
 
-  const todayStr = new Date().toISOString().split("T")[0];
-  const startStr = project.startDate || "2026-01-01";
-  const endStr = project.endDate || "2026-12-31";
-
   // 2. Overdue rule
-  if (todayStr > endStr && realProgress < 100) {
+  if (today > end) {
     return "Vencido";
   }
 
   // 3. Not started yet rule
-  if (todayStr < startStr && realProgress === 0) {
+  if (today < start) {
     return "Planificación";
   }
 
@@ -691,7 +1110,6 @@ function calculateAutoProjectStatus(project) {
 function getProjectStatusDetails(project) {
   const status = project.status || calculateAutoProjectStatus(project);
   const realProgress = Number(project.realProgress) || 0;
-  const todayStr = new Date().toISOString().split("T")[0];
   const startStr = project.startDate || "2026-01-01";
   const endStr = project.endDate || "2026-12-31";
 
@@ -735,7 +1153,7 @@ function getProjectStatusDetails(project) {
         badgeClass: "badge-orange",
         icon: "fa-person-digging",
         color: "#f97316",
-        description: `Obra en progreso activo (${realProgress}% de avance real)`
+        description: `Obra en progreso activo (${realProgress}% de avance automático por fecha)`
       };
   }
 }
@@ -744,7 +1162,15 @@ function syncAllProjectsAutoStatus() {
   if (!DB || !Array.isArray(DB.projects)) return;
   let changed = false;
   DB.projects.forEach(p => {
-    // If not manually locked as paused, compute auto status
+    // 1. Calculate automatic progress based on calendar dates
+    const autoProgress = calculateAutoProjectProgress(p);
+    if (p.realProgress !== autoProgress) {
+      p.realProgress = autoProgress;
+      p.plannedProgress = autoProgress;
+      changed = true;
+    }
+
+    // 2. If not manually locked as paused, compute auto status
     if (!p.manualStatusOverride || p.status !== "Detenido") {
       const autoStatus = calculateAutoProjectStatus(p);
       if (p.status !== autoStatus) {
@@ -759,41 +1185,80 @@ function syncAllProjectsAutoStatus() {
 }
 
 // Smart traffic light calculation for projects
+// Verde: lejos de la fecha de entrega
+// Ámbar: tiempo moderado restante
+// Rojo: etapa crítica (pocos días / plazo vencido) O cuando nos pasamos del presupuesto
 function getProjectHealth(project, settings) {
-  const cfg = (settings && settings.trafficLight) || {
-    alertGapPercent: 10,
-    criticalGapPercent: 20,
-    budgetWarningPercent: 85
-  };
-
-  const gap = (project.plannedProgress || 0) - (project.realProgress || 0);
   const budgetRatio = project.budget > 0 ? (project.spent / project.budget) * 100 : 0;
   
   const today = new Date();
-  const end = new Date(project.endDate);
+  today.setHours(0, 0, 0, 0);
+
+  const start = project.startDate ? new Date(project.startDate + "T00:00:00") : new Date("2026-01-01T00:00:00");
+  const end = project.endDate ? new Date(project.endDate + "T23:59:59") : new Date("2026-12-31T23:59:59");
+  
   const diffDays = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+  const totalDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+  const daysRemainingRatio = (diffDays / totalDays) * 100;
 
-  if (project.status === "Finalizado" || project.realProgress >= 100) {
-    return { color: "green", text: "Finalizado (100%)", gap, diffDays, code: "OK" };
+  // 1. REGLA ROJA ESTRICTA DE SOBREGIRO DE PRESUPUESTO
+  if (project.budget > 0 && project.spent > project.budget) {
+    const overSpent = project.spent - project.budget;
+    return {
+      color: "red",
+      text: `Presupuesto Excedido (+$ ${formatNumberCL(overSpent)})`,
+      diffDays,
+      budgetRatio,
+      code: "SOBREPRESUPUESTO"
+    };
   }
 
-  // Critical conditions
-  if (gap > cfg.criticalGapPercent || budgetRatio > 100 || (diffDays < 0 && project.realProgress < 100)) {
-    let reason = "Atraso crítico";
-    if (budgetRatio > 100) reason = "Sobregiro presupuestario";
-    if (diffDays < 0) reason = "Plazo vencido";
-    return { color: "red", text: reason, gap, diffDays, code: "CRITICO" };
+  // 2. Si el proyecto está finalizado y dentro de presupuesto
+  if (project.status === "Finalizado" || (project.realProgress >= 100 && diffDays >= 0)) {
+    return { color: "green", text: "Finalizado en Plazo", diffDays, budgetRatio, code: "OK" };
   }
 
-  // Alert conditions
-  if (gap > cfg.alertGapPercent || budgetRatio > cfg.budgetWarningPercent || (diffDays <= 15 && project.realProgress < 85)) {
-    let reason = "Desfase moderado";
-    if (budgetRatio > cfg.budgetWarningPercent) reason = "Presupuesto en límite";
-    if (diffDays <= 15) reason = "Próximo a plazo";
-    return { color: "yellow", text: reason, gap, diffDays, code: "ALERTA" };
+  // 3. REGLA ROJA POR ETAPA CRÍTICA / PLAZO VENCIDO
+  // Plazo vencido (días < 0) o cuando queda menos de 7 días / menos del 15% del plazo
+  if (diffDays <= 0) {
+    return {
+      color: "red",
+      text: "Plazo Vencido",
+      diffDays,
+      budgetRatio,
+      code: "CRITICO_VENCIDO"
+    };
+  }
+  if (diffDays <= 7 || daysRemainingRatio <= 15) {
+    return {
+      color: "red",
+      text: `Etapa Crítica (${diffDays} días restantes)`,
+      diffDays,
+      budgetRatio,
+      code: "CRITICO_TIEMPO"
+    };
   }
 
-  return { color: "green", text: "En Plazo y Costo", gap, diffDays, code: "NORMAL" };
+  // 4. REGLA ÁMBAR / AMARILLO POR TIEMPO MODERADO RESTANTE
+  // Quedan entre 8 y 25 días (o entre 15% y 40% del tiempo total del proyecto)
+  if (diffDays <= 25 || daysRemainingRatio <= 40) {
+    return {
+      color: "yellow",
+      text: `Plazo Moderado (${diffDays} días)`,
+      diffDays,
+      budgetRatio,
+      code: "ALERTA_MODERADO"
+    };
+  }
+
+  // 5. REGLA VERDE: LEJOS DE LA FECHA DE ENTREGA
+  return {
+    color: "green",
+    text: `Holgura de Plazo (${diffDays} días)`,
+    diffDays,
+    budgetRatio,
+    code: "HOLGURA_VERDE"
+  };
 }
 
 // Session state management

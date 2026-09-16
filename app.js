@@ -312,12 +312,12 @@ function renderSidebarUserCard() {
   if (!user) {
     card.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="quickLoginRole('Desarrollador')">
-        <div style="width:34px;height:34px;border-radius:50%;background:#1e293b;border:1px dashed var(--border-subtle);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text-sub);">
+        <div style="width:34px;height:34px;border-radius:50%;background:#e0f2fe;border:1px dashed #bae6fd;display:flex;align-items:center;justify-content:center;font-size:13px;color:#0284c7;">
           <i class="fa-solid fa-user-plus"></i>
         </div>
         <div>
-          <div style="font-size:12px;font-weight:700;color:#fff;">Sin sesión</div>
-          <div style="font-size:10px;color:var(--primary);">Ingresar</div>
+          <div style="font-size:12px;font-weight:700;color:#0f172a;">Sin sesión</div>
+          <div style="font-size:10px;color:#0284c7;">Ingresar</div>
         </div>
       </div>
     `;
@@ -332,12 +332,12 @@ function renderSidebarUserCard() {
 
   card.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-      <div style="width:34px;height:34px;border-radius:50%;background:#1e293b;border:1px solid ${userIsDev ? 'var(--blue-accent)' : 'var(--warning)'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${userIsDev ? 'var(--blue-accent)' : 'var(--warning)'};flex-shrink:0;">
+      <div style="width:34px;height:34px;border-radius:50%;background:#e0f2fe;border:1px solid ${userIsDev ? '#0284c7' : '#f59e0b'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${userIsDev ? '#0284c7' : '#d97706'};flex-shrink:0;">
         ${user.avatar || getInitials(user.name)}
       </div>
       <div style="min-width:0;">
-        <div style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${user.name}</div>
-        <div style="font-size:10px;color:var(--text-sub);"><span class="badge ${roleBadge}" style="padding:2px 5px;font-size:8px;"><i class="fa-solid ${roleIcon}"></i> ${roleText}</span></div>
+        <div style="font-size:12px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${user.name}</div>
+        <div style="font-size:10px;color:#64748b;"><span class="badge ${roleBadge}" style="padding:2px 6px;font-size:8.5px;"><i class="fa-solid ${roleIcon}"></i> ${roleText}</span></div>
       </div>
     </div>
     <button class="btn btn-secondary btn-sm" onclick="handleLogout()" title="Cerrar sesión" style="padding:6px 9px;flex-shrink:0;">
@@ -372,7 +372,7 @@ function renderDashboard(container) {
     else normalCount++;
   });
 
-  const activeWorkers = DB.workers.filter(w => w.status === "Activo").length;
+  const activeWorkers = DB.workers.filter(w => !w.status || w.status.includes("Activo") || w.status.includes("Faena")).length;
   const toolsInUse = DB.tools.filter(t => t.status === "En Faena").length;
   const toolsMaintenance = DB.tools.filter(t => t.status === "En Mantenimiento").length;
   const docsExpired = DB.documents.filter(d => d.status === "Vencido" || d.status === "Por Vencer").length;
@@ -599,14 +599,14 @@ function mountDashboardCharts() {
           {
             label: "Presupuesto ($)",
             data: DB.projects.map(p => p.budget),
-            backgroundColor: "#f97316",
-            borderRadius: 4
+            backgroundColor: "#0284c7",
+            borderRadius: 6
           },
           {
             label: "Gasto ($)",
             data: DB.projects.map(p => p.spent),
             backgroundColor: "#38bdf8",
-            borderRadius: 4
+            borderRadius: 6
           }
         ]
       },
@@ -614,7 +614,7 @@ function mountDashboardCharts() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { labels: { color: "#9ca3af", font: { size: 11 } } },
+          legend: { labels: { color: "#475569", font: { size: 11, weight: "600" } } },
           tooltip: {
             callbacks: {
               label: function(context) {
@@ -624,13 +624,13 @@ function mountDashboardCharts() {
           }
         },
         scales: {
-          x: { ticks: { color: "#9ca3af" }, grid: { color: "#1f293d" } },
+          x: { ticks: { color: "#64748b" }, grid: { color: "#e0f2fe" } },
           y: {
             ticks: {
-              color: "#9ca3af",
+              color: "#64748b",
               callback: function(val) { return "$" + formatNumberCL(val); }
             },
-            grid: { color: "#1f293d" }
+            grid: { color: "#e0f2fe" }
           }
         }
       }
@@ -648,14 +648,14 @@ function mountDashboardCharts() {
           {
             label: "Planificado (%)",
             data: DB.projects.map(p => p.plannedProgress),
-            backgroundColor: "rgba(156, 163, 175, 0.4)",
-            borderRadius: 4
+            backgroundColor: "#cbd5e1",
+            borderRadius: 6
           },
           {
             label: "Real (%)",
             data: DB.projects.map(p => p.realProgress),
             backgroundColor: "#10b981",
-            borderRadius: 4
+            borderRadius: 6
           }
         ]
       },
@@ -663,11 +663,11 @@ function mountDashboardCharts() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { labels: { color: "#9ca3af", font: { size: 11 } } }
+          legend: { labels: { color: "#475569", font: { size: 11, weight: "600" } } }
         },
         scales: {
-          x: { ticks: { color: "#9ca3af" }, grid: { color: "#1f293d" } },
-          y: { max: 100, ticks: { color: "#9ca3af" }, grid: { color: "#1f293d" } }
+          x: { ticks: { color: "#64748b" }, grid: { color: "#e0f2fe" } },
+          y: { max: 100, ticks: { color: "#64748b" }, grid: { color: "#e0f2fe" } }
         }
       }
     });
@@ -688,9 +688,9 @@ function mountDashboardCharts() {
         datasets: [
           {
             data: Object.values(catMap),
-            backgroundColor: ["#f97316", "#38bdf8", "#10b981", "#f59e0b", "#a855f7", "#ec4899"],
-            borderWidth: 1,
-            borderColor: "#111827"
+            backgroundColor: ["#0284c7", "#0ea5e9", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"],
+            borderWidth: 2,
+            borderColor: "#ffffff"
           }
         ]
       },
@@ -698,7 +698,7 @@ function mountDashboardCharts() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: "right", labels: { color: "#9ca3af", font: { size: 11 } } },
+          legend: { position: "right", labels: { color: "#475569", font: { size: 11, weight: "600" } } },
           tooltip: {
             callbacks: {
               label: function(context) {
@@ -738,7 +738,7 @@ function mountDashboardCharts() {
             label: "Gasto Acumulado ($)",
             data: timelineData,
             borderColor: "#10b981",
-            backgroundColor: "rgba(16, 185, 129, 0.1)",
+            backgroundColor: "rgba(16, 185, 129, 0.12)",
             fill: true,
             tension: 0.3
           }
@@ -748,7 +748,7 @@ function mountDashboardCharts() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { labels: { color: "#9ca3af", font: { size: 11 } } },
+          legend: { labels: { color: "#475569", font: { size: 11, weight: "600" } } },
           tooltip: {
             callbacks: {
               label: function(context) {
@@ -758,13 +758,13 @@ function mountDashboardCharts() {
           }
         },
         scales: {
-          x: { ticks: { color: "#9ca3af" }, grid: { color: "#1f293d" } },
+          x: { ticks: { color: "#64748b" }, grid: { color: "#e0f2fe" } },
           y: {
             ticks: {
-              color: "#9ca3af",
+              color: "#64748b",
               callback: function(val) { return "$" + formatNumberCL(val); }
             },
-            grid: { color: "#1f293d" }
+            grid: { color: "#e0f2fe" }
           }
         }
       }
@@ -885,14 +885,14 @@ function renderQuotations(container) {
     </div>
 
     <!-- Filter & Search Bar -->
-    <div class="card" style="padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#0d1424;">
+    <div class="card" style="padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:260px;">
-        <i class="fa-solid fa-magnifying-glass" style="color:var(--text-muted);font-size:14px;"></i>
-        <input type="text" class="form-control" placeholder="Buscar por proyecto, código o cliente..." value="${escapeHtml(quotationSearchTerm)}" oninput="quotationSearchTerm=this.value;renderQuotations(document.getElementById('view-root'))" style="background:transparent;border:none;padding:6px 0;font-size:13px;color:#fff;">
+        <i class="fa-solid fa-magnifying-glass" style="color:#64748b;font-size:14px;"></i>
+        <input type="text" class="form-control" placeholder="Buscar por proyecto, código o cliente..." value="${escapeHtml(quotationSearchTerm)}" oninput="quotationSearchTerm=this.value;renderQuotations(document.getElementById('view-root'))" style="background:transparent;border:none;padding:6px 0;font-size:13px;color:#0f172a;">
       </div>
 
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-        <span style="font-size:11px;color:var(--text-sub);text-transform:uppercase;font-weight:700;margin-right:4px;">Estado:</span>
+        <span style="font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700;margin-right:4px;">Estado:</span>
         ${["todas", "borrador", "enviada", "aprobada", "convertida", "rechazada"].map(st => `
           <button class="btn btn-sm ${activeQuotationFilter === st ? 'btn-primary' : 'btn-secondary'}" onclick="activeQuotationFilter='${st}';renderQuotations(document.getElementById('view-root'))" style="font-size:11px;padding:4px 10px;text-transform:capitalize;">
             ${st}
@@ -902,12 +902,12 @@ function renderQuotations(container) {
     </div>
 
     <!-- Quotations Table / List -->
-    <div class="card" style="padding:0;overflow:hidden;background:#0d1424;">
+    <div class="card" style="padding:0;overflow:hidden;">
       <div style="padding:16px 20px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
-        <h3 style="font-size:15px;font-weight:700;color:#fff;margin:0;">
+        <h3 style="font-size:15px;font-weight:700;color:#0f172a;margin:0;">
           Listado de Presupuestos & Cotizaciones (${filteredQuotes.length})
         </h3>
-        <span style="font-size:11px;color:var(--text-sub);">Estructura Centro de Costos + Utilidad 50%</span>
+        <span style="font-size:11px;color:#64748b;">Estructura Centro de Costos + Utilidad 50%</span>
       </div>
 
       <div style="overflow-x:auto;">
@@ -939,11 +939,11 @@ function renderQuotations(container) {
               </tr>
             ` : filteredQuotes.map(q => {
               const statusColors = {
-                "Borrador": { bg: "rgba(156,163,175,0.12)", color: "#9ca3af", border: "rgba(156,163,175,0.3)" },
-                "Enviada": { bg: "rgba(56,189,248,0.12)", color: "#38bdf8", border: "rgba(56,189,248,0.3)" },
-                "Aprobada": { bg: "rgba(34,197,94,0.15)", color: "#4ade80", border: "rgba(34,197,94,0.4)" },
-                "Convertida": { bg: "rgba(168,85,247,0.15)", color: "#c084fc", border: "rgba(168,85,247,0.4)" },
-                "Rechazada": { bg: "rgba(239,68,68,0.12)", color: "#f87171", border: "rgba(239,68,68,0.3)" }
+                "Borrador": { bg: "#f1f5f9", color: "#475569", border: "#cbd5e1" },
+                "Enviada": { bg: "#e0f2fe", color: "#0284c7", border: "#bae6fd" },
+                "Aprobada": { bg: "#ecfdf5", color: "#059669", border: "#a7f3d0" },
+                "Convertida": { bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe" },
+                "Rechazada": { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" }
               };
               const st = statusColors[q.status] || statusColors["Borrador"];
 
@@ -951,38 +951,38 @@ function renderQuotations(container) {
                 <tr>
                   <td style="padding:14px 16px;">
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                      <span class="badge" style="background:#1e293b;color:#f8fafc;font-size:10px;font-weight:700;letter-spacing:0.04em;">${escapeHtml(q.code || q.id)}</span>
+                      <span class="badge" style="background:#e0f2fe;color:#0284c7;font-size:10px;font-weight:700;letter-spacing:0.04em;border:1px solid #bae6fd;">${escapeHtml(q.code || q.id)}</span>
                     </div>
-                    <div style="font-weight:700;color:#fff;font-size:13px;max-width:280px;line-height:1.3;">
+                    <div style="font-weight:700;color:#0f172a;font-size:13px;max-width:280px;line-height:1.3;">
                       ${escapeHtml(q.title || "Cotización sin título")}
                     </div>
                   </td>
-                  <td style="padding:14px 16px;color:var(--text-sub);font-size:12.5px;">
-                    <i class="fa-solid fa-building" style="font-size:10px;margin-right:4px;"></i>
+                  <td style="padding:14px 16px;color:#475569;font-size:12.5px;">
+                    <i class="fa-solid fa-building" style="font-size:10px;margin-right:4px;color:#64748b;"></i>
                     ${escapeHtml(q.client || "Cliente no especificado")}
                   </td>
-                  <td style="padding:14px 16px;font-size:12.5px;color:#fff;">
-                    <span class="badge badge-gray" style="font-size:11px;">
-                      <i class="fa-regular fa-clock"></i> ${escapeHtml(q.executionTime || `${q.months || 4} Meses`)}
+                  <td style="padding:14px 16px;font-size:12.5px;color:#0f172a;">
+                    <span class="badge badge-gray" style="font-size:11px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;">
+                      <i class="fa-regular fa-clock"></i> ${escapeHtml(q.executionTime || `${quote && quote.months ? quote.months : 4} Meses`)}
                     </span>
                   </td>
-                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#cbd5e1;font-weight:600;">
+                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#334155;font-weight:600;">
                     $ ${formatNumberCL(q.laborTotal || 0)}
                   </td>
-                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#cbd5e1;font-weight:600;">
+                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#334155;font-weight:600;">
                     $ ${formatNumberCL(q.expensesSubtotal || 0)}
                   </td>
-                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#e2e8f0;font-weight:700;">
+                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#0f172a;font-weight:700;">
                     $ ${formatNumberCL(q.totalCostCenter || 0)}
                   </td>
-                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#a855f7;font-weight:700;">
+                  <td style="padding:14px 16px;text-align:right;font-size:12.5px;color:#7c3aed;font-weight:700;">
                     $ ${formatNumberCL(q.profitAmount || 0)}
-                    <div style="font-size:10px;color:var(--text-sub);font-weight:400;">(${q.profitPercent || 50}%)</div>
+                    <div style="font-size:10px;color:#64748b;font-weight:400;">(${q.profitPercent || 50}%)</div>
                   </td>
-                  <td style="padding:14px 16px;text-align:right;font-size:14px;color:#4ade80;font-weight:800;">
+                  <td style="padding:14px 16px;text-align:right;font-size:14px;color:#059669;font-weight:800;">
                     $ ${formatNumberCL(q.totalNet || 0)}
                     ${q.discountPercent ? `
-                      <div style="font-size:10px;color:var(--warning);font-weight:500;">
+                      <div style="font-size:10px;color:#d97706;font-weight:500;">
                         Desc. ${q.discountPercent}%: $ ${formatNumberCL(q.totalNetNegotiated || q.totalNet)}
                       </div>
                     ` : ""}
@@ -992,9 +992,9 @@ function renderQuotations(container) {
                       <select class="form-control form-control-sm" style="background:${st.bg};color:${st.color};border:1px solid ${st.border};font-weight:700;font-size:11px;padding:3px 6px;border-radius:6px;cursor:pointer;" onchange="onQuotationStatusChange('${q.id}', this.value)" title="Seleccionar estado: si marcas 'Aprobada' se cargará y guardará directamente en Proyectos y Faenas">
                         <option value="Borrador" ${q.status === "Borrador" ? "selected" : ""} style="background:#0f172a;color:#9ca3af;">Borrador</option>
                         <option value="Enviada" ${q.status === "Enviada" ? "selected" : ""} style="background:#0f172a;color:#38bdf8;">Enviada</option>
-                        <option value="Aprobada" ${q.status === "Aprobada" ? "selected" : ""} style="background:#0f172a;color:#4ade80;">✔ Aprobada (Cargar a Obra)</option>
-                        <option value="Convertida" ${q.status === "Convertida" ? "selected" : ""} style="background:#0f172a;color:#c084fc;">Convertida</option>
-                        <option value="Rechazada" ${q.status === "Rechazada" ? "selected" : ""} style="background:#0f172a;color:#f87171;">Rechazada</option>
+                        <option value="Aprobada" ${q.status === "Aprobada" ? "selected" : ""} style="background:#ffffff;color:#059669;">✔ Aprobada (Cargar a Obra)</option>
+                        <option value="Convertida" ${q.status === "Convertida" ? "selected" : ""} style="background:#ffffff;color:#7c3aed;">Convertida</option>
+                        <option value="Rechazada" ${q.status === "Rechazada" ? "selected" : ""} style="background:#ffffff;color:#dc2626;">Rechazada</option>
                       </select>
                     ` : `
                       <span class="badge" style="background:${st.bg};color:${st.color};border:1px solid ${st.border};font-size:11px;padding:3px 9px;">
@@ -1004,8 +1004,8 @@ function renderQuotations(container) {
                   </td>
                   <td style="padding:14px 16px;text-align:center;">
                     <div style="display:inline-flex;gap:4px;align-items:center;">
-                      <button class="btn btn-secondary btn-sm" onclick="openQuotationDetails('${q.id}')" title="Ver Hoja de Costos Estilo Excel" style="padding:5px 8px;font-size:11px;background:#1e293b;border:1px solid var(--border-color);">
-                        <i class="fa-solid fa-table-cells" style="color:#38bdf8;"></i> Excel
+                      <button class="btn btn-secondary btn-sm" onclick="openQuotationDetails('${q.id}')" title="Ver Hoja de Costos Estilo Excel" style="padding:5px 8px;font-size:11px;background:#f0f9ff;border:1px solid #bae6fd;color:#0284c7;">
+                        <i class="fa-solid fa-table-cells" style="color:#0284c7;"></i> Excel
                       </button>
                       
                       <button class="btn btn-secondary btn-sm" onclick="printQuotation('${q.id}')" title="Imprimir / Exportar PDF Formal" style="padding:5px 8px;font-size:11px;">
@@ -1013,7 +1013,7 @@ function renderQuotations(container) {
                       </button>
 
                       ${userIsDev ? `
-                        <button class="btn btn-sm" onclick="approveQuotationAndLoadProject('${q.id}', true)" title="Aprobar proyecto y cargar a Proyectos & Faenas para rellenar recuadros" style="padding:5px 8px;font-size:11px;background:rgba(34,197,94,0.18);color:#4ade80;border:1px solid rgba(34,197,94,0.35);font-weight:700;">
+                        <button class="btn btn-sm" onclick="approveQuotationAndLoadProject('${q.id}', true)" title="Aprobar proyecto y cargar a Proyectos & Faenas para rellenar recuadros" style="padding:5px 8px;font-size:11px;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;font-weight:700;">
                           <i class="fa-solid fa-circle-check"></i> ${q.status === "Aprobada" || q.status === "Convertida" ? "Ver en Obra" : "Aprobar y Cargar"}
                         </button>
 
@@ -1057,143 +1057,143 @@ function openQuotationDetails(quoteId) {
   `;
 
   body.innerHTML = `
-    <div style="background:#090d16;border-radius:10px;padding:18px;border:1px solid #1e293b;font-family:Inter,system-ui,sans-serif;">
+    <div style="background:#f0f9ff;border-radius:12px;padding:20px;border:1px solid #bae6fd;font-family:Inter,system-ui,sans-serif;">
       
       <!-- Excel Header Block -->
-      <div style="background:#1e293b;border:2px solid #334155;border-radius:6px;padding:12px 16px;margin-bottom:16px;text-align:center;">
-        <div style="font-size:16px;font-weight:900;color:#f8fafc;letter-spacing:0.03em;text-transform:uppercase;">
+      <div style="background:#ffffff;border:2px solid #0284c7;border-radius:10px;padding:14px 18px;margin-bottom:18px;text-align:center;box-shadow:0 4px 6px -1px rgba(2, 132, 199, 0.08);">
+        <div style="font-size:16px;font-weight:900;color:#0f172a;letter-spacing:0.03em;text-transform:uppercase;">
           ${escapeHtml(quote.title || "PROYECTO INDUSTRIAL")}
         </div>
-        <div style="font-size:12px;font-weight:700;color:var(--primary);margin-top:4px;">
+        <div style="font-size:12px;font-weight:700;color:#0284c7;margin-top:4px;">
           EJECUCIÓN: ${escapeHtml(quote.executionTime || `${quote.months || 4} MESES`)}
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns: 2fr 1fr;gap:16px;align-items:start;">
+      <div style="display:grid;grid-template-columns: 2fr 1fr;gap:16px;align-items:start;" id="quote-details-container">
         
         <!-- Main Cost Sheet (Left Table) -->
         <div>
           
           <!-- SECTION 1: MANO DE OBRA -->
-          <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px;border:1px solid #334155;">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px;border:1px solid #cbd5e1;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
             <thead>
               <tr style="background:#0284c7;color:#fff;">
-                <th style="padding:6px 10px;text-align:left;border:1px solid #334155;font-weight:800;">DESCRIPCION</th>
-                <th style="padding:6px 10px;text-align:center;border:1px solid #334155;width:60px;">CANT</th>
-                <th style="padding:6px 10px;text-align:right;border:1px solid #334155;">VALORES (IMPONIBLE)</th>
+                <th style="padding:7px 10px;text-align:left;border:1px solid #0284c7;font-weight:800;">DESCRIPCION</th>
+                <th style="padding:7px 10px;text-align:center;border:1px solid #0284c7;width:60px;">CANT</th>
+                <th style="padding:7px 10px;text-align:right;border:1px solid #0284c7;">VALORES (IMPONIBLE)</th>
               </tr>
-              <tr style="background:#fed7aa;color:#7c2d12;">
-                <th colspan="3" style="padding:4px 10px;text-align:left;font-size:11px;font-weight:800;">SUELDOS POR MES</th>
+              <tr style="background:#e0f2fe;color:#0369a1;">
+                <th colspan="3" style="padding:5px 10px;text-align:left;font-size:11px;font-weight:800;border:1px solid #bae6fd;">SUELDOS POR MES</th>
               </tr>
             </thead>
             <tbody>
               ${(quote.laborItems || []).map(item => `
-                <tr style="background:#0f172a;color:#f8fafc;">
-                  <td style="padding:6px 10px;border:1px solid #1e293b;">${escapeHtml(item.role)}</td>
-                  <td style="padding:6px 10px;border:1px solid #1e293b;text-align:center;">${item.count}</td>
-                  <td style="padding:6px 10px;border:1px solid #1e293b;text-align:right;font-weight:600;">$ ${formatNumberCL(item.taxableMonthly)}</td>
+                <tr style="background:#ffffff;color:#0f172a;border-bottom:1px solid #f1f5f9;">
+                  <td style="padding:6px 10px;border:1px solid #e2e8f0;">${escapeHtml(item.role)}</td>
+                  <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">${item.count}</td>
+                  <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:right;font-weight:600;color:#0f172a;">$ ${formatNumberCL(item.taxableMonthly)}</td>
                 </tr>
               `).join("")}
-              <tr style="background:#1e293b;color:#f8fafc;font-weight:700;">
-                <td style="padding:6px 10px;border:1px solid #334155;">SUBTOTAL MENSUAL</td>
-                <td style="padding:6px 10px;border:1px solid #334155;text-align:center;">-</td>
-                <td style="padding:6px 10px;border:1px solid #334155;text-align:right;">$ ${formatNumberCL(quote.laborMonthlySubtotal || 0)}</td>
+              <tr style="background:#f8fafc;color:#334155;font-weight:700;">
+                <td style="padding:6px 10px;border:1px solid #e2e8f0;">SUBTOTAL MENSUAL</td>
+                <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:center;">-</td>
+                <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:right;color:#0284c7;">$ ${formatNumberCL(quote.laborMonthlySubtotal || 0)}</td>
               </tr>
-              <tr style="background:#1e293b;color:#38bdf8;font-weight:700;">
-                <td style="padding:6px 10px;border:1px solid #334155;">POR ${quote.months || 4} MESES</td>
-                <td style="padding:6px 10px;border:1px solid #334155;text-align:center;">${quote.months || 4}</td>
-                <td style="padding:6px 10px;border:1px solid #334155;text-align:right;">$ ${formatNumberCL(quote.laborTotal || 0)}</td>
+              <tr style="background:#f0f9ff;color:#0369a1;font-weight:700;">
+                <td style="padding:6px 10px;border:1px solid #bae6fd;">POR ${quote.months || 4} MESES</td>
+                <td style="padding:6px 10px;border:1px solid #bae6fd;text-align:center;">${quote.months || 4}</td>
+                <td style="padding:6px 10px;border:1px solid #bae6fd;text-align:right;">$ ${formatNumberCL(quote.laborTotal || 0)}</td>
               </tr>
-              <tr style="background:#334155;color:#fff;font-weight:900;">
-                <td colspan="2" style="padding:8px 10px;border:1px solid #475569;font-size:12px;">TOTAL MANO DE OBRA</td>
-                <td style="padding:8px 10px;border:1px solid #475569;text-align:right;font-size:13px;color:#fed7aa;">$ ${formatNumberCL(quote.laborTotal || 0)}</td>
+              <tr style="background:#e0f2fe;color:#0369a1;font-weight:900;">
+                <td colspan="2" style="padding:8px 10px;border:1px solid #bae6fd;font-size:12px;">TOTAL MANO DE OBRA</td>
+                <td style="padding:8px 10px;border:1px solid #bae6fd;text-align:right;font-size:13px;color:#0284c7;">$ ${formatNumberCL(quote.laborTotal || 0)}</td>
               </tr>
             </tbody>
           </table>
 
           <!-- SECTION 2: GASTOS E INSUMOS -->
-          <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px;border:1px solid #334155;">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px;border:1px solid #cbd5e1;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
             <thead>
-              <tr style="background:#fdba74;color:#7c2d12;">
-                <th colspan="4" style="padding:6px 10px;text-align:center;font-weight:900;letter-spacing:0.04em;">GASTOS E INSUMOS</th>
+              <tr style="background:#0284c7;color:#ffffff;">
+                <th colspan="4" style="padding:7px 10px;text-align:center;font-weight:900;letter-spacing:0.04em;">GASTOS E INSUMOS</th>
               </tr>
-              <tr style="background:#fed7aa;color:#7c2d12;">
-                <th style="padding:5px 10px;text-align:left;border:1px solid #334155;font-weight:800;">DETALLE</th>
-                <th style="padding:5px 10px;text-align:center;border:1px solid #334155;width:60px;">CANT</th>
-                <th style="padding:5px 10px;text-align:right;border:1px solid #334155;width:100px;">VALOR UNIT</th>
-                <th style="padding:5px 10px;text-align:right;border:1px solid #334155;width:120px;">TOTAL</th>
+              <tr style="background:#e0f2fe;color:#0369a1;">
+                <th style="padding:5px 10px;text-align:left;border:1px solid #bae6fd;font-weight:800;">DETALLE</th>
+                <th style="padding:5px 10px;text-align:center;border:1px solid #bae6fd;width:60px;">CANT</th>
+                <th style="padding:5px 10px;text-align:right;border:1px solid #bae6fd;width:100px;">VALOR UNIT</th>
+                <th style="padding:5px 10px;text-align:right;border:1px solid #bae6fd;width:120px;">TOTAL</th>
               </tr>
             </thead>
             <tbody>
-              <tr style="background:#1e293b;color:#f97316;font-weight:800;">
-                <td colspan="4" style="padding:4px 10px;border:1px solid #334155;font-size:11px;">TRABAJO EN TERRENO & LOGISTICA</td>
+              <tr style="background:#f8fafc;color:#0284c7;font-weight:800;">
+                <td colspan="4" style="padding:5px 10px;border:1px solid #e2e8f0;font-size:11px;">TRABAJO EN TERRENO & LOGISTICA</td>
               </tr>
               ${(quote.fieldItems || []).map(item => `
-                <tr style="background:#0f172a;color:#f8fafc;">
-                  <td style="padding:5px 10px;border:1px solid #1e293b;">${escapeHtml(item.name)}</td>
-                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:center;">${item.qty}</td>
-                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;">$ ${formatNumberCL(item.unitPrice)}</td>
-                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;font-weight:600;">$ ${formatNumberCL(item.total)}</td>
+                <tr style="background:#ffffff;color:#0f172a;">
+                  <td style="padding:5px 10px;border:1px solid #e2e8f0;">${escapeHtml(item.name)}</td>
+                  <td style="padding:5px 10px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">${item.qty}</td>
+                  <td style="padding:5px 10px;border:1px solid #e2e8f0;text-align:right;color:#64748b;">$ ${formatNumberCL(item.unitPrice)}</td>
+                  <td style="padding:5px 10px;border:1px solid #e2e8f0;text-align:right;font-weight:600;color:#0f172a;">$ ${formatNumberCL(item.total)}</td>
                 </tr>
               `).join("")}
 
-              <tr style="background:#fed7aa;color:#7c2d12;font-weight:800;">
-                <td colspan="4" style="padding:4px 10px;border:1px solid #334155;font-size:11px;">MATERIALES Y EQUIPOS</td>
+              <tr style="background:#e0f2fe;color:#0369a1;font-weight:800;">
+                <td colspan="4" style="padding:5px 10px;border:1px solid #bae6fd;font-size:11px;">MATERIALES Y EQUIPOS</td>
               </tr>
               ${(quote.materialItems || []).map(item => `
-                <tr style="background:#0f172a;color:#f8fafc;">
-                  <td style="padding:5px 10px;border:1px solid #1e293b;">${escapeHtml(item.name)}</td>
-                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:center;">${item.qty || '-'}</td>
-                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;">${item.unitPrice ? `$ ${formatNumberCL(item.unitPrice)}` : '-'}</td>
-                  <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;font-weight:600;">$ ${formatNumberCL(item.total)}</td>
+                <tr style="background:#ffffff;color:#0f172a;">
+                  <td style="padding:5px 10px;border:1px solid #e2e8f0;">${escapeHtml(item.name)}</td>
+                  <td style="padding:5px 10px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">${item.qty || '-'}</td>
+                  <td style="padding:5px 10px;border:1px solid #e2e8f0;text-align:right;color:#64748b;">${item.unitPrice ? `$ ${formatNumberCL(item.unitPrice)}` : '-'}</td>
+                  <td style="padding:5px 10px;border:1px solid #e2e8f0;text-align:right;font-weight:600;color:#0f172a;">$ ${formatNumberCL(item.total)}</td>
                 </tr>
               `).join("")}
 
-              <tr style="background:#334155;color:#fff;font-weight:900;">
-                <td colspan="3" style="padding:8px 10px;border:1px solid #475569;">SUBTOTAL GASTOS</td>
-                <td style="padding:8px 10px;border:1px solid #475569;text-align:right;font-size:13px;color:#fed7aa;">$ ${formatNumberCL(quote.expensesSubtotal || 0)}</td>
+              <tr style="background:#f0f9ff;color:#0369a1;font-weight:900;">
+                <td colspan="3" style="padding:8px 10px;border:1px solid #bae6fd;">SUBTOTAL GASTOS</td>
+                <td style="padding:8px 10px;border:1px solid #bae6fd;text-align:right;font-size:13px;color:#0284c7;">$ ${formatNumberCL(quote.expensesSubtotal || 0)}</td>
               </tr>
             </tbody>
           </table>
 
           <!-- SECTION 3: CENTRO DE COSTOS, ADMIN Y UTILIDAD -->
-          <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #334155;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #cbd5e1;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
             <tbody>
-              <tr style="background:#1e293b;color:#f8fafc;font-weight:800;">
-                <td style="padding:8px 10px;border:1px solid #334155;">SUB TOTAL CENTRO DE COSTOS</td>
-                <td style="padding:8px 10px;border:1px solid #334155;text-align:right;font-size:13px;">$ ${formatNumberCL(quote.costCenterSubtotal || 0)}</td>
+              <tr style="background:#f8fafc;color:#0f172a;font-weight:800;">
+                <td style="padding:8px 10px;border:1px solid #e2e8f0;">SUB TOTAL CENTRO DE COSTOS</td>
+                <td style="padding:8px 10px;border:1px solid #e2e8f0;text-align:right;font-size:13px;font-weight:800;color:#0f172a;">$ ${formatNumberCL(quote.costCenterSubtotal || 0)}</td>
               </tr>
-              <tr style="background:#fed7aa;color:#7c2d12;font-weight:800;">
-                <td colspan="2" style="padding:4px 10px;font-size:11px;">ADMINISTRACION E IMPREVISTOS</td>
+              <tr style="background:#e0f2fe;color:#0369a1;font-weight:800;">
+                <td colspan="2" style="padding:5px 10px;font-size:11px;">ADMINISTRACION E IMPREVISTOS</td>
               </tr>
-              <tr style="background:#0f172a;color:#cbd5e1;">
-                <td style="padding:5px 10px;border:1px solid #1e293b;">COMISION ADMINISTRACION (${quote.adminPercent || 2}%)</td>
-                <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;">$ ${formatNumberCL(quote.adminTotal || 0)}</td>
+              <tr style="background:#ffffff;color:#475569;">
+                <td style="padding:5px 10px;border:1px solid #e2e8f0;">COMISION ADMINISTRACION (${quote.adminPercent || 2}%)</td>
+                <td style="padding:5px 10px;border:1px solid #e2e8f0;text-align:right;">$ ${formatNumberCL(quote.adminTotal || 0)}</td>
               </tr>
-              <tr style="background:#0f172a;color:#cbd5e1;">
-                <td style="padding:5px 10px;border:1px solid #1e293b;">GASTOS IMPREVISTOS (${quote.contingencyPercent || 5}%)</td>
-                <td style="padding:5px 10px;border:1px solid #1e293b;text-align:right;">$ ${formatNumberCL(quote.contingencyTotal || 0)}</td>
+              <tr style="background:#ffffff;color:#475569;">
+                <td style="padding:5px 10px;border:1px solid #e2e8f0;">GASTOS IMPREVISTOS (${quote.contingencyPercent || 5}%)</td>
+                <td style="padding:5px 10px;border:1px solid #e2e8f0;text-align:right;">$ ${formatNumberCL(quote.contingencyTotal || 0)}</td>
               </tr>
-              <tr style="background:#1e293b;color:#cbd5e1;font-weight:700;">
-                <td style="padding:6px 10px;border:1px solid #334155;">SUBTOTAL ADMINISTRACION</td>
-                <td style="padding:6px 10px;border:1px solid #334155;text-align:right;">$ ${formatNumberCL(quote.adminSubtotal || 0)}</td>
+              <tr style="background:#f8fafc;color:#334155;font-weight:700;">
+                <td style="padding:6px 10px;border:1px solid #e2e8f0;">SUBTOTAL ADMINISTRACION</td>
+                <td style="padding:6px 10px;border:1px solid #e2e8f0;text-align:right;color:#0284c7;">$ ${formatNumberCL(quote.adminSubtotal || 0)}</td>
               </tr>
-              <tr style="background:#334155;color:#fff;font-weight:900;">
-                <td style="padding:8px 10px;border:1px solid #475569;font-size:13px;">TOTAL CENTRO DE COSTOS</td>
-                <td style="padding:8px 10px;border:1px solid #475569;text-align:right;font-size:14px;color:#38bdf8;">$ ${formatNumberCL(quote.totalCostCenter || 0)}</td>
+              <tr style="background:#f0f9ff;color:#0369a1;font-weight:900;">
+                <td style="padding:8px 10px;border:1px solid #bae6fd;font-size:13px;">TOTAL CENTRO DE COSTOS</td>
+                <td style="padding:8px 10px;border:1px solid #bae6fd;text-align:right;font-size:14px;color:#0284c7;">$ ${formatNumberCL(quote.totalCostCenter || 0)}</td>
               </tr>
-              <tr style="background:rgba(34,197,94,0.18);color:#4ade80;font-weight:900;">
-                <td style="padding:8px 10px;border:1px solid rgba(34,197,94,0.4);font-size:13px;">UTILIDAD (${quote.profitPercent || 50}%)</td>
-                <td style="padding:8px 10px;border:1px solid rgba(34,197,94,0.4);text-align:right;font-size:14px;">$ ${formatNumberCL(quote.profitAmount || 0)}</td>
+              <tr style="background:rgba(16,185,129,0.1);color:#047857;font-weight:900;">
+                <td style="padding:8px 10px;border:1px solid rgba(16,185,129,0.25);font-size:13px;">UTILIDAD (${quote.profitPercent || 50}%)</td>
+                <td style="padding:8px 10px;border:1px solid rgba(16,185,129,0.25);text-align:right;font-size:14px;color:#10b981;">$ ${formatNumberCL(quote.profitAmount || 0)}</td>
               </tr>
-              <tr style="background:#052e16;color:#22c55e;font-weight:900;border:2px solid #22c55e;">
+              <tr style="background:#ecfdf5;color:#065f46;font-weight:900;border:2px solid #10b981;">
                 <td style="padding:10px;font-size:14px;letter-spacing:0.02em;">TOTAL NETO DE VENTA</td>
-                <td style="padding:10px;text-align:right;font-size:16px;">$ ${formatNumberCL(quote.totalNet || 0)}</td>
+                <td style="padding:10px;text-align:right;font-size:16px;color:#059669;">$ ${formatNumberCL(quote.totalNet || 0)}</td>
               </tr>
               ${quote.discountPercent ? `
-                <tr style="background:#451a03;color:#fbbf24;font-weight:800;">
-                  <td style="padding:8px 10px;border:1px solid #d97706;">FACTOR NEGOCIACIÓN / DESCUENTO (${quote.discountPercent}%)</td>
-                  <td style="padding:8px 10px;border:1px solid #d97706;text-align:right;font-size:14px;">$ ${formatNumberCL(quote.totalNetNegotiated || quote.totalNet)}</td>
+                <tr style="background:#fffbeb;color:#92400e;font-weight:800;border:1px solid #fcd34d;">
+                  <td style="padding:8px 10px;border:1px solid #fcd34d;">FACTOR NEGOCIACIÓN / DESCUENTO (${quote.discountPercent}%)</td>
+                  <td style="padding:8px 10px;border:1px solid #fcd34d;text-align:right;font-size:14px;color:#d97706;">$ ${formatNumberCL(quote.totalNetNegotiated || quote.totalNet)}</td>
                 </tr>
               ` : ""}
             </tbody>
@@ -1203,44 +1203,44 @@ function openQuotationDetails(quoteId) {
 
         <!-- Right Side: Payroll Deductions Breakdown (Calculo Mensual Fonasa/AFP) -->
         <div>
-          <div style="background:#fef08a;color:#854d0e;padding:8px 12px;font-weight:900;font-size:12px;text-align:center;border-radius:6px 6px 0 0;border:1px solid #ca8a04;">
+          <div style="background:#fef08a;color:#854d0e;padding:8px 12px;font-weight:900;font-size:12px;text-align:center;border-radius:8px 8px 0 0;border:1px solid #fde047;">
             CALCULO MENSUAL LIQUIDO / IMPONIBLE
           </div>
-          <div style="background:#0f172a;border:1px solid #ca8a04;border-top:none;border-radius:0 0 6px 6px;padding:12px;font-size:11px;">
+          <div style="background:#ffffff;border:1px solid #fde047;border-top:none;border-radius:0 0 8px 8px;padding:14px;font-size:11.5px;box-shadow:0 2px 4px rgba(0,0,0,0.04);">
             
             <!-- Ayudante Card -->
-            <div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed #334155;">
-              <div style="font-weight:800;color:#38bdf8;margin-bottom:4px;">AYUDANTE</div>
-              <div style="display:flex;justify-content:space-between;color:#e2e8f0;"><span>Imponible:</span> <strong>$ 865.000</strong></div>
-              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>FONASA (7%):</span> <span>$ 60.550</span></div>
-              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>AFP (~12%):</span> <span>$ 103.800</span></div>
-              <div style="display:flex;justify-content:space-between;color:#4ade80;font-weight:700;margin-top:2px;"><span>Líquido Estimado:</span> <span>$ 700.650</span></div>
+            <div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed #e2e8f0;">
+              <div style="font-weight:800;color:#0284c7;margin-bottom:4px;">AYUDANTE</div>
+              <div style="display:flex;justify-content:space-between;color:#334155;"><span>Imponible:</span> <strong>$ 865.000</strong></div>
+              <div style="display:flex;justify-content:space-between;color:#64748b;"><span>FONASA (7%):</span> <span>$ 60.550</span></div>
+              <div style="display:flex;justify-content:space-between;color:#64748b;"><span>AFP (~12%):</span> <span>$ 103.800</span></div>
+              <div style="display:flex;justify-content:space-between;color:#059669;font-weight:700;margin-top:2px;"><span>Líquido Estimado:</span> <span>$ 700.650</span></div>
             </div>
 
             <!-- Operario Card -->
-            <div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed #334155;">
-              <div style="font-weight:800;color:#38bdf8;margin-bottom:4px;">OPERARIO</div>
-              <div style="display:flex;justify-content:space-between;color:#e2e8f0;"><span>Imponible:</span> <strong>$ 1.012.500</strong></div>
-              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>FONASA (7%):</span> <span>$ 70.875</span></div>
-              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>AFP (~12%):</span> <span>$ 121.500</span></div>
-              <div style="display:flex;justify-content:space-between;color:#4ade80;font-weight:700;margin-top:2px;"><span>Líquido Estimado:</span> <span>$ 820.125</span></div>
+            <div style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed #e2e8f0;">
+              <div style="font-weight:800;color:#0284c7;margin-bottom:4px;">OPERARIO</div>
+              <div style="display:flex;justify-content:space-between;color:#334155;"><span>Imponible:</span> <strong>$ 1.012.500</strong></div>
+              <div style="display:flex;justify-content:space-between;color:#64748b;"><span>FONASA (7%):</span> <span>$ 70.875</span></div>
+              <div style="display:flex;justify-content:space-between;color:#64748b;"><span>AFP (~12%):</span> <span>$ 121.500</span></div>
+              <div style="display:flex;justify-content:space-between;color:#059669;font-weight:700;margin-top:2px;"><span>Líquido Estimado:</span> <span>$ 820.125</span></div>
             </div>
 
             <!-- Bono Supervisión -->
             <div style="margin-bottom:6px;">
-              <div style="font-weight:800;color:#38bdf8;margin-bottom:4px;">BONO SUPERVISIÓN</div>
-              <div style="display:flex;justify-content:space-between;color:#e2e8f0;"><span>Imponible:</span> <strong>$ 247.000</strong></div>
-              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>FONASA:</span> <span>$ 17.290</span></div>
-              <div style="display:flex;justify-content:space-between;color:#94a3b8;"><span>AFP:</span> <span>$ 29.640</span></div>
-              <div style="display:flex;justify-content:space-between;color:#4ade80;font-weight:700;margin-top:2px;"><span>Líquido Estimado:</span> <span>$ 200.070</span></div>
+              <div style="font-weight:800;color:#0284c7;margin-bottom:4px;">BONO SUPERVISIÓN</div>
+              <div style="display:flex;justify-content:space-between;color:#334155;"><span>Imponible:</span> <strong>$ 247.000</strong></div>
+              <div style="display:flex;justify-content:space-between;color:#64748b;"><span>FONASA:</span> <span>$ 17.290</span></div>
+              <div style="display:flex;justify-content:space-between;color:#64748b;"><span>AFP:</span> <span>$ 29.640</span></div>
+              <div style="display:flex;justify-content:space-between;color:#059669;font-weight:700;margin-top:2px;"><span>Líquido Estimado:</span> <span>$ 200.070</span></div>
             </div>
 
           </div>
 
           <!-- Notes / Observations -->
           ${quote.notes ? `
-            <div style="margin-top:14px;background:#1e293b;border-radius:6px;padding:10px 12px;font-size:11.5px;color:#94a3b8;">
-              <strong style="color:#fff;display:block;margin-bottom:4px;"><i class="fa-solid fa-circle-info" style="color:var(--primary);"></i> Observaciones Técnicas:</strong>
+            <div style="margin-top:14px;background:#ffffff;border:1px solid #e0f2fe;border-radius:8px;padding:12px 14px;font-size:11.5px;color:#475569;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <strong style="color:#0f172a;display:block;margin-bottom:4px;"><i class="fa-solid fa-circle-info" style="color:#0284c7;"></i> Observaciones Técnicas:</strong>
               ${escapeHtml(quote.notes)}
             </div>
           ` : ""}
@@ -1251,7 +1251,7 @@ function openQuotationDetails(quoteId) {
               <i class="fa-solid fa-print"></i> Imprimir Cotización Formal
             </button>
             ${isDeveloper() ? `
-              <button class="btn btn-secondary" onclick="approveQuotationAndLoadProject('${quote.id}', true)" style="width:100%;justify-content:center;font-size:12px;background:rgba(34,197,94,0.18);color:#4ade80;border-color:rgba(34,197,94,0.4);font-weight:700;">
+              <button class="btn btn-secondary" onclick="approveQuotationAndLoadProject('${quote.id}', true)" style="width:100%;justify-content:center;font-size:12px;background:#ecfdf5;color:#059669;border-color:#a7f3d0;font-weight:700;">
                 <i class="fa-solid fa-circle-check"></i> ${quote.status === "Aprobada" || quote.status === "Convertida" ? "Ver en Proyectos & Faenas" : "Aprobar Proyecto y Cargar a Faenas"}
               </button>
             ` : ""}
@@ -1377,22 +1377,25 @@ function printQuotation(quoteId) {
       <meta charset="UTF-8">
       <title>Cotización ${quote.code || quote.id} - CM Industrial</title>
       <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1e293b; padding: 40px; margin: 0; background: #fff; font-size: 13px; line-height: 1.5; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #f97316; padding-bottom: 16px; margin-bottom: 24px; }
-        .logo { font-size: 24px; font-weight: 900; color: #f97316; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1e293b; padding: 40px; margin: 0; background: #ffffff; font-size: 13px; line-height: 1.5; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2.5px solid #0284c7; padding-bottom: 16px; margin-bottom: 24px; }
+        .logo { font-size: 24px; font-weight: 900; color: #0284c7; letter-spacing: -0.5px; }
         .logo span { color: #0f172a; }
-        .company-info { text-align: right; font-size: 12px; color: #64748b; }
-        .quote-title-box { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #f97316; padding: 14px 18px; margin-bottom: 24px; border-radius: 4px; }
-        .quote-title { font-size: 16px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-bottom: 4px; }
-        .meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; font-size: 12px; background: #f1f5f9; padding: 12px; border-radius: 4px; }
+        .company-info { text-align: right; font-size: 12px; color: #475569; }
+        .quote-title-box { background: #f0f9ff; border: 1px solid #bae6fd; border-left: 4px solid #0284c7; padding: 14px 18px; margin-bottom: 24px; border-radius: 6px; }
+        .quote-title { font-size: 16px; font-weight: 800; color: #0369a1; text-transform: uppercase; margin-bottom: 4px; }
+        .meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; font-size: 12px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th { background: #0f172a; color: #fff; text-align: left; padding: 8px 10px; font-size: 12px; font-weight: 700; }
-        td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
-        .section-header { background: #fed7aa; color: #7c2d12; font-weight: 800; }
-        .totals-table { width: 320px; margin-left: auto; border: 1px solid #cbd5e1; }
-        .totals-table td { padding: 6px 12px; }
-        .total-final { background: #f97316; color: #fff; font-weight: 900; font-size: 14px; }
-        .footer-terms { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 11px; color: #64748b; }
+        th { background: #0f172a; color: #ffffff; text-align: left; padding: 9px 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; }
+        td { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
+        tbody tr:nth-child(even):not(.section-header) { background: #f8fafc; }
+        .section-header { background: #e0f2fe; color: #0369a1; font-weight: 800; border-top: 1px solid #bae6fd; border-bottom: 1px solid #bae6fd; }
+        .section-header td { color: #0369a1; font-weight: 800; font-size: 12px; }
+        .totals-table { width: 340px; margin-left: auto; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; }
+        .totals-table td { padding: 7px 14px; }
+        .total-final { background: #0284c7; color: #ffffff; font-weight: 900; font-size: 14px; }
+        .total-final td { color: #ffffff; }
+        .footer-terms { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 11px; color: #64748b; background: #f8fafc; padding: 14px; border-radius: 6px; }
         @media print {
           body { padding: 0; }
           .no-print { display: none; }
@@ -1419,10 +1422,10 @@ function printQuotation(quoteId) {
       </div>
 
       <div class="meta-grid">
-        <div><strong>Cliente:</strong><br>${escapeHtml(quote.client || "Cliente")}</div>
-        <div><strong>Tiempo Ejecución:</strong><br>${escapeHtml(quote.executionTime || `${quote.months || 4} Meses`)}</div>
-        <div><strong>Validez Oferta:</strong><br>30 Días</div>
-        <div><strong>Forma de Pago:</strong><br>Estado de Pago / Hitos</div>
+        <div><strong style="color:#475569;">Cliente:</strong><br><span style="color:#0f172a;font-weight:600;">${escapeHtml(quote.client || "Cliente")}</span></div>
+        <div><strong style="color:#475569;">Tiempo Ejecución:</strong><br><span style="color:#0f172a;font-weight:600;">${escapeHtml(quote.executionTime || `${quote.months || 4} Meses`)}</span></div>
+        <div><strong style="color:#475569;">Validez Oferta:</strong><br><span style="color:#0f172a;font-weight:600;">30 Días</span></div>
+        <div><strong style="color:#475569;">Forma de Pago:</strong><br><span style="color:#0f172a;font-weight:600;">Estado de Pago / Hitos</span></div>
       </div>
 
       <!-- Partidas y Desglose -->
@@ -1443,8 +1446,8 @@ function printQuotation(quoteId) {
             <tr>
               <td>Personal: ${escapeHtml(item.role)} (Duración: ${quote.months || 4} Meses)</td>
               <td style="text-align:center;">${item.count}</td>
-              <td style="text-align:right;">$ ${formatNumberCL(item.taxableMonthly)}/mes</td>
-              <td style="text-align:right;font-weight:600;">$ ${formatNumberCL(item.taxableMonthly * item.count * (quote.months || 4))}</td>
+              <td style="text-align:right;color:#475569;">$ ${formatNumberCL(item.taxableMonthly)}/mes</td>
+              <td style="text-align:right;font-weight:700;color:#0f172a;">$ ${formatNumberCL(item.taxableMonthly * item.count * (quote.months || 4))}</td>
             </tr>
           `).join("")}
 
@@ -1455,8 +1458,8 @@ function printQuotation(quoteId) {
             <tr>
               <td>${escapeHtml(item.name)}</td>
               <td style="text-align:center;">${item.qty}</td>
-              <td style="text-align:right;">$ ${formatNumberCL(item.unitPrice)}</td>
-              <td style="text-align:right;font-weight:600;">$ ${formatNumberCL(item.total)}</td>
+              <td style="text-align:right;color:#475569;">$ ${formatNumberCL(item.unitPrice)}</td>
+              <td style="text-align:right;font-weight:700;color:#0f172a;">$ ${formatNumberCL(item.total)}</td>
             </tr>
           `).join("")}
 
@@ -1467,8 +1470,8 @@ function printQuotation(quoteId) {
             <tr>
               <td>${escapeHtml(item.name)}</td>
               <td style="text-align:center;">${item.qty || 1}</td>
-              <td style="text-align:right;">${item.unitPrice ? `$ ${formatNumberCL(item.unitPrice)}` : '-'}</td>
-              <td style="text-align:right;font-weight:600;">$ ${formatNumberCL(item.total)}</td>
+              <td style="text-align:right;color:#475569;">${item.unitPrice ? `$ ${formatNumberCL(item.unitPrice)}` : '-'}</td>
+              <td style="text-align:right;font-weight:700;color:#0f172a;">$ ${formatNumberCL(item.total)}</td>
             </tr>
           `).join("")}
         </tbody>
@@ -1476,25 +1479,25 @@ function printQuotation(quoteId) {
 
       <!-- Resumen de Totales -->
       <table class="totals-table">
-        <tr>
-          <td><strong>Subtotal Costo Directo:</strong></td>
-          <td style="text-align:right;">$ ${formatNumberCL(quote.costCenterSubtotal || quote.totalCostCenter)}</td>
+        <tr style="background:#f8fafc;">
+          <td><strong style="color:#334155;">Subtotal Costo Directo:</strong></td>
+          <td style="text-align:right;font-weight:600;color:#0f172a;">$ ${formatNumberCL(quote.costCenterSubtotal || quote.totalCostCenter)}</td>
         </tr>
         <tr>
-          <td>Gastos Generales & Admin:</td>
-          <td style="text-align:right;">$ ${formatNumberCL(quote.adminSubtotal || 0)}</td>
+          <td style="color:#475569;">Gastos Generales & Admin:</td>
+          <td style="text-align:right;color:#475569;">$ ${formatNumberCL(quote.adminSubtotal || 0)}</td>
         </tr>
         <tr class="total-final">
           <td><strong>TOTAL NETO (+IVA):</strong></td>
           <td style="text-align:right;">$ ${formatNumberCL(quote.totalNet || 0)}</td>
         </tr>
         <tr>
-          <td>IVA (19%):</td>
-          <td style="text-align:right;">$ ${formatNumberCL(Math.round((quote.totalNet || 0) * 0.19))}</td>
+          <td style="color:#475569;">IVA (19%):</td>
+          <td style="text-align:right;color:#475569;">$ ${formatNumberCL(Math.round((quote.totalNet || 0) * 0.19))}</td>
         </tr>
-        <tr style="background:#f1f5f9;font-weight:bold;">
-          <td>TOTAL BRUTO:</td>
-          <td style="text-align:right;">$ ${formatNumberCL(Math.round((quote.totalNet || 0) * 1.19))}</td>
+        <tr style="background:#f1f5f9;font-weight:bold;border-top:1px solid #cbd5e1;">
+          <td style="color:#0f172a;">TOTAL BRUTO:</td>
+          <td style="text-align:right;color:#0f172a;font-size:13.5px;">$ ${formatNumberCL(Math.round((quote.totalNet || 0) * 1.19))}</td>
         </tr>
       </table>
 
@@ -1541,34 +1544,34 @@ function openQuotationTemplateModal() {
 
   body.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <p style="font-size:13px;color:var(--text-sub);margin:0;">Selecciona una plantilla base para comenzar rápidamente tu presupuesto:</p>
+      <p style="font-size:13px;color:#64748b;margin:0;">Selecciona una plantilla base para comenzar rápidamente tu presupuesto:</p>
 
-      <div class="card" style="padding:14px;background:#0f172a;border:1px solid var(--border-color);cursor:pointer;" onclick="loadTemplateAndOpen('secadora')">
+      <div class="card" style="padding:16px;background:#ffffff;border:1px solid #e0f2fe;cursor:pointer;transition:all 0.15s ease;" onmouseover="this.style.borderColor='#0284c7'" onmouseout="this.style.borderColor='#e0f2fe'" onclick="loadTemplateAndOpen('secadora')">
         <div style="display:flex;align-items:center;justify-content:space-between;">
-          <strong style="color:#fff;font-size:14px;">1. Proyecto Secadora de Nueces (Agrícola)</strong>
+          <strong style="color:#0f172a;font-size:14px;">1. Proyecto Secadora de Nueces (Agrícola)</strong>
           <span class="badge badge-green">$ 120.159.930 Neto</span>
         </div>
-        <p style="font-size:12px;color:var(--text-sub);margin:4px 0 0;">
+        <p style="font-size:12px;color:#64748b;margin:6px 0 0;">
           Incluye: 2 operarios, 2 ayudantes, bono supervisión (4 meses), planchas acero 3mm, 5 motores, pintura anticorrosiva, colaciones y fletes.
         </p>
       </div>
 
-      <div class="card" style="padding:14px;background:#0f172a;border:1px solid var(--border-color);cursor:pointer;" onclick="loadTemplateAndOpen('silos')">
+      <div class="card" style="padding:16px;background:#ffffff;border:1px solid #e0f2fe;cursor:pointer;transition:all 0.15s ease;" onmouseover="this.style.borderColor='#0284c7'" onmouseout="this.style.borderColor='#e0f2fe'" onclick="loadTemplateAndOpen('silos')">
         <div style="display:flex;align-items:center;justify-content:space-between;">
-          <strong style="color:#fff;font-size:14px;">2. Instalación Alimentador Llenado de Silos (Molino)</strong>
+          <strong style="color:#0f172a;font-size:14px;">2. Instalación Alimentador Llenado de Silos (Molino)</strong>
           <span class="badge badge-blue">$ 101.866.140 Neto</span>
         </div>
-        <p style="font-size:12px;color:var(--text-sub);margin:4px 0 0;">
+        <p style="font-size:12px;color:#64748b;margin:6px 0 0;">
           Incluye: 2 operarios, 2 ayudantes, planchas plegadas 2mm, motores, pintura sintética y traslados.
         </p>
       </div>
 
-      <div class="card" style="padding:14px;background:#0f172a;border:1px solid var(--border-color);cursor:pointer;" onclick="openQuotationModal()">
+      <div class="card" style="padding:16px;background:#ffffff;border:1px solid #e0f2fe;cursor:pointer;transition:all 0.15s ease;" onmouseover="this.style.borderColor='#0284c7'" onmouseout="this.style.borderColor='#e0f2fe'" onclick="openQuotationModal()">
         <div style="display:flex;align-items:center;justify-content:space-between;">
-          <strong style="color:#fff;font-size:14px;">3. Cotización Personalizada en Blanco</strong>
+          <strong style="color:#0f172a;font-size:14px;">3. Cotización Personalizada en Blanco</strong>
           <span class="badge badge-gray">Nueva Hoja</span>
         </div>
-        <p style="font-size:12px;color:var(--text-sub);margin:4px 0 0;">
+        <p style="font-size:12px;color:#64748b;margin:6px 0 0;">
           Comenzar una cotización desde cero agregando tus propias partidas y materiales.
         </p>
       </div>
@@ -1727,7 +1730,7 @@ function renderQuotationModalBody(quote, isEdit) {
       </div>
 
       <!-- Mode Selector Tabs -->
-      <div style="display:flex;gap:8px;background:#090d16;padding:6px;border-radius:8px;border:1px solid #1e293b;">
+      <div style="display:flex;gap:8px;background:#f0f9ff;padding:6px;border-radius:10px;border:1px solid #bae6fd;">
         <button type="button" class="btn btn-sm ${quoteEntryMode === 'itemized' ? 'btn-primary' : 'btn-secondary'}" onclick="switchQuoteEntryMode('itemized')" style="flex:1;justify-content:center;font-size:12px;">
           <i class="fa-solid fa-list-check"></i> Desglose Detallado por Partidas (Excel)
         </button>
@@ -1738,11 +1741,11 @@ function renderQuotationModalBody(quote, isEdit) {
 
       ${quoteEntryMode === 'quick' ? `
         <!-- QUICK GLOBAL AMOUNTS INPUT -->
-        <div style="background:#0d1424;border:1px solid #1e293b;border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:12px;">
-          <div style="font-size:12.5px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:6px;">
+        <div style="background:#ffffff;border:1px solid #e0f2fe;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <div style="font-size:12.5px;font-weight:700;color:#0284c7;display:flex;align-items:center;gap:6px;">
             <i class="fa-solid fa-bolt"></i> Ingreso Directo de Totales (Separador de Miles & Millones)
           </div>
-          <div style="display:grid;grid-template-columns: repeat(3, 1fr);gap:12px;">
+          <div style="display:grid;grid-template-columns: repeat(3, 1fr);gap:12px;" class="quote-category-cards">
             <div class="form-group" style="margin:0;">
               <label class="form-label" style="font-size:11px;">Mano de Obra Mensual ($)</label>
               <div class="currency-input-wrap">
@@ -1752,7 +1755,7 @@ function renderQuotationModalBody(quote, isEdit) {
               <div id="q-quick-labor-words" style="margin-top:2px;">
                 ${describeAmountInWords(quote.laborMonthlySubtotal || 4002000)}
               </div>
-              <span style="font-size:10px;color:var(--text-sub);">Se multiplica por los meses</span>
+              <span style="font-size:10px;color:#64748b;">Se multiplica por los meses</span>
             </div>
             <div class="form-group" style="margin:0;">
               <label class="form-label" style="font-size:11px;">Gastos Terreno & EPP ($)</label>
@@ -1763,7 +1766,7 @@ function renderQuotationModalBody(quote, isEdit) {
               <div id="q-quick-field-words" style="margin-top:2px;">
                 ${describeAmountInWords((quote.fieldItems || []).reduce((acc, it) => acc + (Number(it.total) || 0), 0) || 6740000)}
               </div>
-              <span style="font-size:10px;color:var(--text-sub);">Colaciones, traslados, fletes</span>
+              <span style="font-size:10px;color:#64748b;">Colaciones, traslados, fletes</span>
             </div>
             <div class="form-group" style="margin:0;">
               <label class="form-label" style="font-size:11px;">Materiales & Equipos ($)</label>
@@ -1774,7 +1777,7 @@ function renderQuotationModalBody(quote, isEdit) {
               <div id="q-quick-mat-words" style="margin-top:2px;">
                 ${describeAmountInWords((quote.materialItems || []).reduce((acc, it) => acc + (Number(it.total) || 0), 0) || 52118000)}
               </div>
-              <span style="font-size:10px;color:var(--text-sub);">Planchas, soldadura, motores</span>
+              <span style="font-size:10px;color:#64748b;">Planchas, soldadura, motores</span>
             </div>
           </div>
         </div>
@@ -1782,27 +1785,27 @@ function renderQuotationModalBody(quote, isEdit) {
         <!-- DETAILED ITEM TABLES -->
         
         <!-- 1. MANO DE OBRA -->
-        <div style="background:#0d1424;border:1px solid #1e293b;border-radius:8px;padding:12px;">
+        <div style="background:#ffffff;border:1px solid #e0f2fe;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="font-size:12.5px;font-weight:700;color:#38bdf8;display:flex;align-items:center;gap:6px;">
+            <div style="font-size:12.5px;font-weight:700;color:#0284c7;display:flex;align-items:center;gap:6px;">
               <i class="fa-solid fa-users-gear"></i> 1. Mano de Obra (Sueldos Imponibles Mensuales)
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuoteLaborRow()" style="font-size:11px;padding:3px 8px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuoteLaborRow()" style="font-size:11px;padding:4px 9px;">
               <i class="fa-solid fa-plus"></i> Añadir Cargo
             </button>
           </div>
           <table style="width:100%;font-size:12px;border-collapse:collapse;" id="quote-labor-table">
             <thead>
-              <tr style="background:#1e293b;color:var(--text-sub);text-align:left;">
-                <th style="padding:6px 8px;">Cargo / Rol</th>
-                <th style="padding:6px 8px;width:70px;text-align:center;">Cant</th>
-                <th style="padding:6px 8px;width:150px;text-align:right;">Sueldo Imponible ($)</th>
-                <th style="padding:6px 8px;width:40px;text-align:center;"></th>
+              <tr style="background:#f0f9ff;color:#0369a1;text-align:left;">
+                <th style="padding:6px 8px;border-bottom:1px solid #bae6fd;">Cargo / Rol</th>
+                <th style="padding:6px 8px;width:70px;text-align:center;border-bottom:1px solid #bae6fd;">Cant</th>
+                <th style="padding:6px 8px;width:150px;text-align:right;border-bottom:1px solid #bae6fd;">Sueldo Imponible ($)</th>
+                <th style="padding:6px 8px;width:40px;text-align:center;border-bottom:1px solid #bae6fd;"></th>
               </tr>
             </thead>
             <tbody id="quote-labor-tbody">
               ${(quote.laborItems || []).map((it, idx) => `
-                <tr style="border-bottom:1px solid #1e293b;">
+                <tr style="border-bottom:1px solid #f1f5f9;">
                   <td style="padding:4px 6px;">
                     <input type="text" class="form-control" style="font-size:12px;padding:4px 8px;" value="${escapeHtml(it.role)}" oninput="quote.laborItems[${idx}].role=this.value;">
                   </td>
@@ -1824,28 +1827,28 @@ function renderQuotationModalBody(quote, isEdit) {
         </div>
 
         <!-- 2. GASTOS E INSUMOS EN TERRENO -->
-        <div style="background:#0d1424;border:1px solid #1e293b;border-radius:8px;padding:12px;">
+        <div style="background:#ffffff;border:1px solid #e0f2fe;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="font-size:12.5px;font-weight:700;color:#f97316;display:flex;align-items:center;gap:6px;">
+            <div style="font-size:12.5px;font-weight:700;color:#f59e0b;display:flex;align-items:center;gap:6px;">
               <i class="fa-solid fa-truck-ramp-box"></i> 2. Trabajo en Terreno, EPP, Colaciones & Fletes
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuoteFieldRow()" style="font-size:11px;padding:3px 8px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuoteFieldRow()" style="font-size:11px;padding:4px 9px;">
               <i class="fa-solid fa-plus"></i> Añadir Gasto
             </button>
           </div>
           <table style="width:100%;font-size:12px;border-collapse:collapse;">
             <thead>
-              <tr style="background:#1e293b;color:var(--text-sub);text-align:left;">
-                <th style="padding:6px 8px;">Detalle / Partida</th>
-                <th style="padding:6px 8px;width:70px;text-align:center;">Cant</th>
-                <th style="padding:6px 8px;width:125px;text-align:right;">Valor Unit ($)</th>
-                <th style="padding:6px 8px;width:125px;text-align:right;">Total ($)</th>
-                <th style="padding:6px 8px;width:40px;text-align:center;"></th>
+              <tr style="background:#fffbeb;color:#92400e;text-align:left;">
+                <th style="padding:6px 8px;border-bottom:1px solid #fde68a;">Detalle / Partida</th>
+                <th style="padding:6px 8px;width:70px;text-align:center;border-bottom:1px solid #fde68a;">Cant</th>
+                <th style="padding:6px 8px;width:125px;text-align:right;border-bottom:1px solid #fde68a;">Valor Unit ($)</th>
+                <th style="padding:6px 8px;width:125px;text-align:right;border-bottom:1px solid #fde68a;">Total ($)</th>
+                <th style="padding:6px 8px;width:40px;text-align:center;border-bottom:1px solid #fde68a;"></th>
               </tr>
             </thead>
             <tbody id="quote-field-tbody">
               ${(quote.fieldItems || []).map((it, idx) => `
-                <tr style="border-bottom:1px solid #1e293b;">
+                <tr style="border-bottom:1px solid #f1f5f9;">
                   <td style="padding:4px 6px;">
                     <input type="text" class="form-control" style="font-size:12px;padding:4px 8px;" value="${escapeHtml(it.name)}" oninput="quote.fieldItems[${idx}].name=this.value;">
                   </td>
@@ -1856,7 +1859,7 @@ function renderQuotationModalBody(quote, isEdit) {
                     <input type="text" inputmode="numeric" id="q-f-unit-${idx}" class="form-control" style="font-size:12px;padding:4px 8px;text-align:right;font-weight:600;" value="${formatNumberCL(it.unitPrice)}" oninput="handleCurrencyInput(this);updateQuoteFieldUnit(${idx}, this.value);" autocomplete="off">
                   </td>
                   <td style="padding:4px 6px;">
-                    <input type="text" inputmode="numeric" id="q-f-tot-${idx}" class="form-control" style="font-size:12px;padding:4px 8px;text-align:right;font-weight:600;color:#38bdf8;" value="${formatNumberCL(it.total)}" oninput="handleCurrencyInput(this);updateQuoteFieldTotal(${idx}, this.value);" autocomplete="off">
+                    <input type="text" inputmode="numeric" id="q-f-tot-${idx}" class="form-control" style="font-size:12px;padding:4px 8px;text-align:right;font-weight:600;color:#0284c7;" value="${formatNumberCL(it.total)}" oninput="handleCurrencyInput(this);updateQuoteFieldTotal(${idx}, this.value);" autocomplete="off">
                   </td>
                   <td style="padding:4px 6px;text-align:center;">
                     <button type="button" class="btn btn-secondary btn-sm" onclick="removeQuoteFieldRow(${idx})" style="padding:4px 6px;color:var(--danger);font-size:11px;">
@@ -1870,28 +1873,28 @@ function renderQuotationModalBody(quote, isEdit) {
         </div>
 
         <!-- 3. MATERIALES, FABRICACIÓN Y EQUIPOS -->
-        <div style="background:#0d1424;border:1px solid #1e293b;border-radius:8px;padding:12px;">
+        <div style="background:#ffffff;border:1px solid #e0f2fe;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="font-size:12.5px;font-weight:700;color:#fed7aa;display:flex;align-items:center;gap:6px;">
+            <div style="font-size:12.5px;font-weight:700;color:#0284c7;display:flex;align-items:center;gap:6px;">
               <i class="fa-solid fa-cubes-stacked"></i> 3. Materiales, Planchas Plegadas, Soldadura & Equipos
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuoteMaterialRow()" style="font-size:11px;padding:3px 8px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuoteMaterialRow()" style="font-size:11px;padding:4px 9px;">
               <i class="fa-solid fa-plus"></i> Añadir Material
             </button>
           </div>
           <table style="width:100%;font-size:12px;border-collapse:collapse;">
             <thead>
-              <tr style="background:#1e293b;color:var(--text-sub);text-align:left;">
-                <th style="padding:6px 8px;">Material / Equipo</th>
-                <th style="padding:6px 8px;width:70px;text-align:center;">Cant</th>
-                <th style="padding:6px 8px;width:125px;text-align:right;">Valor Unit ($)</th>
-                <th style="padding:6px 8px;width:125px;text-align:right;">Total ($)</th>
-                <th style="padding:6px 8px;width:40px;text-align:center;"></th>
+              <tr style="background:#f0f9ff;color:#0369a1;text-align:left;">
+                <th style="padding:6px 8px;border-bottom:1px solid #bae6fd;">Material / Equipo</th>
+                <th style="padding:6px 8px;width:70px;text-align:center;border-bottom:1px solid #bae6fd;">Cant</th>
+                <th style="padding:6px 8px;width:125px;text-align:right;border-bottom:1px solid #bae6fd;">Valor Unit ($)</th>
+                <th style="padding:6px 8px;width:125px;text-align:right;border-bottom:1px solid #bae6fd;">Total ($)</th>
+                <th style="padding:6px 8px;width:40px;text-align:center;border-bottom:1px solid #bae6fd;"></th>
               </tr>
             </thead>
             <tbody id="quote-mat-tbody">
               ${(quote.materialItems || []).map((it, idx) => `
-                <tr style="border-bottom:1px solid #1e293b;">
+                <tr style="border-bottom:1px solid #f1f5f9;">
                   <td style="padding:4px 6px;">
                     <input type="text" class="form-control" style="font-size:12px;padding:4px 8px;" value="${escapeHtml(it.name)}" oninput="quote.materialItems[${idx}].name=this.value;">
                   </td>
@@ -1902,7 +1905,7 @@ function renderQuotationModalBody(quote, isEdit) {
                     <input type="text" inputmode="numeric" id="q-m-unit-${idx}" class="form-control" style="font-size:12px;padding:4px 8px;text-align:right;font-weight:600;" value="${formatNumberCL(it.unitPrice || 0)}" oninput="handleCurrencyInput(this);updateQuoteMaterialUnit(${idx}, this.value);" autocomplete="off">
                   </td>
                   <td style="padding:4px 6px;">
-                    <input type="text" inputmode="numeric" id="q-m-tot-${idx}" class="form-control" style="font-size:12px;padding:4px 8px;text-align:right;font-weight:600;color:#38bdf8;" value="${formatNumberCL(it.total || 0)}" oninput="handleCurrencyInput(this);updateQuoteMaterialTotal(${idx}, this.value);" autocomplete="off">
+                    <input type="text" inputmode="numeric" id="q-m-tot-${idx}" class="form-control" style="font-size:12px;padding:4px 8px;text-align:right;font-weight:600;color:#0284c7;" value="${formatNumberCL(it.total || 0)}" oninput="handleCurrencyInput(this);updateQuoteMaterialTotal(${idx}, this.value);" autocomplete="off">
                   </td>
                   <td style="padding:4px 6px;text-align:center;">
                     <button type="button" class="btn btn-secondary btn-sm" onclick="removeQuoteMaterialRow(${idx})" style="padding:4px 6px;color:var(--danger);font-size:11px;">
@@ -1917,7 +1920,7 @@ function renderQuotationModalBody(quote, isEdit) {
       `}
 
       <!-- Percentages Configuration -->
-      <div style="background:#090d16;border:1px solid #1e293b;border-radius:8px;padding:12px;display:grid;grid-template-columns: repeat(4, 1fr);gap:10px;">
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;display:grid;grid-template-columns: repeat(4, 1fr);gap:10px;">
         <div class="form-group" style="margin:0;">
           <label class="form-label" style="font-size:11px;">Comisión Admin (%)</label>
           <input type="number" id="q-admin-pct" class="form-control" value="${quote.adminPercent || 2}" oninput="recalculateQuoteLive()">
@@ -1927,17 +1930,17 @@ function renderQuotationModalBody(quote, isEdit) {
           <input type="number" id="q-contingency-pct" class="form-control" value="${quote.contingencyPercent || 5}" oninput="recalculateQuoteLive()">
         </div>
         <div class="form-group" style="margin:0;">
-          <label class="form-label" style="font-size:11px;color:#a855f7;font-weight:700;">Margen Utilidad (%)</label>
+          <label class="form-label" style="font-size:11px;color:#8b5cf6;font-weight:700;">Margen Utilidad (%)</label>
           <input type="number" id="q-profit-pct" class="form-control" value="${quote.profitPercent || 50}" oninput="recalculateQuoteLive()">
         </div>
         <div class="form-group" style="margin:0;">
-          <label class="form-label" style="font-size:11px;color:#f59e0b;">Desc. Negociación (%)</label>
+          <label class="form-label" style="font-size:11px;color:#d97706;">Desc. Negociación (%)</label>
           <input type="number" id="q-discount-pct" class="form-control" value="${quote.discountPercent || 0}" oninput="recalculateQuoteLive()">
         </div>
       </div>
 
       <!-- Live Calculation Card -->
-      <div id="quote-live-summary" style="background:#022c22;border:1px solid #059669;border-radius:8px;padding:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div id="quote-live-summary" style="background:#ecfdf5;border:1.5px solid #10b981;border-radius:12px;padding:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:0 4px 6px -1px rgba(16, 185, 129, 0.1);">
         <!-- Filled dynamically by recalculateQuoteLive() -->
       </div>
 
@@ -2155,18 +2158,18 @@ function recalculateQuoteLive() {
   if (summaryBox) {
     summaryBox.innerHTML = `
       <div>
-        <div style="font-size:11px;color:#a7f3d0;text-transform:uppercase;font-weight:700;">TOTAL COSTO DIRECTO</div>
-        <div style="font-size:16px;font-weight:800;color:#fff;">$ ${formatNumberCL(totalCostCenter)}</div>
+        <div style="font-size:11px;color:#047857;text-transform:uppercase;font-weight:700;">TOTAL COSTO DIRECTO</div>
+        <div style="font-size:16px;font-weight:800;color:#065f46;">$ ${formatNumberCL(totalCostCenter)}</div>
       </div>
       <div>
-        <div style="font-size:11px;color:#a7f3d0;text-transform:uppercase;font-weight:700;">UTILIDAD (${profitPct}%)</div>
-        <div style="font-size:16px;font-weight:800;color:#34d399;">$ ${formatNumberCL(profitAmount)}</div>
+        <div style="font-size:11px;color:#047857;text-transform:uppercase;font-weight:700;">UTILIDAD (${profitPct}%)</div>
+        <div style="font-size:16px;font-weight:800;color:#059669;">$ ${formatNumberCL(profitAmount)}</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:11px;color:#a7f3d0;text-transform:uppercase;font-weight:700;">TOTAL NETO VENTA</div>
-        <div style="font-size:20px;font-weight:900;color:#4ade80;">$ ${formatNumberCL(totalNet)}</div>
+        <div style="font-size:11px;color:#047857;text-transform:uppercase;font-weight:700;">TOTAL NETO VENTA</div>
+        <div style="font-size:20px;font-weight:900;color:#059669;">$ ${formatNumberCL(totalNet)}</div>
         ${discountPct > 0 ? `
-          <div style="font-size:11px;color:#fbbf24;font-weight:700;">Con Desc ${discountPct}%: $ ${formatNumberCL(totalNetNegotiated)}</div>
+          <div style="font-size:11px;color:#d97706;font-weight:700;">Con Desc ${discountPct}%: $ ${formatNumberCL(totalNetNegotiated)}</div>
         ` : ""}
       </div>
     `;
@@ -2692,13 +2695,15 @@ function renderProjects(container) {
                   <td>${p.manager || 'No asignado'}</td>
                   <td><strong>${fmtMoney(p.budget)}</strong></td>
                   <td>${fmtMoney(p.spent)}</td>
-                  <td style="min-width:130px;">
-                    <div style="display:flex;justify-content:space-between;font-size:11px;">
-                      <span style="font-weight:700;color:${p.realProgress >= 100 ? 'var(--success)' : '#fff'};">R: ${p.realProgress}%</span>
-                      <span style="color:var(--text-sub);">P: ${p.plannedProgress}%</span>
+                  <td style="min-width:140px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;margin-bottom:3px;">
+                      <span style="font-weight:700;color:${p.realProgress >= 100 ? 'var(--success)' : '#fff'};">
+                        <i class="fa-solid fa-clock-rotate-left" style="font-size:10px;color:var(--primary);margin-right:2px;"></i> ${p.realProgress}%
+                      </span>
+                      <span style="font-size:10px;color:var(--text-sub);" title="Calculado automáticamente por fecha">Auto</span>
                     </div>
                     <div class="prog-bar-bg">
-                      <div class="prog-bar-fill" style="width:${Math.min(100, p.realProgress)}%;background:${p.realProgress >= p.plannedProgress ? 'var(--success)' : 'var(--danger)'};"></div>
+                      <div class="prog-bar-fill" style="width:${Math.min(100, p.realProgress)}%;background:${p.realProgress >= 100 ? 'var(--success)' : h.color === 'red' ? 'var(--danger)' : h.color === 'yellow' ? 'var(--warning)' : 'var(--primary)'};"></div>
                     </div>
                   </td>
                   <td>
@@ -5331,6 +5336,8 @@ function populateProjectFormFromQuote(quoteId) {
     endEl.value = endDate.toISOString().split("T")[0];
   }
 
+  recalculateProjectModalProgress();
+
   const locEl = document.getElementById("f_location");
   if (locEl && (!locEl.value || locEl.value === "Faena en Terreno / Planta")) {
     locEl.value = "Faena en Terreno / Planta";
@@ -5343,9 +5350,24 @@ function populateProjectFormFromQuote(quoteId) {
 
   const statusEl = document.getElementById("f_status");
   if (statusEl) {
-    statusEl.value = "En Ejecución";
+    statusEl.value = "Automático";
   }
 }
+
+function recalculateProjectModalProgress() {
+  const startVal = document.getElementById("f_start") ? document.getElementById("f_start").value : "";
+  const endVal = document.getElementById("f_end") ? document.getElementById("f_end").value : "";
+  if (!startVal || !endVal) return;
+
+  const tempProj = { startDate: startVal, endDate: endVal, status: "En Ejecución" };
+  const autoProgress = calculateAutoProjectProgress(tempProj);
+
+  const planEl = document.getElementById("f_plan");
+  const realEl = document.getElementById("f_real");
+  if (planEl) planEl.value = autoProgress;
+  if (realEl) realEl.value = autoProgress;
+}
+window.recalculateProjectModalProgress = recalculateProjectModalProgress;
 
 function getEntityFormHTML(entity, data) {
   if (entity === "projects") {
@@ -5412,26 +5434,32 @@ function getEntityFormHTML(entity, data) {
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="f_plan">Avance Planificado (%)</label>
+          <label class="form-label" for="f_plan" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Avance Planificado (%)</span>
+            <span style="font-size:10px;color:var(--primary);"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto por Fecha</span>
+          </label>
           <div class="percent-input-wrap">
-            <input type="number" id="f_plan" class="form-control" value="${data.plannedProgress || 0}" min="0" max="100" step="0.1">
+            <input type="number" id="f_plan" class="form-control" value="${data.plannedProgress ?? calculateAutoProjectProgress(data)}" min="0" max="100" step="0.1">
             <span class="percent-suffix">%</span>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="f_real">Avance Real (%)</label>
+          <label class="form-label" for="f_real" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Avance Físico / Real (%)</span>
+            <span style="font-size:10px;color:var(--primary);"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto por Fecha</span>
+          </label>
           <div class="percent-input-wrap">
-            <input type="number" id="f_real" class="form-control" value="${data.realProgress || 0}" min="0" max="100" step="0.1">
+            <input type="number" id="f_real" class="form-control" value="${data.realProgress ?? calculateAutoProjectProgress(data)}" min="0" max="100" step="0.1">
             <span class="percent-suffix">%</span>
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">Fecha Inicio</label>
-          <input type="date" id="f_start" class="form-control" value="${data.startDate || '2026-01-01'}">
+          <input type="date" id="f_start" class="form-control" value="${data.startDate || '2026-01-01'}" onchange="recalculateProjectModalProgress()">
         </div>
         <div class="form-group">
           <label class="form-label">Fecha Término</label>
-          <input type="date" id="f_end" class="form-control" value="${data.endDate || '2026-06-30'}">
+          <input type="date" id="f_end" class="form-control" value="${data.endDate || '2026-06-30'}" onchange="recalculateProjectModalProgress()">
         </div>
         <div class="form-group">
           <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
@@ -6212,10 +6240,13 @@ async function saveModalRecord() {
     record.manager = document.getElementById("f_manager").value.trim();
     record.budget = parseCurrencyNumber(document.getElementById("f_budget").value);
     record.spent = parseCurrencyNumber(document.getElementById("f_spent").value);
-    record.plannedProgress = Number(document.getElementById("f_plan").value) || 0;
-    record.realProgress = Number(document.getElementById("f_real").value) || 0;
     record.startDate = document.getElementById("f_start").value;
     record.endDate = document.getElementById("f_end").value;
+
+    // Automatic progress calculation by timeline dates
+    const autoProg = calculateAutoProjectProgress(record);
+    record.realProgress = autoProg;
+    record.plannedProgress = autoProg;
 
     const rawStatus = document.getElementById("f_status") ? document.getElementById("f_status").value : "Automático";
     if (rawStatus === "Automático" || !rawStatus) {
@@ -6669,6 +6700,39 @@ async function attemptLogin() {
     if (passInput) passInput.value = "";
   }
 }
+
+function quickLoginDev(devEmail = "dev@cmindustrial.cl", devName = "Marco Dev") {
+  const emailInput = document.getElementById("auth-email");
+  const passInput = document.getElementById("auth-password");
+  if (emailInput) emailInput.value = devEmail;
+  if (passInput) passInput.value = "admin123";
+
+  // Crear o cargar sesión de desarrollador para avance
+  let user = (DB.users || []).find(u => u && u.email && u.email.toLowerCase() === devEmail.toLowerCase());
+  if (!user) {
+    user = {
+      id: "usr-dev-preview",
+      name: devName,
+      email: devEmail,
+      role: "Desarrollador",
+      avatar: getInitials(devName),
+      password: "admin123",
+      createdAt: new Date().toISOString().split("T")[0]
+    };
+    DB.users = DB.users || [];
+    DB.users.push(user);
+    saveDB();
+  } else {
+    user.role = "Desarrollador";
+  }
+
+  setLocalSession(user);
+  if (typeof initCloudSync === "function") {
+    initCloudSync(true);
+  }
+  showApp();
+}
+window.quickLoginDev = quickLoginDev;
 
 async function createFirstUser() {
   const nameInput = document.getElementById("setup-name");
