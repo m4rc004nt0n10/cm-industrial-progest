@@ -422,37 +422,39 @@ function renderDashboard(container) {
     ` : ""}
 
     <!-- Top Dashboard Filter Toolbar (Afecta KPIs y Gráficos) -->
-    <div class="card" style="padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#ffffff;border:1px solid #bae6fd;border-radius:12px;box-shadow:0 2px 4px rgba(2,132,199,0.04);">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:34px;height:34px;border-radius:8px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;color:#0284c7;font-size:15px;">
+    <div class="dashboard-filter-card">
+      <div class="dashboard-filter-info">
+        <div class="dashboard-filter-icon">
           <i class="fa-solid fa-filter"></i>
         </div>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px;">
-            <span>Alcance del Dashboard:</span>
-            <span class="badge ${isFiltered ? 'badge-blue' : 'badge-green'}" style="font-size:11px;padding:3px 8px;">
-              ${isFiltered ? `${filteredProject ? filteredProject.name : activeDashboardProjectFilter}` : 'Vista General Consolidada'}
+        <div class="dashboard-filter-text">
+          <div class="dashboard-filter-title-row">
+            <span class="dashboard-filter-title">Alcance del Dashboard:</span>
+            <span class="badge ${isFiltered ? 'badge-blue' : 'badge-green'} dashboard-filter-badge" title="${isFiltered ? (filteredProject ? filteredProject.name : activeDashboardProjectFilter) : 'Vista General Consolidada'}">
+              ${isFiltered ? (filteredProject ? filteredProject.name : activeDashboardProjectFilter) : 'Vista General Consolidada'}
             </span>
           </div>
-          <div style="font-size:11px;color:#64748b;">Filtra los 10 KPIs y los gráficos por proyecto específico o visualiza el consolidado general de la empresa</div>
+          <div class="dashboard-filter-desc">Filtra los 10 KPIs y los gráficos por proyecto específico o visualiza el consolidado general de la empresa</div>
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <label for="dashboard-project-select" style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">Seleccionar Proyecto:</label>
-        <select id="dashboard-project-select" class="form-control" style="font-size:12px;padding:7px 12px;min-width:260px;background:#f8fafc;border:1px solid #cbd5e1;font-weight:600;color:#0f172a;" onchange="onDashboardProjectFilterChange(this.value)">
-          <option value="todos" ${activeDashboardProjectFilter === 'todos' ? 'selected' : ''}>📊 Vista General (Todos los Proyectos)</option>
-          ${DB.projects.map(p => `
-            <option value="${p.id}" ${activeDashboardProjectFilter === p.id ? 'selected' : ''}>
-              ${p.id} - ${p.name}
-            </option>
-          `).join("")}
-        </select>
-        ${isFiltered ? `
-          <button class="btn btn-secondary btn-sm" onclick="onDashboardProjectFilterChange('todos')" style="font-size:11.5px;padding:6px 12px;color:#0284c7;font-weight:600;" title="Ver resumen general de todos los proyectos">
-            <i class="fa-solid fa-rotate-left"></i> Ver General
-          </button>
-        ` : ''}
+      <div class="dashboard-filter-controls">
+        <label for="dashboard-project-select" class="dashboard-filter-label">Seleccionar Proyecto:</label>
+        <div class="dashboard-filter-inputs">
+          <select id="dashboard-project-select" class="form-control dashboard-project-select" onchange="onDashboardProjectFilterChange(this.value)">
+            <option value="todos" ${activeDashboardProjectFilter === 'todos' ? 'selected' : ''}>📊 Vista General (Todos los Proyectos)</option>
+            ${DB.projects.map(p => `
+              <option value="${p.id}" ${activeDashboardProjectFilter === p.id ? 'selected' : ''}>
+                ${p.id} - ${p.name}
+              </option>
+            `).join("")}
+          </select>
+          ${isFiltered ? `
+            <button class="btn btn-secondary btn-sm dashboard-filter-reset-btn" onclick="onDashboardProjectFilterChange('todos')" title="Ver resumen general de todos los proyectos">
+              <i class="fa-solid fa-rotate-left"></i> <span>Ver General</span>
+            </button>
+          ` : ''}
+        </div>
       </div>
     </div>
 
@@ -944,7 +946,7 @@ function renderQuotations(container) {
           <span class="kpi-title">TOTAL COTIZACIONES</span>
           <i class="fa-solid fa-folder-open kpi-icon" style="color:var(--primary);"></i>
         </div>
-        <div class="kpi-value" style="color:#fff;">${totalCotizaciones} <span style="font-size:13px;font-weight:400;color:var(--text-sub);">emitidas</span></div>
+        <div class="kpi-value" style="color:var(--text-main);">${totalCotizaciones} <span style="font-size:13px;font-weight:400;color:var(--text-sub);">emitidas</span></div>
         <div class="kpi-subtext">Histórico en plataforma</div>
       </div>
 
@@ -2670,7 +2672,7 @@ function renderProjects(container) {
     <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 18px;">
       <div class="stat-card" style="cursor:pointer;${activeProjectStatusFilter === 'todos' ? 'border-color:var(--primary);' : ''}" onclick="setProjectStatusFilter('todos')">
         <div class="stat-label">TOTAL PROYECTOS</div>
-        <div class="stat-value" style="color:#fff;">${totalPrj}</div>
+        <div class="stat-value" style="color:var(--primary);">${totalPrj}</div>
         <div style="font-size:11px;color:var(--text-sub);margin-top:2px;">Cartera total en obra</div>
       </div>
       <div class="stat-card" style="cursor:pointer;${activeProjectStatusFilter === 'ejecucion' ? 'border-color:#f97316;' : ''}" onclick="setProjectStatusFilter('ejecucion')">

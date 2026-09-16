@@ -73,11 +73,11 @@ function defaultSeedData() {
         manager: "Ing. Marcela Pardo",
         budget: 280000000,
         spent: 245000000,
-        plannedProgress: 60,
-        realProgress: 42,
+        plannedProgress: 100,
+        realProgress: 78,
         startDate: "2026-02-01",
-        endDate: "2026-10-15",
-        status: "En Ejecución"
+        endDate: "2026-08-30",
+        status: "Vencido"
       },
       {
         id: "PRJ-003",
@@ -100,12 +100,12 @@ function defaultSeedData() {
         location: "San Felipe, V Región",
         manager: "Ing. Marco Antonio",
         budget: 114151934,
-        spent: 42300000,
-        plannedProgress: 40,
-        realProgress: 38,
-        startDate: "2026-05-10",
-        endDate: "2026-10-30",
-        status: "En Ejecución"
+        spent: 0,
+        plannedProgress: 0,
+        realProgress: 0,
+        startDate: "2026-10-15",
+        endDate: "2027-02-28",
+        status: "Planificación"
       },
       {
         id: "PRJ-005",
@@ -114,12 +114,40 @@ function defaultSeedData() {
         location: "Rancagua, VI Región",
         manager: "Ing. Rodrigo Silva",
         budget: 96772833,
-        spent: 102500000,
-        plannedProgress: 80,
-        realProgress: 75,
-        startDate: "2026-03-01",
-        endDate: "2026-09-25",
+        spent: 94800000,
+        plannedProgress: 100,
+        realProgress: 100,
+        startDate: "2026-01-10",
+        endDate: "2026-08-20",
+        status: "Finalizado"
+      },
+      {
+        id: "PRJ-006",
+        name: "Overhaul de Puente Grúa & Estructuras Nave Piping",
+        client: "Celulosa Arauco",
+        location: "Constitución, VII Región",
+        manager: "Ing. Marcela Pardo",
+        budget: 175000000,
+        spent: 58000000,
+        plannedProgress: 50,
+        realProgress: 48,
+        startDate: "2026-06-01",
+        endDate: "2026-11-15",
         status: "En Ejecución"
+      },
+      {
+        id: "PRJ-007",
+        name: "Montaje Línea de Transmisión 110kV",
+        client: "Transelec",
+        location: "Copiapó, III Región",
+        manager: "Ing. Rodrigo Silva",
+        budget: 320000000,
+        spent: 0,
+        plannedProgress: 0,
+        realProgress: 0,
+        startDate: "2026-11-01",
+        endDate: "2027-05-30",
+        status: "Planificación"
       }
     ],
     expenses: [
@@ -199,6 +227,83 @@ function defaultSeedData() {
         date: "2026-09-02",
         status: "Aprobado",
         note: "Fletes de carga sobredimensionada y escolta vial"
+      },
+      {
+        id: "EXP-108",
+        folio: "F-4701",
+        projectId: "PRJ-001",
+        category: "Materiales",
+        amount: 4850000,
+        supplier: "3M Industrial Chile",
+        date: "2026-09-05",
+        status: "Aprobado",
+        note: "Trajes de cuero, caretas fotosensibles y arneses dieléctricos"
+      },
+      {
+        id: "EXP-109",
+        folio: "F-4712",
+        projectId: "PRJ-003",
+        category: "Servicios",
+        amount: 6200000,
+        supplier: "CESMEC Bureau Veritas",
+        date: "2026-09-08",
+        status: "Aprobado",
+        note: "Radiografía industrial y tintas penetrantes en uniones de impulsión"
+      },
+      {
+        id: "EXP-110",
+        folio: "F-4720",
+        projectId: "PRJ-002",
+        category: "Equipamiento",
+        amount: 8900000,
+        supplier: "Copec Combustibles Faena",
+        date: "2026-09-10",
+        status: "Aprobado",
+        note: "Petróleo diésel para generadores y compresores auxiliares"
+      },
+      {
+        id: "EXP-111",
+        folio: "F-4735",
+        projectId: "PRJ-001",
+        category: "Materiales",
+        amount: 7600000,
+        supplier: "Sherwin Williams Protective",
+        date: "2026-09-11",
+        status: "Aprobado",
+        note: "Pintura epóxica marina anticorrosiva de alto espesor"
+      },
+      {
+        id: "EXP-112",
+        folio: "F-4740",
+        projectId: "PRJ-005",
+        category: "Servicios",
+        amount: 11400000,
+        supplier: "Maestranza Rancagua",
+        date: "2026-09-12",
+        status: "Aprobado",
+        note: "Mecanizado de poleas y tambores de tracción de alimentador"
+      },
+      {
+        id: "EXP-113",
+        folio: "F-4752",
+        projectId: "PRJ-002",
+        category: "Materiales",
+        amount: 3800000,
+        supplier: "Wurth Chile",
+        date: "2026-09-13",
+        status: "Aprobado",
+        note: "Pernos de torque calibrados Grado 8.8 y arandelas biseladas"
+      },
+      {
+        id: "EXP-114",
+        folio: "F-4760",
+        projectId: "PRJ-006",
+        category: "Materiales",
+        amount: 9500000,
+        supplier: "Prodalam Industrial",
+        date: "2026-09-14",
+        status: "Aprobado",
+        note: "Cables de acero galvanizado para izaje y carros de traslación"
       }
     ],
     workers: [
@@ -281,6 +386,54 @@ function defaultSeedData() {
         hoursWorked: 160,
         overtimeHours: 8.0,
         status: "Activo en Obra"
+      },
+      {
+        id: "WRK-006",
+        rut: "13.780.455-1",
+        name: "Luis Navarro",
+        role: "Supervisor de Montaje & HSE",
+        projectId: "PRJ-002",
+        phone: "+56 9 3321 7765",
+        email: "luis.navarro@cmindustrial.cl",
+        certifications: "Prevención SERNAGEOMIN B, Auditor ISO 45001",
+        medExamExpiry: "2026-12-28",
+        workSchedule: "Turno 7x7 (Faena Minera 12 hrs/día)",
+        hourlyRate: 18000,
+        hoursWorked: 168,
+        overtimeHours: 14.5,
+        status: "Activo en Obra"
+      },
+      {
+        id: "WRK-007",
+        rut: "16.234.901-7",
+        name: "Esteban Carrasco",
+        role: "Técnico Instrumentista",
+        projectId: "PRJ-003",
+        phone: "+56 9 2211 4433",
+        email: "esteban.carrasco@cmindustrial.cl",
+        certifications: "Calibración Hart / Fieldbus, Lazos 4-20mA",
+        medExamExpiry: "2026-10-30",
+        workSchedule: "40 hrs/semana (Turno 5x2)",
+        hourlyRate: 14000,
+        hoursWorked: 160,
+        overtimeHours: 10.0,
+        status: "Activo en Obra"
+      },
+      {
+        id: "WRK-008",
+        rut: "15.891.220-3",
+        name: "Pedro Salinas",
+        role: "Maestro Calderero Piping",
+        projectId: "PRJ-006",
+        phone: "+56 9 9988 1234",
+        email: "pedro.salinas@cmindustrial.cl",
+        certifications: "Spools ASME B31.3, TIG Inox, Puente Grúa",
+        medExamExpiry: "2026-11-15",
+        workSchedule: "Turno 4x3 (Jornada 10 hrs/día)",
+        hourlyRate: 13500,
+        hoursWorked: 160,
+        overtimeHours: 16.0,
+        status: "Activo en Obra"
       }
     ],
     overtime: [
@@ -330,6 +483,70 @@ function defaultSeedData() {
         totalDayPay: 174000,
         reason: "Alineación láser de bomba centrífuga de impulsión",
         supervisor: "Ing. Cristian Morales",
+        status: "Aprobado"
+      },
+      {
+        id: "OVT-104",
+        workerId: "WRK-002",
+        projectId: "PRJ-001",
+        date: "2026-09-09",
+        workSchedule: "Turno 7x7 (Faena Minera 12 hrs/día)",
+        regularHours: 12,
+        overtimeHours: 4.5,
+        hourlyRate: 13000,
+        overtimeRate: 19500,
+        overtimeTotal: 87750,
+        totalDayPay: 243750,
+        reason: "Cableado y comisionamiento de tablero de fuerza nocturno",
+        supervisor: "Ing. Rodrigo Silva",
+        status: "Aprobado"
+      },
+      {
+        id: "OVT-105",
+        workerId: "WRK-003",
+        projectId: "PRJ-002",
+        date: "2026-09-11",
+        workSchedule: "40 hrs/semana (Turno 5x2)",
+        regularHours: 8,
+        overtimeHours: 5.0,
+        hourlyRate: 11500,
+        overtimeRate: 17250,
+        overtimeTotal: 86250,
+        totalDayPay: 178250,
+        reason: "Maniobra de izaje crítico de tolva primaria 45T",
+        supervisor: "Ing. Marcela Pardo",
+        status: "Aprobado"
+      },
+      {
+        id: "OVT-106",
+        workerId: "WRK-006",
+        projectId: "PRJ-002",
+        date: "2026-09-12",
+        workSchedule: "Turno 7x7 (Faena Minera 12 hrs/día)",
+        regularHours: 12,
+        overtimeHours: 2.5,
+        hourlyRate: 18000,
+        overtimeRate: 27000,
+        overtimeTotal: 67500,
+        totalDayPay: 283500,
+        reason: "Inspección de seguridad y liberación de trabajo en caliente",
+        supervisor: "Ing. Marcela Pardo",
+        status: "Aprobado"
+      },
+      {
+        id: "OVT-107",
+        workerId: "WRK-008",
+        projectId: "PRJ-006",
+        date: "2026-09-14",
+        workSchedule: "Turno 4x3 (Jornada 10 hrs/día)",
+        regularHours: 10,
+        overtimeHours: 3.5,
+        hourlyRate: 13500,
+        overtimeRate: 20250,
+        overtimeTotal: 70875,
+        totalDayPay: 205875,
+        reason: "Armado y biselado de spools de alta presión en nave",
+        supervisor: "Ing. Marcela Pardo",
         status: "Aprobado"
       }
     ],
@@ -385,6 +602,32 @@ function defaultSeedData() {
         lastMaintenance: "2026-05-20",
         status: "En Mantenimiento",
         photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="35" y="45" width="170" height="90" rx="6" fill="%231e293b" stroke="%23f59e0b" stroke-width="2"/><circle cx="75" cy="135" r="14" fill="%23475569"/><circle cx="165" cy="135" r="14" fill="%23475569"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%23f59e0b" font-weight="bold" text-anchor="middle">CMP-01: Atlas Copco 185 CFM</text></svg>'
+      },
+      {
+        id: "TLS-005",
+        code: "TRQ-03",
+        name: "Torquímetro Hidráulico de Bajo Perfil 10.000 Nm",
+        brand: "Hytorc Stealth",
+        serialNumber: "HY-10482",
+        projectId: "PRJ-002",
+        responsible: "Rodrigo Fuentes",
+        nextMaintenance: "2026-10-20",
+        lastMaintenance: "2026-05-15",
+        status: "En Faena",
+        photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="35" y="55" width="170" height="70" rx="8" fill="%231e293b" stroke="%2338bdf8" stroke-width="2"/><circle cx="75" cy="90" r="20" fill="%230f172a" stroke="%2338bdf8" stroke-width="2"/><rect x="110" y="75" width="80" height="30" rx="4" fill="%23334155"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%2338bdf8" font-weight="bold" text-anchor="middle">TRQ-03: Hytorc Stealth 10k</text></svg>'
+      },
+      {
+        id: "TLS-006",
+        code: "CAM-02",
+        name: "Camión Pluma 15T con Capacho Aislado",
+        brand: "Mercedes-Benz / Fassi",
+        serialNumber: "MB-77301",
+        projectId: "PRJ-006",
+        responsible: "Luis Navarro",
+        nextMaintenance: "2026-11-01",
+        lastMaintenance: "2026-07-25",
+        status: "En Faena",
+        photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="30" y="70" width="130" height="60" rx="4" fill="%231e293b" stroke="%23f97316" stroke-width="2"/><rect x="130" y="50" width="50" height="80" rx="4" fill="%23334155"/><line x1="50" y1="70" x2="110" y2="30" stroke="%23f97316" stroke-width="4"/><circle cx="65" cy="130" r="14" fill="%23475569"/><circle cx="155" cy="130" r="14" fill="%23475569"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%23f97316" font-weight="bold" text-anchor="middle">CAM-02: MB Actros Pluma 15T</text></svg>'
       }
     ],
     documents: [
@@ -428,6 +671,62 @@ function defaultSeedData() {
         amount: 4500000,
         supplier: "Seguros Generales BCI",
         fileName: "Poliza_RC_CodelcoNorte.pdf",
+        fileType: "pdf"
+      },
+      {
+        id: "DOC-004",
+        code: "FAC-88421",
+        name: "Factura Electrónica Compra Vigas Estructurales",
+        type: "Factura / Compra",
+        projectId: "PRJ-001",
+        date: "2026-05-12",
+        expiryDate: "2026-06-12",
+        status: "Vigente",
+        amount: 85000000,
+        supplier: "Aceros Industriales del Pacífico",
+        fileName: "Factura_F-4582_Aceros.pdf",
+        fileType: "pdf"
+      },
+      {
+        id: "DOC-005",
+        code: "EDP-N03",
+        name: "Estado de Pago N°3 Aprobado Subestación Ventanas",
+        type: "Estado de Pago",
+        projectId: "PRJ-001",
+        date: "2026-08-30",
+        expiryDate: "2026-09-30",
+        status: "Vigente",
+        amount: 95400000,
+        supplier: "Minera Andina SpA",
+        fileName: "EDP_03_Aprobado_MineraAndina.pdf",
+        fileType: "pdf"
+      },
+      {
+        id: "DOC-006",
+        code: "PRO-HID-02",
+        name: "Protocolo de Prueba Hidrostática Tuberías 800 PSI",
+        type: "Calidad / Certificación",
+        projectId: "PRJ-003",
+        date: "2026-09-01",
+        expiryDate: "2026-12-31",
+        status: "Vigente",
+        amount: 0,
+        supplier: "Inspección Técnica ITO",
+        fileName: "Protocolo_Hidrostatica_PRJ003.pdf",
+        fileType: "pdf"
+      },
+      {
+        id: "DOC-007",
+        code: "INF-SERNAG",
+        name: "Informe de Fiscalización SERNAGEOMIN Sin Observaciones",
+        type: "Inspección Técnica",
+        projectId: "PRJ-002",
+        date: "2026-08-15",
+        expiryDate: "2026-11-15",
+        status: "Vigente",
+        amount: 0,
+        supplier: "SERNAGEOMIN Región de Antofagasta",
+        fileName: "Acta_Fiscalizacion_SERNAGEOMIN.pdf",
         fileType: "pdf"
       }
     ],
@@ -531,6 +830,95 @@ function defaultSeedData() {
         discountPercent: 5,
         discountAmount: 5093307,
         totalNetNegotiated: 96772833
+      },
+      {
+        id: "COT-003",
+        code: "COT-2026-003",
+        title: "SUBESTACIÓN VENTANAS - MONTAJE ESTRUCTURAS & BANCO DE DUCTOS",
+        client: "Minera Andina SpA",
+        executionTime: "6 Meses",
+        months: 6,
+        status: "Convertida",
+        createdAt: "2026-08-15",
+        validUntil: "2026-09-15",
+        notes: "Montaje electromecánico de soportes de alta tensión, bancos de ductos subterráneos y canalizaciones blindadas.",
+        laborItems: [
+          { role: "Maestro Mayor Estructuras", count: 2, taxableMonthly: 2350000, fonasa: 164500, afp: 282000, liquidMonthly: 1903500 },
+          { role: "Soldador Calificado 6G ASME", count: 2, taxableMonthly: 2480000, fonasa: 173600, afp: 297600, liquidMonthly: 2008800 },
+          { role: "Rigger Nivel 1 Certificado", count: 1, taxableMonthly: 1950000, fonasa: 136500, afp: 234000, liquidMonthly: 1579500 },
+          { role: "Ayudantes Especializados", count: 3, taxableMonthly: 1550000, fonasa: 108500, afp: 186000, liquidMonthly: 1255500 }
+        ],
+        laborMonthlySubtotal: 11460000,
+        laborTotal: 68760000,
+        fieldItems: [
+          { name: "EPP Especial Alta Tensión & Calzado Dieléctrico", qty: 8, unitPrice: 120000, total: 960000 },
+          { name: "Alimentación & Viáticos Faena (132 días x 8 pers)", qty: 1056, unitPrice: 8500, total: 8976000 },
+          { name: "Fletes y Transporte Grúas 70T", qty: 6, unitPrice: 1850000, total: 11100000 },
+          { name: "Camioneta Escolta y Combustible", qty: 6, unitPrice: 950000, total: 5700000 }
+        ],
+        materialItems: [
+          { name: "Perfiles HEB-300 y Ángulos L100 Galvanizados", qty: 1, unitPrice: 85000000, total: 85000000 },
+          { name: "Pernos de Anclaje ASTM A325 & Graderío", qty: 1, unitPrice: 14500000, total: 14500000 },
+          { name: "Bandejas Portacables Ranuradas C20", qty: 1, unitPrice: 22400000, total: 22400000 },
+          { name: "Pintura Epóxica Marina Alto Espesor", qty: 80, unitPrice: 95000, total: 7600000 }
+        ],
+        expensesSubtotal: 156236000,
+        costCenterSubtotal: 224996000,
+        adminPercent: 3,
+        adminTotal: 6749880,
+        contingencyPercent: 5,
+        contingencyTotal: 11249800,
+        adminSubtotal: 17999680,
+        totalCostCenter: 242995680,
+        profitPercent: 45,
+        profitAmount: 109348056,
+        totalNet: 352343736,
+        discountPercent: 0,
+        discountAmount: 0,
+        totalNetNegotiated: 352343736
+      },
+      {
+        id: "COT-004",
+        code: "COT-2026-004",
+        title: "PLANTA CHANCADO - OVERHAUL DE TOLVA & REVESTIMIENTO ANTIABRASIVO",
+        client: "Codelco División Norte",
+        executionTime: "3 Meses",
+        months: 3,
+        status: "Borrador",
+        createdAt: "2026-09-12",
+        validUntil: "2026-10-12",
+        notes: "Cambio de placas de desgaste Hardox 500 en tolva primaria, vigas de soporte y cambio de pernos de alto torque.",
+        laborItems: [
+          { role: "Técnico Calderero Especialista", count: 2, taxableMonthly: 2200000, fonasa: 154000, afp: 264000, liquidMonthly: 1782000 },
+          { role: "Soldador Arco Sumergido", count: 2, taxableMonthly: 2150000, fonasa: 150500, afp: 258000, liquidMonthly: 1741500 },
+          { role: "Ayudante de Terreno", count: 2, taxableMonthly: 1400000, fonasa: 98000, afp: 168000, liquidMonthly: 1134000 }
+        ],
+        laborMonthlySubtotal: 8500000,
+        laborTotal: 25500000,
+        fieldItems: [
+          { name: "Inducción y Exámenes Ocupacionales Gran Altura", qty: 6, unitPrice: 180000, total: 1080000 },
+          { name: "Alojamiento y Pensión Completa Calama", qty: 3, unitPrice: 3200000, total: 9600000 },
+          { name: "Arriendo Grúa Horquilla & Manlift 16m", qty: 3, unitPrice: 2800000, total: 8400000 }
+        ],
+        materialItems: [
+          { name: "Placas Antiabrasivas Hardox 500 (20mm)", qty: 1, unitPrice: 48600000, total: 48600000 },
+          { name: "Soldadura E7018 & Alambre Tubulado", qty: 1, unitPrice: 6200000, total: 6200000 },
+          { name: "Pernos Cabeza Avellanada Grado 8.8", qty: 1, unitPrice: 3800000, total: 3800000 }
+        ],
+        expensesSubtotal: 77680000,
+        costCenterSubtotal: 103180000,
+        adminPercent: 2,
+        adminTotal: 2063600,
+        contingencyPercent: 5,
+        contingencyTotal: 5159000,
+        adminSubtotal: 7222600,
+        totalCostCenter: 110402600,
+        profitPercent: 50,
+        profitAmount: 55201300,
+        totalNet: 165603900,
+        discountPercent: 3,
+        discountAmount: 4968117,
+        totalNetNegotiated: 160635783
       }
     ]
   };
@@ -538,243 +926,7 @@ function defaultSeedData() {
 
 // Datos de demostración industrial (opcionales para pruebas)
 function demoSeedData() {
-  return {
-    version: "4.0",
-    settings: {
-      companyName: "CM Industrial",
-      currency: "CLP",
-      currencySymbol: "$",
-      trafficLight: {
-        alertGapPercent: 10,
-        criticalGapPercent: 20,
-        budgetWarningPercent: 85
-      }
-    },
-    users: [
-      {
-        id: "usr-dev",
-        name: "Desarrollador CM",
-        email: "desarrollador@cmindustrial.cl",
-        role: "Desarrollador",
-        avatar: "DEV",
-        createdAt: "2026-01-10"
-      },
-      {
-        id: "usr-user",
-        name: "Operador de Terreno",
-        email: "usuario@cmindustrial.cl",
-        role: "Usuario",
-        avatar: "OP",
-        createdAt: "2026-01-15"
-      }
-    ],
-    projects: [
-      {
-        id: "PRJ-001",
-        name: "Montaje Electromecánico Subestación Ventanas",
-        client: "Minera Andina SpA",
-        location: "Quintero, V Región",
-        manager: "Ing. Rodrigo Silva",
-        budget: 450000000,
-        spent: 310000000,
-        plannedProgress: 75,
-        realProgress: 72,
-        startDate: "2026-01-15",
-        endDate: "2026-11-30",
-        status: "En Ejecución"
-      },
-      {
-        id: "PRJ-002",
-        name: "Mantenimiento Integral Planta Chancado",
-        client: "Codelco División Norte",
-        location: "Calama, II Región",
-        manager: "Ing. Marcela Pardo",
-        budget: 280000000,
-        spent: 245000000,
-        plannedProgress: 60,
-        realProgress: 42,
-        startDate: "2026-02-01",
-        endDate: "2026-10-15",
-        status: "En Ejecución"
-      },
-      {
-        id: "PRJ-003",
-        name: "Sistema de Impulsión de Agua Concentradora",
-        client: "Antofagasta Minerals",
-        location: "Sierra Gorda",
-        manager: "Ing. Cristian Morales",
-        budget: 620000000,
-        spent: 180000000,
-        plannedProgress: 35,
-        realProgress: 36,
-        startDate: "2026-04-01",
-        endDate: "2026-12-20",
-        status: "En Ejecución"
-      }
-    ],
-    expenses: [
-      {
-        id: "EXP-101",
-        folio: "F-4582",
-        projectId: "PRJ-001",
-        category: "Materiales",
-        amount: 85000000,
-        supplier: "Aceros Industriales del Pacífico",
-        date: "2026-05-12",
-        status: "Aprobado",
-        note: "Vigas estructurales y pernos de alta resistencia"
-      },
-      {
-        id: "EXP-102",
-        folio: "F-4599",
-        projectId: "PRJ-002",
-        category: "Servicios",
-        amount: 42000000,
-        supplier: "Grúas & Montajes del Norte",
-        date: "2026-06-05",
-        status: "Aprobado",
-        note: "Arriendo grúa telescópica 70T para tolva"
-      },
-      {
-        id: "EXP-103",
-        folio: "F-4610",
-        projectId: "PRJ-003",
-        category: "Equipamiento",
-        amount: 54000000,
-        supplier: "Bombas y Tuberías Mineras S.A.",
-        date: "2026-06-20",
-        status: "Aprobado",
-        note: "Válvulas de retención y acoples victaulic"
-      }
-    ],
-    workers: [
-      {
-        id: "WRK-001",
-        rut: "15.420.890-K",
-        name: "Carlos Morales",
-        role: "Soldador Calificado 6G",
-        projectId: "PRJ-001",
-        phone: "+56 9 8451 2291",
-        certifications: "ASME IX, Oxicorte, Altura",
-        medExamExpiry: "2026-12-30",
-        workSchedule: "40 hrs/semana (Turno 5x2)",
-        hourlyRate: 14500,
-        hoursWorked: 160,
-        overtimeHours: 21.5,
-        status: "Activo en Obra"
-      },
-      {
-        id: "WRK-002",
-        rut: "16.890.123-4",
-        name: "Matías Alarcón",
-        role: "Técnico Electricista SEC",
-        projectId: "PRJ-001",
-        phone: "+56 9 7312 9044",
-        certifications: "Licencia Clase A SEC, Espacios Confinados",
-        medExamExpiry: "2026-10-15",
-        workSchedule: "Turno 7x7 (Faena Minera 12 hrs/día)",
-        hourlyRate: 13000,
-        hoursWorked: 168,
-        overtimeHours: 15.0,
-        status: "Activo en Obra"
-      },
-      {
-        id: "WRK-003",
-        rut: "14.230.981-2",
-        name: "Hernán Sepúlveda",
-        role: "Rigger / Maniobrista",
-        projectId: "PRJ-002",
-        phone: "+56 9 6621 0032",
-        certifications: "Rigger Alta Tensión Certificado",
-        medExamExpiry: "2026-08-01",
-        workSchedule: "40 hrs/semana (Turno 5x2)",
-        hourlyRate: 11500,
-        hoursWorked: 152,
-        overtimeHours: 12.5,
-        status: "Disponible (En Base)"
-      },
-      {
-        id: "WRK-004",
-        rut: "17.654.321-8",
-        name: "Rodrigo Fuentes",
-        role: "Mecánico Montajista",
-        projectId: "PRJ-003",
-        phone: "+56 9 5543 8812",
-        certifications: "Torque Controlado, Trabajo en Caliente",
-        medExamExpiry: "2026-11-20",
-        workSchedule: "Turno 4x3 (Jornada 10 hrs/día)",
-        hourlyRate: 12000,
-        hoursWorked: 160,
-        overtimeHours: 18.0,
-        status: "Activo en Obra"
-      }
-    ],
-    overtime: [
-      {
-        id: "OVT-101",
-        workerId: "WRK-001",
-        projectId: "PRJ-001",
-        date: "2026-08-28",
-        workSchedule: "40 hrs/semana (Turno 5x2)",
-        regularHours: 8,
-        overtimeHours: 3.5,
-        hourlyRate: 14500,
-        overtimeRate: 21750,
-        overtimeTotal: 76125,
-        totalDayPay: 192125,
-        reason: "Soldadura urgente de tubería de relave fuera de turno",
-        supervisor: "Ing. Residente",
-        status: "Aprobado"
-      },
-      {
-        id: "OVT-102",
-        workerId: "WRK-001",
-        projectId: "PRJ-001",
-        date: "2026-09-02",
-        workSchedule: "40 hrs/semana (Turno 5x2)",
-        regularHours: 8,
-        overtimeHours: 4.0,
-        hourlyRate: 14500,
-        overtimeRate: 21750,
-        overtimeTotal: 87000,
-        totalDayPay: 203000,
-        reason: "Prueba hidrostática y pase de raíz en spool principal",
-        supervisor: "Ing. Residente",
-        status: "Aprobado"
-      }
-    ],
-    tools: [
-      {
-        id: "TLS-001",
-        code: "GEN-01",
-        name: "Generador Diésel Insonorizado 150 kVA",
-        brand: "Cummins Power",
-        serialNumber: "CP-88421",
-        projectId: "PRJ-001",
-        responsible: "Carlos Morales",
-        nextMaintenance: "2026-09-30",
-        lastMaintenance: "2026-06-01",
-        status: "En Faena",
-        photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="25" y="35" width="190" height="110" rx="8" fill="%231e293b" stroke="%23f97316" stroke-width="2"/><rect x="35" y="45" width="80" height="90" rx="4" fill="%23334155"/><line x1="45" y1="55" x2="105" y2="55" stroke="%2394a3b8" stroke-width="3"/><line x1="45" y1="65" x2="105" y2="65" stroke="%2394a3b8" stroke-width="3"/><line x1="45" y1="75" x2="105" y2="75" stroke="%2394a3b8" stroke-width="3"/><line x1="45" y1="85" x2="105" y2="85" stroke="%2394a3b8" stroke-width="3"/><rect x="130" y="45" width="75" height="50" rx="4" fill="%230f172a" stroke="%2338bdf8" stroke-width="1.5"/><circle cx="150" cy="70" r="10" fill="%2322c55e"/><circle cx="180" cy="70" r="10" fill="%23ef4444"/><rect x="130" y="105" width="75" height="30" rx="3" fill="%23334155"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%23f97316" font-weight="bold" text-anchor="middle">GEN-01: Cummins 150 kVA</text></svg>'
-      }
-    ],
-    documents: [
-      {
-        id: "DOC-001",
-        code: "PTS-MEC-01",
-        name: "Procedimiento de Trabajo Seguro - Montaje Estructuras",
-        type: "Seguridad / Prevención",
-        projectId: "PRJ-001",
-        date: "2026-06-10",
-        expiryDate: "2026-12-31",
-        status: "Vigente",
-        amount: 0,
-        supplier: "Depto. HSE & Prevención",
-        fileName: "PTS-MEC-01_Seguridad.pdf",
-        fileType: "pdf"
-      }
-    ]
-  };
+  return JSON.parse(JSON.stringify(defaultSeedData()));
 }
 
 function freshDB() {
@@ -989,26 +1141,91 @@ function loadDB() {
       }
       
       const seed = defaultSeedData();
+      
+      // Merge projects
       if (!DB.projects || DB.projects.length === 0) {
         DB.projects = seed.projects;
+      } else {
+        seed.projects.forEach(sp => {
+          const existingIdx = DB.projects.findIndex(p => p.id === sp.id);
+          if (existingIdx === -1) {
+            DB.projects.push(sp);
+          } else if (!DB.projects[existingIdx].customUserEdited) {
+            // Update default seed projects with the latest demo dates and progress
+            DB.projects[existingIdx] = Object.assign({}, sp, DB.projects[existingIdx]);
+            DB.projects[existingIdx].startDate = sp.startDate;
+            DB.projects[existingIdx].endDate = sp.endDate;
+            DB.projects[existingIdx].plannedProgress = sp.plannedProgress;
+            DB.projects[existingIdx].realProgress = sp.realProgress;
+            DB.projects[existingIdx].status = sp.status;
+          }
+        });
       }
+
+      // Merge expenses
       if (!DB.expenses || DB.expenses.length === 0) {
         DB.expenses = seed.expenses;
+      } else {
+        seed.expenses.forEach(se => {
+          if (!DB.expenses.some(e => e.id === se.id)) {
+            DB.expenses.push(se);
+          }
+        });
       }
+
+      // Merge workers
       if (!DB.workers || DB.workers.length === 0) {
         DB.workers = seed.workers;
+      } else {
+        seed.workers.forEach(sw => {
+          if (!DB.workers.some(w => w.id === sw.id || (w.rut && w.rut === sw.rut))) {
+            DB.workers.push(sw);
+          }
+        });
       }
+
+      // Merge tools
       if (!DB.tools || DB.tools.length === 0) {
         DB.tools = seed.tools;
+      } else {
+        seed.tools.forEach(st => {
+          if (!DB.tools.some(t => t.id === st.id || t.code === st.code)) {
+            DB.tools.push(st);
+          }
+        });
       }
+
+      // Merge documents
       if (!DB.documents || DB.documents.length === 0) {
         DB.documents = seed.documents;
+      } else {
+        seed.documents.forEach(sd => {
+          if (!DB.documents.some(d => d.id === sd.id || d.code === sd.code)) {
+            DB.documents.push(sd);
+          }
+        });
       }
+
+      // Merge overtime
       if (!DB.overtime || DB.overtime.length === 0) {
         DB.overtime = seed.overtime;
+      } else {
+        seed.overtime.forEach(so => {
+          if (!DB.overtime.some(o => o.id === so.id)) {
+            DB.overtime.push(so);
+          }
+        });
       }
+
+      // Merge quotations
       if (!DB.quotations || DB.quotations.length === 0) {
         DB.quotations = seed.quotations;
+      } else {
+        seed.quotations.forEach(sq => {
+          if (!DB.quotations.some(q => q.id === sq.id || q.code === sq.code)) {
+            DB.quotations.push(sq);
+          }
+        });
       }
       saveDB();
     } else {
