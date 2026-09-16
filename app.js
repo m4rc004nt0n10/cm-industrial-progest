@@ -2984,6 +2984,7 @@ function renderExpenses(container) {
           </div>
           <div class="toolbar-btn-group">
             <button class="btn btn-secondary btn-sm" onclick="exportCSV('expenses')"><i class="fa-solid fa-file-export"></i> Exportar</button>
+            <button class="btn btn-secondary btn-sm" onclick="syncAllExpensesToFirebase()" title="Cargar o sincronizar los 20 gastos de ejemplo con la base de datos de Firebase"><i class="fa-solid fa-cloud-arrow-up"></i> Cargar Gastos en Firebase</button>
             ${userIsDev ? `
               <button class="btn btn-primary btn-sm" onclick="openCreateModal('expenses')"><i class="fa-solid fa-plus"></i> Registrar Gasto</button>
             ` : ""}
@@ -3012,10 +3013,13 @@ function renderExpenses(container) {
                 <td colspan="9" style="text-align:center;padding:48px 20px;">
                   <i class="fa-solid fa-receipt" style="font-size:32px;color:var(--text-sub);margin-bottom:12px;display:block;"></i>
                   <h3 style="font-size:15px;color:#fff;margin-bottom:6px;">Sin gastos registrados</h3>
-                  <p style="color:var(--text-sub);font-size:13px;max-width:400px;margin:0 auto 16px;">Registra compras, facturas, arriendos o adquisiciones reales de tus obras.</p>
-                  ${userIsDev ? `
-                    <button class="btn btn-primary btn-sm" onclick="openCreateModal('expenses')"><i class="fa-solid fa-plus"></i> Registrar Primer Gasto</button>
-                  ` : ""}
+                  <p style="color:var(--text-sub);font-size:13px;max-width:400px;margin:0 auto 16px;">Registra compras, facturas, arriendos o carga el set de gastos industriales de ejemplo en tu base de datos.</p>
+                  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-sm" onclick="syncAllExpensesToFirebase()"><i class="fa-solid fa-cloud-arrow-up"></i> Cargar Gastos de Ejemplo en Firebase</button>
+                    ${userIsDev ? `
+                      <button class="btn btn-secondary btn-sm" onclick="openCreateModal('expenses')"><i class="fa-solid fa-plus"></i> Registrar Primer Gasto</button>
+                    ` : ""}
+                  </div>
                 </td>
               </tr>
             ` : DB.expenses.map(e => `

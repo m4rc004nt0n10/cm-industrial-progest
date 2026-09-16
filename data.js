@@ -297,13 +297,79 @@ function defaultSeedData() {
       {
         id: "EXP-114",
         folio: "F-4760",
-        projectId: "PRJ-006",
+        projectId: "PRJ-001",
         category: "Materiales",
         amount: 9500000,
         supplier: "Prodalam Industrial",
         date: "2026-09-14",
         status: "Aprobado",
         note: "Cables de acero galvanizado para izaje y carros de traslación"
+      },
+      {
+        id: "EXP-115",
+        folio: "F-4775",
+        projectId: "PRJ-003",
+        category: "Equipamiento",
+        amount: 18500000,
+        supplier: "Atlas Copco Chile",
+        date: "2026-09-14",
+        status: "Aprobado",
+        note: "Arriendo mensual compresor de tornillo portátil 750 CFM"
+      },
+      {
+        id: "EXP-116",
+        folio: "F-4782",
+        projectId: "PRJ-004",
+        category: "Servicios",
+        amount: 12300000,
+        supplier: "Montajes & Torque SpA",
+        date: "2026-09-15",
+        status: "Aprobado",
+        note: "Servicio especializado de alineación láser y tensado térmico"
+      },
+      {
+        id: "EXP-117",
+        folio: "F-4790",
+        projectId: "PRJ-001",
+        category: "Equipamiento",
+        amount: 22400000,
+        supplier: "Schneider Electric Chile",
+        date: "2026-09-15",
+        status: "Aprobado",
+        note: "Celdas de media tensión y transformadores auxiliares 23kV"
+      },
+      {
+        id: "EXP-118",
+        folio: "F-4801",
+        projectId: "PRJ-005",
+        category: "Materiales",
+        amount: 5750000,
+        supplier: "Indura S.A.",
+        date: "2026-09-15",
+        status: "Aprobado",
+        note: "Gases técnicos (Argón/CO2) y electrodos 7018 / alambre tubular"
+      },
+      {
+        id: "EXP-119",
+        folio: "F-4815",
+        projectId: "PRJ-002",
+        category: "Mano de Obra",
+        amount: 16800000,
+        supplier: "Servicios Técnicos Industriales",
+        date: "2026-09-15",
+        status: "Aprobado",
+        note: "Cuadrilla de mecánicos de terreno para cambio de revestimientos"
+      },
+      {
+        id: "EXP-120",
+        folio: "F-4820",
+        projectId: "PRJ-003",
+        category: "Transporte",
+        amount: 6900000,
+        supplier: "Transportes Mineros del Norte",
+        date: "2026-09-15",
+        status: "Aprobado",
+        note: "Camión pluma 15T para descarga y posicionamiento en zanja"
       }
     ],
     workers: [
@@ -1016,12 +1082,106 @@ function pushToCloud() {
           }
         });
       }
+
+      // Sync individual expense documents into 'expenses' collection for visibility in Firebase Console
+      if (Array.isArray(DB.expenses)) {
+        DB.expenses.forEach(exp => {
+          if (exp && exp.id) {
+            window.firebaseDb.collection("expenses").doc(exp.id).set({
+              id: exp.id,
+              folio: exp.folio || "",
+              projectId: exp.projectId || "",
+              category: exp.category || "Materiales",
+              amount: Number(exp.amount) || 0,
+              supplier: exp.supplier || "",
+              date: exp.date || new Date().toISOString().split("T")[0],
+              status: exp.status || "Aprobado",
+              note: exp.note || "",
+              lastUpdated: new Date().toISOString()
+            }, { merge: true }).catch(eErr => console.log("Expense doc sync note:", eErr));
+          }
+        });
+      }
+
+      // Sync individual project documents into 'projects' collection for visibility in Firebase Console
+      if (Array.isArray(DB.projects)) {
+        DB.projects.forEach(p => {
+          if (p && p.id) {
+            window.firebaseDb.collection("projects").doc(p.id).set({
+              id: p.id,
+              name: p.name || "",
+              client: p.client || "",
+              location: p.location || "",
+              manager: p.manager || "",
+              budget: Number(p.budget) || 0,
+              spent: Number(p.spent) || 0,
+              plannedProgress: Number(p.plannedProgress) || 0,
+              realProgress: Number(p.realProgress) || 0,
+              startDate: p.startDate || "",
+              endDate: p.endDate || "",
+              status: p.status || "En Ejecución",
+              lastUpdated: new Date().toISOString()
+            }, { merge: true }).catch(pErr => console.log("Project doc sync note:", pErr));
+          }
+        });
+      }
     } catch (e) {
       console.warn("Cloud push exception:", e);
       updateCloudStatusBadge("offline", "Memoria Local");
     }
   }, 250);
 }
+
+// Explicit helper to sync or re-populate sample expenses in Firebase
+function syncAllExpensesToFirebase() {
+  if (!window.firebaseDb) {
+    if (typeof showToast === "function") {
+      showToast("Conectando con Firebase... Verifica tu conexión.", "warning");
+    }
+    return;
+  }
+
+  const seed = defaultSeedData();
+  if (!DB || !DB.expenses || DB.expenses.length === 0) {
+    if (DB) DB.expenses = seed.expenses;
+    saveDB();
+  } else {
+    seed.expenses.forEach(se => {
+      if (!DB.expenses.some(e => e.id === se.id)) {
+        DB.expenses.push(se);
+      }
+    });
+    saveDB();
+  }
+
+  // Push each directly to Firestore
+  let count = 0;
+  DB.expenses.forEach(exp => {
+    window.firebaseDb.collection("expenses").doc(exp.id).set({
+      id: exp.id,
+      folio: exp.folio || "",
+      projectId: exp.projectId || "",
+      category: exp.category || "Materiales",
+      amount: Number(exp.amount) || 0,
+      supplier: exp.supplier || "",
+      date: exp.date || new Date().toISOString().split("T")[0],
+      status: exp.status || "Aprobado",
+      note: exp.note || "",
+      lastUpdated: new Date().toISOString()
+    }, { merge: true }).catch(err => console.error("Sync expense item error:", err));
+    count++;
+  });
+
+  pushToCloud();
+
+  if (typeof showToast === "function") {
+    showToast(`¡${count} gastos de ejemplo enviados y sincronizados en Firebase!`);
+  }
+  if (typeof renderCurrentView === "function") {
+    renderCurrentView();
+  }
+}
+window.syncAllExpensesToFirebase = syncAllExpensesToFirebase;
 
 // Listen to Firestore real-time changes
 let activeFirestoreUnsubscribe = null;
