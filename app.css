@@ -186,7 +186,7 @@ body.mobile-nav-locked {
 }
 
 .topbar {
-  height: 64px;
+  min-height: 64px;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -194,10 +194,12 @@ body.mobile-nav-locked {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 8px 24px;
   position: sticky;
   top: 0;
   z-index: 30;
+  flex-wrap: wrap;
+  row-gap: 6px;
 }
 
 .topbar-left {
@@ -249,6 +251,8 @@ body.mobile-nav-locked {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .topbar-alert-btn {
   width: 36px;
@@ -259,11 +263,18 @@ body.mobile-nav-locked {
   justify-content: center;
   border-radius: 8px;
   flex-shrink: 0;
+  margin-left: 2px;
 }
 .topbar-role-wrapper {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+#cloud-sync-status-badge,
+#topbar-role-badge .badge {
+  height: 26px;
+  box-sizing: border-box;
+  line-height: 1;
 }
 .role-name-short {
   display: none;
@@ -1181,8 +1192,11 @@ button, select, input, .btn, .nav-item, .status-pill-btn {
 /* Mobile Phones (<= 640px) */
 @media (max-width: 640px) {
   .topbar {
-    padding: 0 10px;
-    height: 56px;
+    padding: 8px 10px;
+    min-height: 56px;
+  }
+  .topbar-right {
+    gap: 6px;
   }
   .topbar-title-tablet {
     display: none;
@@ -1209,8 +1223,16 @@ button, select, input, .btn, .nav-item, .status-pill-btn {
     font-size: 11px;
   }
   .topbar-alert-btn {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
+    margin-left: 0;
+  }
+  #cloud-sync-status-badge,
+  #topbar-role-badge .badge {
+    font-size: 10px !important;
+    padding: 4px 7px !important;
+    height: 24px;
+    gap: 4px !important;
   }
   .view-container {
     padding: 12px 8px;
