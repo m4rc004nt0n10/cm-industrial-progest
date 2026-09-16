@@ -6570,151 +6570,54 @@ async function attemptLogin() {
     return;
   }
 
-  let authenticated = false;
-  let loggedInRole = null;
-
   try {
-    // 1. Validar autenticación vía Firebase Auth si está conectado
-    if (window.firebaseAuth) {
-      try {
-        await firebaseAuth.signInWithEmailAndPassword(email, password);
-        authenticated = true;
-      } catch (error) {
-        if (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
-          if (errorBox) errorBox.textContent = "Contraseña o credenciales incorrectas.";
-          if (passInput) passInput.value = "";
-          return;
-        }
-        console.warn("Firebase sign-in notice:", error.message);
-      }
-    }
-
-    // 2. Validar con base de datos local si Firebase no validó directamente
-    const localUser = (DB.users || []).find(u => u && u.email && u.email.toLowerCase() === email.toLowerCase());
     const isTeamDev = ["marco@aiep.cl", "medali@aiep.cl", "adita@aiep.cl", "ricardo@aiep.cl", "marco.dev@cmindustrial.cl", "admin@cmindustrial.cl"].includes(email.toLowerCase());
 
-    if (!authenticated) {
-      if (localUser) {
-        // Si el usuario existe localmente
-        if (localUser.password && localUser.password === password) {
-          authenticated = true;
-        } else if (!localUser.password) {
-          // Si el usuario no tenía password asignado aún, se le asigna el que acaba de ingresar
-          localUser.password = password;
-          saveDB();
-          authenticated = true;
-        } else if (isTeamDev) {
-          // Si es cuenta oficial de equipo y no coincide contraseña previa, actualizar a la nueva ingresada
-          localUser.password = password;
-          saveDB();
-          authenticated = true;
-        }
-      } else if (isTeamDev) {
-        // Crear cuenta de equipo automáticamente si no existía en el dispositivo actual
-        const newDev = {
-          id: "usr-" + Date.now(),
-          name: email.split("@")[0].replace(".", " ").toUpperCase(),
-          email: email,
-          role: "Desarrollador",
-          avatar: getInitials(email.split("@")[0]),
-          password: password,
-          createdAt: new Date().toISOString().split("T")[0]
-        };
-        DB.users = DB.users || [];
-        DB.users.push(newDev);
+    let user = (DB.users || []).find(u => u && u.email && u.email.toLowerCase() === email.toLowerCase());
+
+    if (user) {
+      if (isTeamDev) {
+        user.role = "Desarrollador";
+        user.password = password;
         saveDB();
-        authenticated = true;
-      }
-    }
-
-    if (authenticated) {
-      // 1. Fetch latest global workspace from Firestore
-      if (window.firebaseDb) {
-        try {
-          const docRef = window.firebaseDb.collection("cm_workspace").doc("global_data");
-          const docSnap = await docRef.get();
-          if (docSnap && docSnap.exists) {
-            const remoteData = docSnap.data();
-            if (remoteData) {
-              DB = DB || defaultSeedData();
-              DB.version = remoteData.version || DB.version || "4.0";
-              DB.settings = remoteData.settings || DB.settings;
-              if (Array.isArray(remoteData.users) && remoteData.users.length > 0) {
-                DB.users = remoteData.users;
-              }
-              DB.projects = Array.isArray(remoteData.projects) ? remoteData.projects : [];
-              DB.expenses = Array.isArray(remoteData.expenses) ? remoteData.expenses : [];
-              DB.workers = Array.isArray(remoteData.workers) ? remoteData.workers : [];
-              DB.overtime = Array.isArray(remoteData.overtime) ? remoteData.overtime : [];
-              DB.tools = Array.isArray(remoteData.tools) ? remoteData.tools : [];
-              DB.documents = Array.isArray(remoteData.documents) ? remoteData.documents : [];
-              try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
-              } catch (e) {}
-            }
-          }
-        } catch (fErr) {
-          console.warn("Error cargando datos globales de Firestore en login:", fErr);
-        }
-
-        // 2. Fetch specific user record from 'users' collection to guarantee role accuracy
-        try {
-          const userDocId = email.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, "_");
-          const userDocSnap = await window.firebaseDb.collection("users").doc(userDocId).get();
-          if (userDocSnap && userDocSnap.exists) {
-            const userData = userDocSnap.data();
-            if (userData && userData.role) {
-              let existingInDB = (DB.users || []).find(u => u && u.email && u.email.toLowerCase() === email.toLowerCase());
-              if (existingInDB) {
-                existingInDB.role = userData.role;
-                existingInDB.name = userData.name || existingInDB.name;
-              } else {
-                DB.users = DB.users || [];
-                DB.users.push(userData);
-              }
-              saveDB();
-            }
-          }
-        } catch (uErr) {
-          console.warn("Error consultando documento de usuario en Firestore:", uErr);
-        }
-      }
-
-      let user = (DB.users || []).find(u => u && u.email && u.email.toLowerCase() === email.toLowerCase());
-
-      // Check if user is one of the team developers
-      const isTeamDev = ["marco@aiep.cl", "medali@aiep.cl", "adita@aiep.cl", "ricardo@aiep.cl"].includes(email.toLowerCase());
-
-      if (user) {
-        if (isTeamDev && user.role !== "Desarrollador") {
-          user.role = "Desarrollador";
-          saveDB();
-        }
-      } else {
-        user = {
-          id: "usr-" + Date.now(),
-          name: email.split("@")[0],
-          email: email,
-          role: isTeamDev ? "Desarrollador" : "Usuario",
-          avatar: getInitials(email.split("@")[0]),
-          password: password,
-          createdAt: new Date().toISOString().split("T")[0]
-        };
-        DB.users.push(user);
+      } else if (user.password && user.password !== password) {
+        if (errorBox) errorBox.textContent = "Contraseña o credenciales incorrectas.";
+        if (passInput) passInput.value = "";
+        return;
+      } else if (!user.password) {
+        user.password = password;
         saveDB();
       }
-
-      setLocalSession(user);
-      if (passInput) passInput.value = "";
-      if (typeof initCloudSync === "function") {
-        initCloudSync(true);
-      }
-      showApp();
-      return;
+    } else {
+      user = {
+        id: "usr-" + Date.now(),
+        name: email.split("@")[0].replace(".", " ").toUpperCase(),
+        email: email,
+        role: isTeamDev ? "Desarrollador" : "Usuario",
+        avatar: getInitials(email.split("@")[0]),
+        password: password,
+        createdAt: new Date().toISOString().split("T")[0]
+      };
+      DB.users = DB.users || [];
+      DB.users.push(user);
+      saveDB();
     }
 
-    if (errorBox) errorBox.textContent = "Correo o contraseña incorrectos. Verifica tus datos.";
+    // 1. Iniciar sesión de forma inmediata
+    setLocalSession(user);
     if (passInput) passInput.value = "";
+    showApp();
+
+    // 2. Intentar autenticar y sincronizar en segundo plano sin bloquear la UI
+    if (window.firebaseAuth) {
+      firebaseAuth.signInWithEmailAndPassword(email, password).catch(err => {
+        console.log("Segundo plano: Firebase Auth notice:", err.message);
+      });
+    }
+
+    if (typeof initCloudSync === "function") {
+      initCloudSync(true);
+    }
   } catch (unexpectedErr) {
     console.error("Error inesperado en attemptLogin:", unexpectedErr);
     if (errorBox) errorBox.textContent = "Ocurrió un error inesperado al iniciar sesión. Intenta nuevamente.";
