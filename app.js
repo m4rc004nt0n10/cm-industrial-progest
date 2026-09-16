@@ -349,36 +349,57 @@ function renderSidebarUserCard() {
 // Dashboard project filter state
 let activeDashboardProjectFilter = "todos";
 
-// 1. DASHBOARD VIEW WITH 10 KPIS & 4 CHARTS
+// 1. DASHBOARD VIEW WITH 10 KPIS & 4 CHARTS (FILTRABLE POR PROYECTO O VISTA GENERAL)
 function renderDashboard(container) {
   syncAllProjectsAutoStatus();
-  const totalBudget = DB.projects.reduce((acc, p) => acc + (p.budget || 0), 0);
-  const totalSpent = DB.projects.reduce((acc, p) => acc + (p.spent || 0), 0);
+
+  const isFiltered = activeDashboardProjectFilter && activeDashboardProjectFilter !== "todos";
+  const filteredProject = isFiltered ? DB.projects.find(p => p.id === activeDashboardProjectFilter) : null;
+
+  // Filtrado de proyectos
+  const targetProjects = filteredProject ? [filteredProject] : DB.projects;
+
+  // 1. Presupuestos y Gastos
+  const totalBudget = targetProjects.reduce((acc, p) => acc + (p.budget || 0), 0);
+  const totalSpent = targetProjects.reduce((acc, p) => acc + (p.spent || 0), 0);
   const margin = totalBudget - totalSpent;
   const marginPercent = totalBudget > 0 ? (margin / totalBudget) * 100 : 0;
   
-  const avgPlanned = DB.projects.length > 0 
-    ? DB.projects.reduce((acc, p) => acc + (p.plannedProgress || 0), 0) / DB.projects.length 
+  // 2. Avances Planificado y Real
+  const avgPlanned = targetProjects.length > 0 
+    ? targetProjects.reduce((acc, p) => acc + (p.plannedProgress || 0), 0) / targetProjects.length 
     : 0;
-  const avgReal = DB.projects.length > 0 
-    ? DB.projects.reduce((acc, p) => acc + (p.realProgress || 0), 0) / DB.projects.length 
+  const avgReal = targetProjects.length > 0 
+    ? targetProjects.reduce((acc, p) => acc + (p.realProgress || 0), 0) / targetProjects.length 
     : 0;
 
-  // Status breakdown via Smart Traffic Light
+  // 3. Semáforo inteligente
   let criticalCount = 0;
   let alertCount = 0;
   let normalCount = 0;
-  DB.projects.forEach(p => {
+  targetProjects.forEach(p => {
     const health = getProjectHealth(p, DB.settings);
     if (health.color === "red") criticalCount++;
     else if (health.color === "yellow") alertCount++;
     else normalCount++;
   });
 
-  const activeWorkers = DB.workers.filter(w => !w.status || w.status.includes("Activo") || w.status.includes("Faena")).length;
-  const toolsInUse = DB.tools.filter(t => t.status === "En Faena").length;
-  const toolsMaintenance = DB.tools.filter(t => t.status === "En Mantenimiento").length;
-  const docsExpired = DB.documents.filter(d => d.status === "Vencido" || d.status === "Por Vencer").length;
+  // 4. Recursos vinculados (personal, herramientas, documentos)
+  const targetWorkers = isFiltered 
+    ? DB.workers.filter(w => w.projectId === activeDashboardProjectFilter)
+    : DB.workers;
+  const activeWorkers = targetWorkers.filter(w => !w.status || w.status.includes("Activo") || w.status.includes("Faena")).length;
+
+  const targetTools = isFiltered
+    ? DB.tools.filter(t => t.projectId === activeDashboardProjectFilter || (t.location && t.location.includes(activeDashboardProjectFilter)))
+    : DB.tools;
+  const toolsInUse = targetTools.filter(t => t.status === "En Faena").length;
+  const toolsMaintenance = targetTools.filter(t => t.status === "En Mantenimiento").length;
+
+  const targetDocs = isFiltered
+    ? DB.documents.filter(d => d.projectId === activeDashboardProjectFilter)
+    : DB.documents;
+  const docsExpired = targetDocs.filter(d => d.status === "Vencido" || d.status === "Por Vencer").length;
 
   const userIsDev = isDeveloper();
 
@@ -400,18 +421,53 @@ function renderDashboard(container) {
       </div>
     ` : ""}
 
-    <!-- Top KPI Row (10 KPIs) -->
+    <!-- Top Dashboard Filter Toolbar (Afecta KPIs y Gráficos) -->
+    <div class="card" style="padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#ffffff;border:1px solid #bae6fd;border-radius:12px;box-shadow:0 2px 4px rgba(2,132,199,0.04);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;border-radius:8px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;color:#0284c7;font-size:15px;">
+          <i class="fa-solid fa-filter"></i>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px;">
+            <span>Alcance del Dashboard:</span>
+            <span class="badge ${isFiltered ? 'badge-blue' : 'badge-green'}" style="font-size:11px;padding:3px 8px;">
+              ${isFiltered ? `${filteredProject ? filteredProject.name : activeDashboardProjectFilter}` : 'Vista General Consolidada'}
+            </span>
+          </div>
+          <div style="font-size:11px;color:#64748b;">Filtra los 10 KPIs y los gráficos por proyecto específico o visualiza el consolidado general de la empresa</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <label for="dashboard-project-select" style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">Seleccionar Proyecto:</label>
+        <select id="dashboard-project-select" class="form-control" style="font-size:12px;padding:7px 12px;min-width:260px;background:#f8fafc;border:1px solid #cbd5e1;font-weight:600;color:#0f172a;" onchange="onDashboardProjectFilterChange(this.value)">
+          <option value="todos" ${activeDashboardProjectFilter === 'todos' ? 'selected' : ''}>📊 Vista General (Todos los Proyectos)</option>
+          ${DB.projects.map(p => `
+            <option value="${p.id}" ${activeDashboardProjectFilter === p.id ? 'selected' : ''}>
+              ${p.id} - ${p.name}
+            </option>
+          `).join("")}
+        </select>
+        ${isFiltered ? `
+          <button class="btn btn-secondary btn-sm" onclick="onDashboardProjectFilterChange('todos')" style="font-size:11.5px;padding:6px 12px;color:#0284c7;font-weight:600;" title="Ver resumen general de todos los proyectos">
+            <i class="fa-solid fa-rotate-left"></i> Ver General
+          </button>
+        ` : ''}
+      </div>
+    </div>
+
+    <!-- Top KPI Row (10 KPIs Dinámicos según Filtro) -->
     <div class="kpi-grid">
       <div class="kpi-card highlight">
-        <div class="kpi-title"><span>Proyectos Activos</span> <i class="fa-solid fa-briefcase"></i></div>
-        <div class="kpi-value">${DB.projects.filter(p => p.status !== "Finalizado").length} <span style="font-size:13px;font-weight:500;color:var(--text-sub);">/ ${DB.projects.length} tot</span></div>
-        <div class="kpi-sub">${normalCount} en norma, ${criticalCount} críticos</div>
+        <div class="kpi-title"><span>${isFiltered ? 'Estado Proyecto' : 'Proyectos Activos'}</span> <i class="fa-solid fa-briefcase"></i></div>
+        <div class="kpi-value">${isFiltered ? (filteredProject ? filteredProject.status : 'Activo') : `${DB.projects.filter(p => p.status !== "Finalizado").length} <span style="font-size:13px;font-weight:500;color:var(--text-sub);">/ ${DB.projects.length} tot</span>`}</div>
+        <div class="kpi-sub">${isFiltered ? (filteredProject ? `${filteredProject.location} • ${filteredProject.client}` : 'Detalle faena') : `${normalCount} en norma, ${criticalCount} críticos`}</div>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-title"><span>Presupuesto Asignado</span> <i class="fa-solid fa-dollar-sign"></i></div>
         <div class="kpi-value">${fmtMoney(totalBudget)}</div>
-        <div class="kpi-sub">Total cartera de proyectos</div>
+        <div class="kpi-sub">${isFiltered ? 'Presupuesto contractual' : 'Total cartera de proyectos'}</div>
       </div>
 
       <div class="kpi-card warning">
@@ -427,69 +483,39 @@ function renderDashboard(container) {
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-title"><span>Avance Ponderado</span> <i class="fa-solid fa-percent"></i></div>
+        <div class="kpi-title"><span>Avance ${isFiltered ? 'Físico' : 'Ponderado'}</span> <i class="fa-solid fa-percent"></i></div>
         <div class="kpi-value">${fmtPercent(avgReal)}</div>
         <div class="kpi-sub">Planificado: ${fmtPercent(avgPlanned)}</div>
       </div>
 
-      <div class="kpi-card danger">
-        <div class="kpi-title"><span>Semáforo Crítico</span> <i class="fa-solid fa-triangle-exclamation"></i></div>
-        <div class="kpi-value">${criticalCount}</div>
-        <div class="kpi-sub">${alertCount} en alerta amarilla</div>
+      <div class="kpi-card ${criticalCount > 0 ? 'danger' : (alertCount > 0 ? 'warning' : 'success')}">
+        <div class="kpi-title"><span>Semáforo ${isFiltered ? 'de Faena' : 'Crítico'}</span> <i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="kpi-value">${isFiltered ? (filteredProject ? getProjectHealth(filteredProject, DB.settings).text : 'Normal') : criticalCount}</div>
+        <div class="kpi-sub">${isFiltered ? (filteredProject ? `Código: ${getProjectHealth(filteredProject, DB.settings).code}` : 'Monitoreo') : `${alertCount} en alerta amarilla`}</div>
       </div>
 
       <div class="kpi-card highlight">
         <div class="kpi-title"><span>Personal en Faena</span> <i class="fa-solid fa-hard-hat"></i></div>
         <div class="kpi-value">${activeWorkers}</div>
-        <div class="kpi-sub">${DB.workers.length} total colaboradores</div>
+        <div class="kpi-sub">${targetWorkers.length} colaboradores ${isFiltered ? 'en este proyecto' : 'totales'}</div>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-title"><span>Herramientas Activas</span> <i class="fa-solid fa-wrench"></i></div>
         <div class="kpi-value">${toolsInUse}</div>
-        <div class="kpi-sub">${toolsMaintenance} en mantenimiento</div>
+        <div class="kpi-sub">${toolsMaintenance} en mantenimiento (${targetTools.length} asignadas)</div>
       </div>
 
       <div class="kpi-card ${docsExpired > 0 ? 'warning' : 'success'}">
         <div class="kpi-title"><span>Docs por Vencer/Vencidos</span> <i class="fa-solid fa-file-contract"></i></div>
         <div class="kpi-value">${docsExpired}</div>
-        <div class="kpi-sub">${DB.documents.length} documentos auditados</div>
+        <div class="kpi-sub">${targetDocs.length} documentos ${isFiltered ? 'del proyecto' : 'auditados'}</div>
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-title"><span>Desvío Global (SPI)</span> <i class="fa-solid fa-gauge-high"></i></div>
+        <div class="kpi-title"><span>Desvío ${isFiltered ? 'del Proyecto' : 'Global'} (SPI)</span> <i class="fa-solid fa-gauge-high"></i></div>
         <div class="kpi-value">${(avgPlanned > 0 ? (avgReal / avgPlanned).toFixed(2) : "1.00")}</div>
         <div class="kpi-sub">${avgReal >= avgPlanned ? 'En o sobre meta' : 'Desfase -' + (avgPlanned - avgReal).toFixed(1) + '%'}</div>
-      </div>
-    </div>
-
-    <!-- Charts Filter Toolbar -->
-    <div class="card" style="padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#ffffff;border:1px solid #bae6fd;border-radius:12px;box-shadow:0 2px 4px rgba(2,132,199,0.04);">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:32px;height:32px;border-radius:8px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;color:#0284c7;font-size:14px;">
-          <i class="fa-solid fa-filter"></i>
-        </div>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:#0f172a;">Filtrar Gráficos por Proyecto</div>
-          <div style="font-size:11px;color:#64748b;">Visualiza presupuestos, avances físicos, distribución de gastos y cronograma por faena específica</div>
-        </div>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <label for="dashboard-project-select" style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">Proyecto:</label>
-        <select id="dashboard-project-select" class="form-control" style="font-size:12px;padding:6px 12px;min-width:240px;background:#f8fafc;border:1px solid #cbd5e1;font-weight:600;color:#0f172a;" onchange="onDashboardProjectFilterChange(this.value)">
-          <option value="todos" ${activeDashboardProjectFilter === 'todos' ? 'selected' : ''}>📊 Todos los Proyectos (Vista Consolidada)</option>
-          ${DB.projects.map(p => `
-            <option value="${p.id}" ${activeDashboardProjectFilter === p.id ? 'selected' : ''}>
-              ${p.id} - ${p.name}
-            </option>
-          `).join("")}
-        </select>
-        ${activeDashboardProjectFilter !== "todos" ? `
-          <button class="btn btn-secondary btn-sm" onclick="onDashboardProjectFilterChange('todos')" style="font-size:11px;padding:5px 10px;color:#0284c7;" title="Ver todos los proyectos">
-            <i class="fa-solid fa-rotate-left"></i> Restablecer
-          </button>
-        ` : ''}
       </div>
     </div>
 
