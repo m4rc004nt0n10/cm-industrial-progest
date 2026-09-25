@@ -20,6 +20,13 @@
 <link rel="stylesheet" href="app.css">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- PDF.js for crisp PDF thumbnail generation and viewing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
 </head>
 <body>
 
@@ -227,7 +234,7 @@ CM
 
 <!-- Lightbox Modal for Equipment & Invoices/Receipts Photos/Docs -->
 <div id="photo-lightbox-modal" class="modal-backdrop" onclick="closePhotoLightbox(event)">
-<div id="lightbox-card" class="modal-box" style="max-width:620px;" onclick="event.stopPropagation()">
+<div id="lightbox-card" class="modal-box" style="max-width:760px;width:95%;" onclick="event.stopPropagation()">
 <div class="modal-header">
 <div style="display:flex;align-items:center;gap:10px;">
 <i id="lightbox-header-icon" class="fa-solid fa-camera" style="color:var(--primary);"></i>
@@ -236,20 +243,71 @@ CM
 <button id="lightbox-close-btn" class="btn btn-secondary btn-sm" onclick="closePhotoLightbox()" style="border:none;"><i class="fa-solid fa-xmark"></i></button>
 </div>
 <div class="modal-body" style="padding:16px;text-align:center;">
+<!-- Photo Image Container -->
 <div id="lightbox-img-container" style="background:#080c14;border:1px solid var(--border-color);border-radius:10px;overflow:hidden;max-height:480px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
 <img id="lightbox-img" src="" alt="Fotografía" style="max-width:100%;max-height:460px;object-fit:contain;">
 </div>
-<div id="lightbox-pdf-container" style="display:none;background:#0d121f;border:1px dashed var(--border-color);border-radius:10px;padding:24px;margin-bottom:14px;text-align:center;">
-<i class="fa-solid fa-file-pdf" style="font-size:48px;color:#ef4444;margin-bottom:12px;"></i>
-<div id="lightbox-pdf-name" style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;">Documento PDF</div>
-<div style="font-size:12px;color:var(--text-sub);margin-bottom:16px;">Documento técnico o factura en formato PDF listo para visualizar o descargar.</div>
-<a id="lightbox-pdf-view-btn" href="#" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir PDF en Nueva Pestaña</a>
+
+<!-- Interactive PDF Document Viewer -->
+<div id="lightbox-pdf-viewer" style="display:none;margin-bottom:14px;text-align:left;">
+  <!-- PDF Top Toolbar -->
+  <div style="background:#0b111e;border:1px solid var(--border-color);border-bottom:none;border-radius:10px 10px 0 0;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="badge badge-red" style="font-size:11px;font-weight:700;padding:3px 7px;"><i class="fa-solid fa-file-pdf"></i> PDF</span>
+      <span id="lightbox-pdf-filename" style="font-size:12px;color:#fff;font-weight:600;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">factura.pdf</span>
+    </div>
+    <!-- Navigation & Zoom Controls -->
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-pdf-prev" onclick="changePdfPage(-1)" style="padding:3px 8px;font-size:11px;" title="Página anterior">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <span id="lightbox-pdf-page-indicator" style="font-size:11px;color:var(--text-sub);min-width:65px;text-align:center;font-weight:600;">1 / 1</span>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-pdf-next" onclick="changePdfPage(1)" style="padding:3px 8px;font-size:11px;" title="Página siguiente">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+      <div style="height:18px;width:1px;background:var(--border-color);margin:0 3px;"></div>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="zoomPdfDoc(-0.2)" style="padding:3px 8px;font-size:11px;" title="Reducir zoom">
+        <i class="fa-solid fa-magnifying-glass-minus"></i>
+      </button>
+      <span id="lightbox-pdf-zoom-val" style="font-size:11px;color:var(--text-muted);min-width:34px;text-align:center;">100%</span>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="zoomPdfDoc(0.2)" style="padding:3px 8px;font-size:11px;" title="Aumentar zoom">
+        <i class="fa-solid fa-magnifying-glass-plus"></i>
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="openPdfInNewTab()" style="padding:3px 8px;font-size:11px;" title="Abrir en pestaña nueva">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+      </button>
+    </div>
+  </div>
+  <!-- Scrollable viewport for high-res PDF canvas -->
+  <div id="lightbox-pdf-viewport" style="background:#0f172a;border:1px solid var(--border-color);border-radius:0 0 10px 10px;min-height:280px;max-height:520px;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:16px 8px;position:relative;">
+    <canvas id="lightbox-pdf-canvas" style="background:#fff;border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,0.6);max-width:100%;height:auto;display:none;"></canvas>
+    
+    <!-- Fallback if PDF canvas fails -->
+    <div id="lightbox-pdf-fallback" style="display:none;text-align:center;padding:32px 16px;color:#fff;width:100%;">
+      <i class="fa-solid fa-file-pdf" style="font-size:46px;color:#ef4444;margin-bottom:12px;"></i>
+      <div id="lightbox-pdf-fallback-name" style="font-weight:700;font-size:14px;margin-bottom:6px;">Documento PDF</div>
+      <p style="color:var(--text-sub);font-size:12px;margin-bottom:16px;max-width:400px;margin-left:auto;margin-right:auto;">El archivo PDF está adjunto y listo. Puedes visualizarlo en una pestaña completa del navegador o descargarlo a tu equipo.</p>
+      <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary btn-sm" onclick="openPdfInNewTab()"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir en Pestaña Completa</button>
+      </div>
+    </div>
+    
+    <!-- Loading spinner for PDF rendering -->
+    <div id="lightbox-pdf-loading" style="display:flex;padding:36px;color:var(--text-sub);font-size:13px;align-items:center;justify-content:center;gap:10px;">
+      <i class="fa-solid fa-circle-notch fa-spin" style="font-size:22px;color:var(--primary);"></i>
+      <span>Cargando documento PDF...</span>
+    </div>
+  </div>
 </div>
+
 <div id="lightbox-meta" style="font-size:13px;color:var(--text-muted);text-align:left;background:#0d121f;border:1px solid var(--border-color);border-radius:8px;padding:12px;">
 </div>
 </div>
-<div class="modal-footer" style="justify-content:space-between;">
-<a id="lightbox-download-link" href="#" download="archivo.jpg" class="btn btn-secondary btn-sm"><i class="fa-solid fa-download"></i> Descargar Archivo</a>
+<div class="modal-footer" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
+  <a id="lightbox-download-link" href="#" download="archivo.jpg" class="btn btn-secondary btn-sm"><i class="fa-solid fa-download"></i> Descargar Archivo</a>
+  <button type="button" id="lightbox-open-external-btn" class="btn btn-secondary btn-sm" onclick="openPdfInNewTab()" style="display:none;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir en Pestaña</button>
+</div>
 <button id="lightbox-done-btn" class="btn btn-primary btn-sm" onclick="closePhotoLightbox()">Cerrar</button>
 </div>
 </div>

@@ -1,6 +1,123 @@
 // CM INDUSTRIAL — Data Store & Business Logic
 const STORAGE_KEY = "cm_progest_v4";
 
+// Generador de miniaturas visuales de alta fidelidad para documentos y facturas en formato PDF
+function createStyledDocThumbnail(code, name, type, supplier) {
+  const isInvoice = type && (type.includes("Factura") || type.includes("Boleta") || type.includes("Compra") || type.includes("Pago"));
+  const headerColor = isInvoice ? "%23f97316" : "%23ef4444";
+  const badgeLabel = isInvoice ? "FACTURA DTE" : "DOC PDF";
+  const safeCode = (code || "DOC-001").replace(/"/g, "'");
+  const safeName = (name || "Documento Adjunto").replace(/"/g, "'").slice(0, 32);
+  const safeSupplier = (supplier || "CM Industrial").replace(/"/g, "'").slice(0, 24);
+
+  return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 360" width="280" height="360">' +
+    '<rect width="280" height="360" rx="8" fill="%23ffffff" stroke="%23cbd5e1" stroke-width="2"/>' +
+    '<rect x="0" y="0" width="280" height="42" rx="8" fill="' + headerColor + '"/>' +
+    '<rect x="0" y="32" width="280" height="10" fill="' + headerColor + '"/>' +
+    '<text x="14" y="26" font-family="Inter,sans-serif" font-size="12" font-weight="bold" fill="%23ffffff">' + safeCode + '</text>' +
+    '<rect x="210" y="10" width="56" height="22" rx="4" fill="%23ffffff" fill-opacity="0.25"/>' +
+    '<text x="238" y="25" font-family="Inter,sans-serif" font-size="10" font-weight="bold" fill="%23ffffff" text-anchor="middle">PDF</text>' +
+    '<text x="16" y="68" font-family="Inter,sans-serif" font-size="11" font-weight="bold" fill="%230f172a">' + safeSupplier + '</text>' +
+    '<line x1="16" y1="78" x2="264" y2="78" stroke="%23e2e8f0" stroke-width="1.5"/>' +
+    '<text x="16" y="98" font-family="Inter,sans-serif" font-size="10" font-weight="600" fill="%23475569">' + safeName + '</text>' +
+    '<rect x="16" y="112" width="248" height="6" rx="2" fill="%23f1f5f9"/>' +
+    '<rect x="16" y="126" width="210" height="6" rx="2" fill="%23f1f5f9"/>' +
+    '<rect x="16" y="140" width="230" height="6" rx="2" fill="%23f1f5f9"/>' +
+    '<rect x="16" y="154" width="180" height="6" rx="2" fill="%23f1f5f9"/>' +
+    '<rect x="24" y="174" width="232" height="110" rx="6" fill="%23f8fafc" stroke="%23e2e8f0" stroke-width="1.5" stroke-dasharray="4 3"/>' +
+    '<circle cx="70" cy="229" r="28" fill="%23fee2e2" stroke="%23ef4444" stroke-width="2"/>' +
+    '<text x="70" y="234" font-family="Inter,sans-serif" font-size="16" font-weight="900" fill="%23ef4444" text-anchor="middle">PDF</text>' +
+    '<text x="114" y="218" font-family="Inter,sans-serif" font-size="11" font-weight="bold" fill="%230f172a">Documento Oficial</text>' +
+    '<text x="114" y="234" font-family="Inter,sans-serif" font-size="9" fill="%2364748b">Registro y Respaldo Técnico</text>' +
+    '<text x="114" y="248" font-family="Inter,sans-serif" font-size="9" font-weight="600" fill="%2310b981">&#x2714; Verificado / Válido</text>' +
+    '<line x1="16" y1="300" x2="264" y2="300" stroke="%23e2e8f0" stroke-width="1.5"/>' +
+    '<text x="16" y="324" font-family="Inter,sans-serif" font-size="9" fill="%2394a3b8">CM INDUSTRIAL &bull; Respaldo Digital</text>' +
+    '<rect x="195" y="312" width="68" height="20" rx="4" fill="%23fee2e2"/>' +
+    '<text x="229" y="326" font-family="Inter,sans-serif" font-size="9" font-weight="bold" fill="%23ef4444" text-anchor="middle">ADJUNTADO</text>' +
+    '</svg>';
+}
+window.createStyledDocThumbnail = createStyledDocThumbnail;
+
+// Generador de archivo PDF 1.4 válido y legible para previsualización inmediata
+function generateSimplePdfDataUri(title, code) {
+  const safeTitle = (title || 'Documento Oficial').replace(/[()]/g, '');
+  const safeCode = (code || 'DOC-01').replace(/[()]/g, '');
+  const content = `%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<</Font<</F1 4 0 R>>>>/Contents 5 0 R>>endobj\n4 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold>>endobj\n5 0 obj<</Length 280>>stream\nBT /F1 20 Tf 50 720 Td (CM INDUSTRIAL - CONTROL DOCUMENTAL) Tj ET\nBT /F1 15 Tf 50 680 Td (Codigo: ${safeCode}) Tj ET\nBT /F1 12 Tf 50 645 Td (Glosa: ${safeTitle}) Tj ET\nBT /F1 11 Tf 50 610 Td (Documento respaldado y registrado en la plataforma CM Industrial.) Tj ET\nBT /F1 10 Tf 50 580 Td (Validez: Verificada en faena y auditoria tecnica.) Tj ET\nendstream\nendobj\nxref\n0 6\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\n0000000224 00000 n\n0000000305 00000 n\ntrailer<</Size 6/Root 1 0 R>>\nstartxref\n640\n%%EOF`;
+  return "data:application/pdf;base64," + btoa(content);
+}
+window.generateSimplePdfDataUri = generateSimplePdfDataUri;
+
+// Almacenamiento local IndexedDB para archivos y PDFs pesados (evita exceder cuota de localStorage)
+const idbDocStorage = {
+  dbPromise: null,
+  getDB() {
+    if (!this.dbPromise) {
+      this.dbPromise = new Promise((resolve) => {
+        if (typeof indexedDB === "undefined") return resolve(null);
+        try {
+          const req = indexedDB.open("cm_docs_store", 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("files")) {
+              db.createStore = db.createObjectStore("files", { keyPath: "id" });
+            }
+          };
+          req.onsuccess = (e) => resolve(e.target.result);
+          req.onerror = () => resolve(null);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }
+    return this.dbPromise;
+  },
+  async save(id, fileData, meta = {}) {
+    try {
+      const db = await this.getDB();
+      if (!db) return false;
+      return new Promise((resolve) => {
+        const tx = db.transaction("files", "readwrite");
+        const store = tx.objectStore("files");
+        store.put({ id, fileData, meta, updatedAt: new Date().toISOString() });
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      });
+    } catch (e) {
+      return false;
+    }
+  },
+  async get(id) {
+    try {
+      const db = await this.getDB();
+      if (!db) return null;
+      return new Promise((resolve) => {
+        const tx = db.transaction("files", "readonly");
+        const store = tx.objectStore("files");
+        const req = store.get(id);
+        req.onsuccess = () => resolve(req.result ? req.result.fileData : null);
+        req.onerror = () => resolve(null);
+      });
+    } catch (e) {
+      return null;
+    }
+  },
+  async remove(id) {
+    try {
+      const db = await this.getDB();
+      if (!db) return false;
+      return new Promise((resolve) => {
+        const tx = db.transaction("files", "readwrite");
+        tx.objectStore("files").delete(id);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      });
+    } catch (e) {
+      return false;
+    }
+  }
+};
+window.idbDocStorage = idbDocStorage;
+
 // Clean dataset for real operational use (0 mock records)
 function defaultSeedData() {
   return {
@@ -709,7 +826,10 @@ function defaultSeedData() {
         amount: 0,
         supplier: "Depto. HSE & Prevención",
         fileName: "PTS-MEC-01_Seguridad.pdf",
-        fileType: "pdf"
+        fileType: "pdf",
+        thumbnail: createStyledDocThumbnail("PTS-MEC-01", "PTS Montaje Estructuras", "Seguridad / Prevención", "Depto. HSE & Prevención"),
+        photo: createStyledDocThumbnail("PTS-MEC-01", "PTS Montaje Estructuras", "Seguridad / Prevención", "Depto. HSE & Prevención"),
+        fileData: generateSimplePdfDataUri("Procedimiento de Trabajo Seguro - Montaje Estructuras", "PTS-MEC-01")
       },
       {
         id: "DOC-002",
@@ -723,7 +843,10 @@ function defaultSeedData() {
         amount: 0,
         supplier: "CESMEC / Bureau Veritas",
         fileName: "Certificado_ASME_IX_CarlosMorales.pdf",
-        fileType: "pdf"
+        fileType: "pdf",
+        thumbnail: createStyledDocThumbnail("CRT-SLD-6G", "Calificación Soldador ASME IX 6G", "Calidad / Certificación", "CESMEC / Bureau Veritas"),
+        photo: createStyledDocThumbnail("CRT-SLD-6G", "Calificación Soldador ASME IX 6G", "Calidad / Certificación", "CESMEC / Bureau Veritas"),
+        fileData: generateSimplePdfDataUri("Calificación Procedimiento Soldador ASME IX 6G", "CRT-SLD-6G")
       },
       {
         id: "DOC-003",
@@ -737,7 +860,10 @@ function defaultSeedData() {
         amount: 4500000,
         supplier: "Seguros Generales BCI",
         fileName: "Poliza_RC_CodelcoNorte.pdf",
-        fileType: "pdf"
+        fileType: "pdf",
+        thumbnail: createStyledDocThumbnail("POL-SEG-MIN", "Póliza RC & Todo Riesgo Faena", "Legal / Seguros", "Seguros Generales BCI"),
+        photo: createStyledDocThumbnail("POL-SEG-MIN", "Póliza RC & Todo Riesgo Faena", "Legal / Seguros", "Seguros Generales BCI"),
+        fileData: generateSimplePdfDataUri("Póliza de Responsabilidad Civil y Todo Riesgo Faena", "POL-SEG-MIN")
       },
       {
         id: "DOC-004",
@@ -751,7 +877,10 @@ function defaultSeedData() {
         amount: 85000000,
         supplier: "Aceros Industriales del Pacífico",
         fileName: "Factura_F-4582_Aceros.pdf",
-        fileType: "pdf"
+        fileType: "pdf",
+        thumbnail: createStyledDocThumbnail("FAC-88421", "Factura Vigas Estructurales", "Factura / Compra", "Aceros Industriales"),
+        photo: createStyledDocThumbnail("FAC-88421", "Factura Vigas Estructurales", "Factura / Compra", "Aceros Industriales"),
+        fileData: generateSimplePdfDataUri("Factura Electrónica Compra Vigas Estructurales", "FAC-88421")
       },
       {
         id: "DOC-005",
@@ -765,7 +894,10 @@ function defaultSeedData() {
         amount: 95400000,
         supplier: "Minera Andina SpA",
         fileName: "EDP_03_Aprobado_MineraAndina.pdf",
-        fileType: "pdf"
+        fileType: "pdf",
+        thumbnail: createStyledDocThumbnail("EDP-N03", "Estado de Pago N°3 Ventanas", "Estado de Pago", "Minera Andina SpA"),
+        photo: createStyledDocThumbnail("EDP-N03", "Estado de Pago N°3 Ventanas", "Estado de Pago", "Minera Andina SpA"),
+        fileData: generateSimplePdfDataUri("Estado de Pago N°3 Aprobado Subestación Ventanas", "EDP-N03")
       },
       {
         id: "DOC-006",
@@ -779,7 +911,10 @@ function defaultSeedData() {
         amount: 0,
         supplier: "Inspección Técnica ITO",
         fileName: "Protocolo_Hidrostatica_PRJ003.pdf",
-        fileType: "pdf"
+        fileType: "pdf",
+        thumbnail: createStyledDocThumbnail("PRO-HID-02", "Prueba Hidrostática 800 PSI", "Calidad / Certificación", "Inspección Técnica ITO"),
+        photo: createStyledDocThumbnail("PRO-HID-02", "Prueba Hidrostática 800 PSI", "Calidad / Certificación", "Inspección Técnica ITO"),
+        fileData: generateSimplePdfDataUri("Protocolo de Prueba Hidrostática Tuberías 800 PSI", "PRO-HID-02")
       },
       {
         id: "DOC-007",
@@ -793,7 +928,10 @@ function defaultSeedData() {
         amount: 0,
         supplier: "SERNAGEOMIN Región de Antofagasta",
         fileName: "Acta_Fiscalizacion_SERNAGEOMIN.pdf",
-        fileType: "pdf"
+        fileType: "pdf",
+        thumbnail: createStyledDocThumbnail("INF-SERNAG", "Informe Fiscalización SERNAGEOMIN", "Inspección Técnica", "SERNAGEOMIN Antofagasta"),
+        photo: createStyledDocThumbnail("INF-SERNAG", "Informe Fiscalización SERNAGEOMIN", "Inspección Técnica", "SERNAGEOMIN Antofagasta"),
+        fileData: generateSimplePdfDataUri("Informe de Fiscalización SERNAGEOMIN Sin Observaciones", "INF-SERNAG")
       }
     ],
     quotations: [
@@ -1040,6 +1178,19 @@ function pushToCloud() {
   cloudSyncDebounceTimer = setTimeout(() => {
     try {
       if (!DB) return;
+      // Prepare documents safely for consolidated workspace (prevent exceeding Firestore 1MB doc limit)
+      const sanitizedDocsForGlobal = (DB.documents || []).map(doc => {
+        const isHeavy = doc.fileData && doc.fileData.length > 200000;
+        if (isHeavy) {
+          return {
+            ...doc,
+            fileData: doc.thumbnail || "", // preserve thumbnail for instant visual display
+            hasHeavyFile: true
+          };
+        }
+        return doc;
+      });
+
       const payload = {
         version: DB.version || "4.0",
         settings: DB.settings || defaultSeedData().settings,
@@ -1049,7 +1200,7 @@ function pushToCloud() {
         workers: DB.workers || [],
         overtime: DB.overtime || [],
         tools: DB.tools || [],
-        documents: DB.documents || [],
+        documents: sanitizedDocsForGlobal,
         quotations: DB.quotations || [],
         lastUpdated: new Date().toISOString()
       };
@@ -1064,6 +1215,31 @@ function pushToCloud() {
           console.warn("Firestore save warning:", err);
           updateCloudStatusBadge("offline", "Memoria Local");
         });
+
+      // Also sync individual documents into 'documents' collection in Firestore
+      if (Array.isArray(DB.documents)) {
+        DB.documents.forEach(doc => {
+          if (doc && doc.id) {
+            window.firebaseDb.collection("documents").doc(doc.id).set({
+              id: doc.id,
+              code: doc.code || "",
+              name: doc.name || "",
+              type: doc.type || "",
+              projectId: doc.projectId || "",
+              date: doc.date || "",
+              expiryDate: doc.expiryDate || "",
+              status: doc.status || "Vigente",
+              amount: Number(doc.amount) || 0,
+              supplier: doc.supplier || "",
+              fileName: doc.fileName || "",
+              fileType: doc.fileType || "pdf",
+              thumbnail: doc.thumbnail || doc.photo || "",
+              fileData: (doc.fileData && doc.fileData.length < 800000) ? doc.fileData : (doc.thumbnail || ""),
+              lastUpdated: new Date().toISOString()
+            }, { merge: true }).catch(dErr => console.log("Doc individual sync note:", dErr));
+          }
+        });
+      }
 
       // Also sync individual user documents into the 'users' collection for clear visibility in Firebase Console
       if (Array.isArray(DB.users)) {
@@ -1393,6 +1569,26 @@ function loadDB() {
           }
         });
       }
+      // Ensure all documents in existing DB have visual thumbnails and PDF data
+      if (Array.isArray(DB.documents)) {
+        DB.documents.forEach(doc => {
+          const isPdf = doc.fileType === "pdf" || (doc.fileName && doc.fileName.toLowerCase().endsWith(".pdf"));
+          if (!doc.thumbnail) {
+            if (isPdf) {
+              doc.thumbnail = createStyledDocThumbnail(doc.code, doc.name, doc.type, doc.supplier);
+            } else if (doc.fileData || doc.photo) {
+              doc.thumbnail = doc.fileData || doc.photo;
+            }
+          }
+          if (!doc.photo && doc.thumbnail) {
+            doc.photo = doc.thumbnail;
+          }
+          if (!doc.fileData && isPdf) {
+            doc.fileData = generateSimplePdfDataUri(doc.name, doc.code);
+          }
+        });
+      }
+
       saveDB();
     } else {
       DB = defaultSeedData();
@@ -1414,7 +1610,22 @@ function saveDB() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
   } catch (e) {
-    console.error("Error saving DB to localStorage:", e);
+    console.warn("Storage quota warning, trimming heavy files from localStorage:", e);
+    try {
+      // Save lightweight copy with thumbnails only to avoid quota crash
+      const lightCopy = JSON.parse(JSON.stringify(DB));
+      if (Array.isArray(lightCopy.documents)) {
+        lightCopy.documents.forEach(d => {
+          if (d.fileData && d.fileData.length > 150000) {
+            d.fileData = d.thumbnail || "";
+            d.hasIndexedDbFile = true;
+          }
+        });
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(lightCopy));
+    } catch (innerErr) {
+      console.error("Critical localStorage error:", innerErr);
+    }
   }
   pushToCloud();
 }

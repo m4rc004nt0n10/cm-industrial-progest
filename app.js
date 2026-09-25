@@ -4011,8 +4011,9 @@ function renderDocuments(container) {
             const prj = DB.projects.find(p => p.id === d.projectId);
             const isInvoice = (d.type && (d.type.includes("Factura") || d.type.includes("Boleta"))) || Boolean(d.invoiceFolio);
             const isExp = d.expiryDate ? new Date(d.expiryDate) < new Date() : false;
-            const hasFile = Boolean(d.fileData || d.photo);
-            const isPdf = d.fileType === "pdf" || (d.fileData && d.fileData.startsWith("data:application/pdf"));
+            const hasFile = Boolean(d.fileData || d.photo || d.thumbnail);
+            const isPdf = d.fileType === "pdf" || (d.fileName && d.fileName.toLowerCase().endsWith(".pdf")) || (d.fileData && d.fileData.startsWith("data:application/pdf"));
+            const previewSrc = d.thumbnail || d.photo || d.fileData;
             return `
               <tr data-prj="${d.projectId || ''}" data-type="${(d.type || '').toLowerCase()}" data-has-invoice="${isInvoice ? 'true' : 'false'}">
                 <td>
@@ -4066,15 +4067,21 @@ function renderDocuments(container) {
                 <td style="text-align:center;">
                   ${hasFile ? (
                     isPdf ? `
-                      <button class="btn btn-secondary btn-sm" onclick="openDocPhotoViewer('${d.id}')" title="Ver Documento PDF" style="font-size:11px;padding:4px 8px;gap:5px;">
-                        <i class="fa-solid fa-file-pdf" style="color:#ef4444;font-size:13px;"></i> Ver PDF
-                      </button>
+                      <div style="display:inline-flex;align-items:center;gap:6px;">
+                        <div onclick="openDocPhotoViewer('${d.id}')" title="Clic para ver documento PDF adjunto" style="width:38px;height:38px;border-radius:6px;overflow:hidden;border:1px solid rgba(239,68,68,0.45);background:#ffffff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;position:relative;box-shadow:0 1px 4px rgba(0,0,0,0.3);transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                          <img src="${previewSrc}" alt="${d.code}" style="width:100%;height:100%;object-fit:cover;">
+                          <span style="position:absolute;bottom:0;right:0;background:#ef4444;color:#fff;font-size:8px;font-weight:900;padding:1px 3px;border-top-left-radius:3px;line-height:1;box-shadow:0 0 2px rgba(0,0,0,0.5);">PDF</span>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="openDocPhotoViewer('${d.id}')" title="Ver Documento PDF" style="padding:4px 7px;font-size:11px;color:#ef4444;border-color:rgba(239,68,68,0.3);">
+                          <i class="fa-solid fa-file-pdf"></i>
+                        </button>
+                      </div>
                     ` : `
                       <div style="display:inline-flex;align-items:center;gap:6px;">
-                        <div onclick="openDocPhotoViewer('${d.id}')" title="Clic para ampliar foto de factura" style="width:36px;height:36px;border-radius:6px;overflow:hidden;border:1px solid var(--border-color);background:#080c14;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.3);transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                          <img src="${d.fileData || d.photo}" alt="${d.code}" style="width:100%;height:100%;object-fit:cover;">
+                        <div onclick="openDocPhotoViewer('${d.id}')" title="Clic para ampliar foto de factura" style="width:38px;height:38px;border-radius:6px;overflow:hidden;border:1px solid var(--border-color);background:#080c14;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.3);transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                          <img src="${previewSrc}" alt="${d.code}" style="width:100%;height:100%;object-fit:cover;">
                         </div>
-                        <button class="btn btn-secondary btn-sm" onclick="openDocPhotoViewer('${d.id}')" title="Ampliar foto" style="padding:3px 7px;font-size:11px;">
+                        <button class="btn btn-secondary btn-sm" onclick="openDocPhotoViewer('${d.id}')" title="Ampliar foto" style="padding:4px 7px;font-size:11px;">
                           <i class="fa-solid fa-eye"></i>
                         </button>
                       </div>
@@ -4082,10 +4089,10 @@ function renderDocuments(container) {
                   ) : (
                     userIsDev ? `
                       <button class="btn btn-secondary btn-sm" onclick="openEditModal('documents', '${d.id}')" title="Subir foto o PDF" style="font-size:11px;padding:3px 8px;color:var(--text-sub);">
-                        <i class="fa-solid fa-camera"></i> + Foto
+                        <i class="fa-solid fa-file-arrow-up"></i> + Adjuntar
                       </button>
                     ` : `
-                      <span style="font-size:11px;color:var(--text-muted);">Sin foto</span>
+                      <span style="font-size:11px;color:var(--text-muted);">Sin archivo</span>
                     `
                   )}
                 </td>
@@ -4913,6 +4920,12 @@ function closePhotoLightbox(event) {
   }
   const modal = document.getElementById("photo-lightbox-modal");
   if (modal) modal.classList.remove("active");
+  if (typeof currentPdfBlobUrl !== "undefined" && currentPdfBlobUrl) {
+    try {
+      URL.revokeObjectURL(currentPdfBlobUrl);
+    } catch (e) {}
+    currentPdfBlobUrl = null;
+  }
 }
 
 // ==========================================
@@ -5008,7 +5021,48 @@ function captureDocPhoto() {
   stopDocCamera();
 }
 
-function handleDocFileUpload(evt) {
+async function generatePdfThumbnail(fileDataUrl, code, name, type, supplier) {
+  try {
+    if (window.pdfjsLib) {
+      let uint8Array = null;
+      if (fileDataUrl.startsWith("data:")) {
+        const parts = fileDataUrl.split(";base64,");
+        const base64 = parts[1] || parts[0];
+        const binary = atob(base64);
+        uint8Array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          uint8Array[i] = binary.charCodeAt(i);
+        }
+      }
+      if (uint8Array) {
+        const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 1.0 });
+        const targetWidth = 320;
+        const scale = targetWidth / viewport.width;
+        const scaledViewport = page.getViewport({ scale });
+        const canvas = document.createElement("canvas");
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+        return canvas.toDataURL("image/jpeg", 0.82);
+      }
+    }
+  } catch (err) {
+    console.warn("PDF.js thumbnail rendering error, using fallback:", err);
+  }
+
+  // High quality SVG styled document thumbnail fallback
+  return typeof createStyledDocThumbnail === "function" 
+    ? createStyledDocThumbnail(code, name, type, supplier) 
+    : "";
+}
+
+async function handleDocFileUpload(evt) {
   const file = evt.target.files && evt.target.files[0];
   if (!file) return;
 
@@ -5020,20 +5074,46 @@ function handleDocFileUpload(evt) {
     return;
   }
 
-  if (file.size > 8 * 1024 * 1024) {
-    alert("El archivo es demasiado pesado (máximo 8 MB para almacenamiento local).");
+  if (file.size > 15 * 1024 * 1024) {
+    alert("El archivo es demasiado pesado (máximo 15 MB).");
     return;
   }
 
+  const statusBadge = document.getElementById("doc-indicator-badge");
+  if (statusBadge) {
+    statusBadge.className = "badge badge-blue";
+    statusBadge.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Cargando archivo...';
+  }
+
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async (e) => {
     const dataUrl = e.target.result;
+    const codeEl = document.getElementById("f_dcode");
+    const nameEl = document.getElementById("f_dname");
+    const typeEl = document.getElementById("f_dtype");
+    const supplierEl = document.getElementById("f_d_supplier");
+    const code = codeEl ? codeEl.value.trim() : "";
+    const name = nameEl ? nameEl.value.trim() : "";
+    const type = typeEl ? typeEl.value : "";
+    const supplier = supplierEl ? supplierEl.value.trim() : "";
+
     if (isImg) {
       compressImageIfPossible(dataUrl, 1400, 0.82, (compressed) => {
-        applyDocFile(compressed, file.name, "image");
+        applyDocFile(compressed, file.name, "image", compressed);
       });
     } else {
-      applyDocFile(dataUrl, file.name, "pdf");
+      if (statusBadge) {
+        statusBadge.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Generando miniatura PDF...';
+      }
+      try {
+        const thumb = await generatePdfThumbnail(dataUrl, code, name || file.name, type, supplier);
+        applyDocFile(dataUrl, file.name, "pdf", thumb);
+      } catch (err) {
+        const fallbackThumb = typeof createStyledDocThumbnail === "function" 
+          ? createStyledDocThumbnail(code, name || file.name, type, supplier) 
+          : "";
+        applyDocFile(dataUrl, file.name, "pdf", fallbackThumb);
+      }
     }
   };
   reader.readAsDataURL(file);
@@ -5064,14 +5144,16 @@ function compressImageIfPossible(dataUrl, maxDim, quality, callback) {
   img.src = dataUrl;
 }
 
-function applyDocFile(fileData, fileName, fileType) {
+function applyDocFile(fileData, fileName, fileType, thumbnail) {
   const dataInput = document.getElementById("f_doc_filedata");
   const nameInput = document.getElementById("f_doc_filename");
   const typeInput = document.getElementById("f_doc_filetype");
+  const thumbInput = document.getElementById("f_doc_thumbnail");
   const emptyBox = document.getElementById("doc-photo-empty-box");
+  const previewWrapper = document.getElementById("doc-preview-wrapper");
   const imgPreview = document.getElementById("doc-photo-img");
-  const pdfCard = document.getElementById("doc-pdf-card");
-  const pdfName = document.getElementById("doc-pdf-name");
+  const previewBadge = document.getElementById("doc-preview-badge");
+  const statusInfo = document.getElementById("doc-photo-status-info");
   const statusBadge = document.getElementById("doc-indicator-badge");
   const statusTitle = document.getElementById("doc-photo-status-title");
   const statusDesc = document.getElementById("doc-photo-status-desc");
@@ -5082,31 +5164,39 @@ function applyDocFile(fileData, fileName, fileType) {
     return;
   }
 
-  const detectedType = fileType || (fileData.startsWith("data:application/pdf") ? "pdf" : "image");
+  const detectedType = fileType || (((fileData && fileData.startsWith("data:application/pdf")) || (fileName && fileName.toLowerCase().endsWith(".pdf"))) ? "pdf" : "image");
 
   if (dataInput) dataInput.value = fileData;
   if (nameInput) nameInput.value = fileName || "";
   if (typeInput) typeInput.value = detectedType;
+  if (thumbInput) thumbInput.value = thumbnail || "";
 
   if (emptyBox) emptyBox.style.display = "none";
+  if (previewWrapper) previewWrapper.style.display = "block";
+  if (statusInfo) statusInfo.style.display = "block";
   if (removeBtn) removeBtn.style.display = "inline-flex";
 
+  const visualPreview = thumbnail || (detectedType === "pdf" ? (typeof createStyledDocThumbnail === "function" ? createStyledDocThumbnail("DOC", fileName, "Documento", "") : fileData) : fileData);
+
+  if (imgPreview) {
+    imgPreview.src = visualPreview;
+    imgPreview.style.display = "block";
+    imgPreview.title = detectedType === "pdf" ? "Clic para ver documento PDF adjunto" : "Clic para ampliar fotografía";
+  }
+
+  if (previewBadge) {
+    previewBadge.style.background = detectedType === "pdf" ? "#ef4444" : "#10b981";
+    previewBadge.innerHTML = detectedType === "pdf" ? '<i class="fa-solid fa-file-pdf"></i> PDF' : '<i class="fa-solid fa-camera"></i> FOTO';
+  }
+
   if (detectedType === "pdf") {
-    if (imgPreview) imgPreview.style.display = "none";
-    if (pdfCard) pdfCard.style.display = "flex";
-    if (pdfName) pdfName.innerText = fileName || "Documento_Factura.pdf";
     if (statusBadge) {
       statusBadge.className = "badge badge-red";
       statusBadge.innerHTML = '<i class="fa-solid fa-file-pdf"></i> PDF Listo';
     }
-    if (statusTitle) statusTitle.innerText = fileName || "Documento PDF Listo";
-    if (statusDesc) statusDesc.innerText = "Archivo PDF vinculado. Se guardará con este registro.";
+    if (statusTitle) statusTitle.innerText = fileName || "Documento PDF Adjunto";
+    if (statusDesc) statusDesc.innerText = "Documento PDF adjuntado correctamente. Se visualiza la miniatura de la primera página.";
   } else {
-    if (pdfCard) pdfCard.style.display = "none";
-    if (imgPreview) {
-      imgPreview.src = fileData;
-      imgPreview.style.display = "block";
-    }
     if (statusBadge) {
       statusBadge.className = "badge badge-green";
       statusBadge.innerHTML = '<i class="fa-solid fa-check"></i> Foto Lista';
@@ -5120,10 +5210,12 @@ function removeDocFile() {
   const dataInput = document.getElementById("f_doc_filedata");
   const nameInput = document.getElementById("f_doc_filename");
   const typeInput = document.getElementById("f_doc_filetype");
+  const thumbInput = document.getElementById("f_doc_thumbnail");
   const fileInput = document.getElementById("f_doc_file");
   const emptyBox = document.getElementById("doc-photo-empty-box");
+  const previewWrapper = document.getElementById("doc-preview-wrapper");
   const imgPreview = document.getElementById("doc-photo-img");
-  const pdfCard = document.getElementById("doc-pdf-card");
+  const statusInfo = document.getElementById("doc-photo-status-info");
   const statusBadge = document.getElementById("doc-indicator-badge");
   const statusTitle = document.getElementById("doc-photo-status-title");
   const statusDesc = document.getElementById("doc-photo-status-desc");
@@ -5132,14 +5224,16 @@ function removeDocFile() {
   if (dataInput) dataInput.value = "";
   if (nameInput) nameInput.value = "";
   if (typeInput) typeInput.value = "image";
+  if (thumbInput) thumbInput.value = "";
   if (fileInput) fileInput.value = "";
 
   if (emptyBox) emptyBox.style.display = "flex";
+  if (previewWrapper) previewWrapper.style.display = "none";
+  if (statusInfo) statusInfo.style.display = "none";
   if (imgPreview) {
     imgPreview.style.display = "none";
     imgPreview.src = "";
   }
-  if (pdfCard) pdfCard.style.display = "none";
   if (removeBtn) removeBtn.style.display = "none";
 
   if (statusBadge) {
@@ -5150,102 +5244,276 @@ function removeDocFile() {
   if (statusDesc) statusDesc.innerText = "Toma una foto con la cámara o sube un archivo JPG, PNG o PDF.";
 }
 
-function showDocImageLightboxCurrent() {
+// ==========================================
+// INTERACTIVE PDF VIEWER ENGINE
+// ==========================================
+let currentPdfDoc = null;
+let currentPdfPageNum = 1;
+let currentPdfScale = 1.15;
+let currentPdfBlobUrl = null;
+
+function changePdfPage(delta) {
+  if (!currentPdfDoc) return;
+  const newPage = currentPdfPageNum + delta;
+  if (newPage >= 1 && newPage <= currentPdfDoc.numPages) {
+    currentPdfPageNum = newPage;
+    renderCurrentPdfPage();
+  }
+}
+
+function zoomPdfDoc(delta) {
+  currentPdfScale = Math.max(0.5, Math.min(3.0, currentPdfScale + delta));
+  const zoomEl = document.getElementById("lightbox-pdf-zoom-val");
+  if (zoomEl) zoomEl.innerText = `${Math.round(currentPdfScale * 100)}%`;
+  renderCurrentPdfPage();
+}
+
+function openPdfInNewTab() {
+  if (currentPdfBlobUrl) {
+    window.open(currentPdfBlobUrl, "_blank");
+  } else {
+    const downloadLink = document.getElementById("lightbox-download-link");
+    if (downloadLink && downloadLink.href) {
+      window.open(downloadLink.href, "_blank");
+    }
+  }
+}
+
+async function renderCurrentPdfPage() {
+  if (!currentPdfDoc) return;
+  try {
+    const page = await currentPdfDoc.getPage(currentPdfPageNum);
+    const canvas = document.getElementById("lightbox-pdf-canvas");
+    if (!canvas) return;
+
+    const viewport = page.getViewport({ scale: currentPdfScale });
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    canvas.style.display = "block";
+
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const pageIndicator = document.getElementById("lightbox-pdf-page-indicator");
+    if (pageIndicator) pageIndicator.innerText = `${currentPdfPageNum} / ${currentPdfDoc.numPages}`;
+
+    const prevBtn = document.getElementById("btn-pdf-prev");
+    const nextBtn = document.getElementById("btn-pdf-next");
+    if (prevBtn) prevBtn.disabled = currentPdfPageNum <= 1;
+    if (nextBtn) nextBtn.disabled = currentPdfPageNum >= currentPdfDoc.numPages;
+
+    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+    const loading = document.getElementById("lightbox-pdf-loading");
+    if (loading) loading.style.display = "none";
+  } catch (err) {
+    console.warn("Error rendering PDF page in canvas:", err);
+    showPdfFallbackView();
+  }
+}
+
+function showPdfFallbackView(filename) {
+  const loading = document.getElementById("lightbox-pdf-loading");
+  const canvas = document.getElementById("lightbox-pdf-canvas");
+  const fallback = document.getElementById("lightbox-pdf-fallback");
+  const fallbackName = document.getElementById("lightbox-pdf-fallback-name");
+  if (loading) loading.style.display = "none";
+  if (canvas) canvas.style.display = "none";
+  if (fallback) fallback.style.display = "block";
+  if (fallbackName && filename) fallbackName.innerText = filename;
+}
+
+async function loadAndDisplayPdfInLightbox(fileData, filename) {
+  const imgContainer = document.getElementById("lightbox-img-container");
+  const pdfViewer = document.getElementById("lightbox-pdf-viewer");
+  const canvas = document.getElementById("lightbox-pdf-canvas");
+  const fallback = document.getElementById("lightbox-pdf-fallback");
+  const loading = document.getElementById("lightbox-pdf-loading");
+  const filenameEl = document.getElementById("lightbox-pdf-filename");
+  const openExternalBtn = document.getElementById("lightbox-open-external-btn");
+
+  if (imgContainer) imgContainer.style.display = "none";
+  if (pdfViewer) pdfViewer.style.display = "block";
+  if (canvas) canvas.style.display = "none";
+  if (fallback) fallback.style.display = "none";
+  if (loading) loading.style.display = "flex";
+  if (filenameEl) filenameEl.innerText = filename || "documento.pdf";
+  if (openExternalBtn) openExternalBtn.style.display = "inline-flex";
+
+  if (currentPdfBlobUrl) {
+    try {
+      URL.revokeObjectURL(currentPdfBlobUrl);
+    } catch (e) {}
+    currentPdfBlobUrl = null;
+  }
+
+  try {
+    let uint8Array = null;
+    if (fileData.startsWith("data:")) {
+      const parts = fileData.split(";base64,");
+      const base64 = parts[1] || parts[0];
+      const binary = atob(base64);
+      uint8Array = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        uint8Array[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([uint8Array], { type: "application/pdf" });
+      currentPdfBlobUrl = URL.createObjectURL(blob);
+    } else {
+      currentPdfBlobUrl = fileData;
+    }
+
+    const downloadLink = document.getElementById("lightbox-download-link");
+    if (downloadLink) {
+      downloadLink.href = currentPdfBlobUrl;
+      downloadLink.download = filename || "documento.pdf";
+    }
+
+    if (window.pdfjsLib && uint8Array) {
+      currentPdfDoc = await pdfjsLib.getDocument({ data: uint8Array }).promise;
+      currentPdfPageNum = 1;
+      currentPdfScale = 1.15;
+      const zoomEl = document.getElementById("lightbox-pdf-zoom-val");
+      if (zoomEl) zoomEl.innerText = "115%";
+      await renderCurrentPdfPage();
+    } else {
+      showPdfFallbackView(filename);
+    }
+  } catch (err) {
+    console.warn("Could not load PDF document:", err);
+    showPdfFallbackView(filename);
+  }
+}
+
+async function showDocImageLightboxCurrent() {
   const fileData = document.getElementById("f_doc_filedata") ? document.getElementById("f_doc_filedata").value : "";
   const fileType = document.getElementById("f_doc_filetype") ? document.getElementById("f_doc_filetype").value : "image";
   const fileName = document.getElementById("f_doc_filename") ? document.getElementById("f_doc_filename").value : "";
+  const thumb = document.getElementById("f_doc_thumbnail") ? document.getElementById("f_doc_thumbnail").value : "";
   const code = document.getElementById("f_dcode") ? document.getElementById("f_dcode").value : "DOC";
   const name = document.getElementById("f_dname") ? document.getElementById("f_dname").value : "Factura";
 
-  if (!fileData) return;
+  if (!fileData && !thumb) return;
 
   const modal = document.getElementById("photo-lightbox-modal");
+  const imgContainer = document.getElementById("lightbox-img-container");
   const img = document.getElementById("lightbox-img");
-  const pdfContainer = document.getElementById("lightbox-pdf-container");
+  const pdfViewer = document.getElementById("lightbox-pdf-viewer");
   const title = document.getElementById("lightbox-title");
   const meta = document.getElementById("lightbox-meta");
   const downloadLink = document.getElementById("lightbox-download-link");
+  const headerIcon = document.getElementById("lightbox-header-icon");
+  const openExternalBtn = document.getElementById("lightbox-open-external-btn");
 
   if (!modal) return;
 
-  title.innerText = `Vista Previa: ${code} - ${name}`;
-  downloadLink.href = fileData;
-  downloadLink.download = fileName || `${code}.${fileType === 'pdf' ? 'pdf' : 'jpg'}`;
+  const isPdf = fileType === "pdf" || fileData.startsWith("data:application/pdf");
+  const displayFile = fileData || thumb;
+  const currentFileName = fileName || `${code}.${isPdf ? 'pdf' : 'jpg'}`;
 
-  if (fileType === "pdf" || fileData.startsWith("data:application/pdf")) {
-    if (img) img.style.display = "none";
-    if (pdfContainer) {
-      pdfContainer.style.display = "block";
-      pdfContainer.innerHTML = `<iframe src="${fileData}" style="width:100%;height:520px;border:none;border-radius:8px;background:#fff;"></iframe>`;
-    }
-    meta.innerHTML = `<div style="font-size:12px;color:var(--text-sub);">Documento PDF de factura/boleta listo para guardar.</div>`;
+  title.innerText = `Vista Previa: ${code} - ${name}`;
+  if (headerIcon) {
+    headerIcon.className = isPdf ? "fa-solid fa-file-pdf" : "fa-solid fa-camera";
+    headerIcon.style.color = isPdf ? "#ef4444" : "var(--primary)";
+  }
+
+  if (isPdf) {
+    if (imgContainer) imgContainer.style.display = "none";
+    if (openExternalBtn) openExternalBtn.style.display = "inline-flex";
+    await loadAndDisplayPdfInLightbox(displayFile, currentFileName);
   } else {
-    if (pdfContainer) {
-      pdfContainer.style.display = "none";
-      pdfContainer.innerHTML = "";
-    }
+    if (pdfViewer) pdfViewer.style.display = "none";
+    if (openExternalBtn) openExternalBtn.style.display = "none";
+    if (imgContainer) imgContainer.style.display = "flex";
     if (img) {
-      img.src = fileData;
+      img.src = displayFile;
       img.style.display = "block";
     }
-    meta.innerHTML = `<div style="font-size:12px;color:var(--text-sub);">Fotografía cargada para este registro.</div>`;
+    if (downloadLink) {
+      downloadLink.href = displayFile;
+      downloadLink.download = currentFileName;
+    }
   }
+
+  if (meta) {
+    meta.innerHTML = `<div style="font-size:12px;color:var(--text-sub);">Vista previa del archivo adjunto antes de guardar el registro en Control Documental.</div>`;
+  }
+
   modal.classList.add("active");
 }
 
-function openDocPhotoViewer(docId) {
-  const doc = (DB.documents || []).find(d => d.id === docId);
+async function openDocPhotoViewer(docId) {
+  let doc = (DB.documents || []).find(d => d.id === docId);
   if (!doc) return;
 
-  const fileData = doc.fileData || doc.photo;
+  // Retrieve cached file from IndexedDB if fileData is not in memory
+  if (!doc.fileData && window.idbDocStorage) {
+    try {
+      const cached = await idbDocStorage.get(doc.id);
+      if (cached) doc.fileData = cached;
+    } catch (e) {}
+  }
+
+  const fileData = doc.fileData || doc.thumbnail || doc.photo;
   if (!fileData) {
     alert("Este registro no tiene foto ni documento adjunto.");
     return;
   }
 
   const modal = document.getElementById("photo-lightbox-modal");
+  const imgContainer = document.getElementById("lightbox-img-container");
   const img = document.getElementById("lightbox-img");
-  const pdfContainer = document.getElementById("lightbox-pdf-container");
+  const pdfViewer = document.getElementById("lightbox-pdf-viewer");
   const title = document.getElementById("lightbox-title");
   const meta = document.getElementById("lightbox-meta");
   const downloadLink = document.getElementById("lightbox-download-link");
+  const headerIcon = document.getElementById("lightbox-header-icon");
+  const openExternalBtn = document.getElementById("lightbox-open-external-btn");
 
   if (!modal) return;
 
-  const isPdf = doc.fileType === "pdf" || fileData.startsWith("data:application/pdf");
+  const isPdf = doc.fileType === "pdf" || (doc.fileName && doc.fileName.toLowerCase().endsWith(".pdf")) || fileData.startsWith("data:application/pdf");
+  const fileName = doc.fileName || `${doc.code}.${isPdf ? 'pdf' : 'jpg'}`;
+
   title.innerText = `${isPdf ? 'Documento PDF' : 'Foto de Factura / Boleta'}: ${doc.code}`;
-  downloadLink.href = fileData;
-  downloadLink.download = doc.fileName || `${doc.code}.${isPdf ? 'pdf' : 'jpg'}`;
+  if (headerIcon) {
+    headerIcon.className = isPdf ? "fa-solid fa-file-pdf" : "fa-solid fa-camera";
+    headerIcon.style.color = isPdf ? "#ef4444" : "var(--primary)";
+  }
 
   const prj = DB.projects.find(p => p.id === doc.projectId);
 
   if (isPdf) {
-    if (img) img.style.display = "none";
-    if (pdfContainer) {
-      pdfContainer.style.display = "block";
-      pdfContainer.innerHTML = `<iframe src="${fileData}" style="width:100%;height:560px;border:none;border-radius:8px;background:#fff;"></iframe>`;
-    }
+    if (imgContainer) imgContainer.style.display = "none";
+    if (openExternalBtn) openExternalBtn.style.display = "inline-flex";
+    await loadAndDisplayPdfInLightbox(fileData, fileName);
   } else {
-    if (pdfContainer) {
-      pdfContainer.style.display = "none";
-      pdfContainer.innerHTML = "";
-    }
+    if (pdfViewer) pdfViewer.style.display = "none";
+    if (openExternalBtn) openExternalBtn.style.display = "none";
+    if (imgContainer) imgContainer.style.display = "flex";
     if (img) {
       img.src = fileData;
       img.style.display = "block";
     }
+    if (downloadLink) {
+      downloadLink.href = fileData;
+      downloadLink.download = fileName;
+    }
   }
 
-  meta.innerHTML = `
-    <div style="font-size:13px;font-weight:600;color:var(--text-main);margin-bottom:6px;">${doc.name}</div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--text-sub);">
-      <div><strong>Proyecto:</strong> <span class="badge badge-blue">${doc.projectId}</span> ${prj ? prj.name : ''}</div>
-      <div><strong>Fecha:</strong> ${doc.date || doc.expiryDate || '-'}</div>
-      ${doc.amount ? `<div><strong>Monto:</strong> <span style="color:var(--primary);font-weight:700;">${fmtMoney(doc.amount)}</span></div>` : ''}
-      ${doc.supplier ? `<div><strong>Emisor:</strong> ${doc.supplier}</div>` : ''}
-      <div><strong>Estado:</strong> <span class="badge ${doc.status === 'Vigente' ? 'badge-green' : doc.status === 'Pagado' ? 'badge-blue' : 'badge-yellow'}">${doc.status}</span></div>
-    </div>
-  `;
+  if (meta) {
+    meta.innerHTML = `
+      <div style="font-size:13px;font-weight:600;color:var(--text-main);margin-bottom:6px;">${doc.name}</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--text-sub);">
+        <div><strong>Proyecto:</strong> <span class="badge badge-blue">${doc.projectId || 'General'}</span> ${prj ? prj.name : ''}</div>
+        <div><strong>Fecha:</strong> ${doc.date || doc.expiryDate || '-'}</div>
+        ${doc.amount ? `<div><strong>Monto:</strong> <span style="color:var(--primary);font-weight:700;">${fmtMoney(doc.amount)}</span></div>` : ''}
+        ${doc.supplier ? `<div><strong>Emisor:</strong> ${doc.supplier}</div>` : ''}
+        <div><strong>Estado:</strong> <span class="badge ${doc.status === 'Vigente' ? 'badge-green' : doc.status === 'Pagado' ? 'badge-blue' : 'badge-yellow'}">${doc.status}</span></div>
+      </div>
+    `;
+  }
 
   modal.classList.add("active");
 }
@@ -5255,8 +5523,13 @@ function initDocInvoiceForm(data) {
   const selectedPrj = prjSelect ? prjSelect.value : (data ? data.projectId : "");
   updateDocLinkedExpenses(selectedPrj, data ? (data.expenseId || data.invoiceFolio) : null);
 
-  if (data && (data.fileData || data.photo)) {
-    applyDocFile(data.fileData || data.photo, data.fileName || `${data.code || 'documento'}.jpg`, data.fileType || "image");
+  if (data && (data.fileData || data.photo || data.thumbnail)) {
+    applyDocFile(
+      data.fileData || data.thumbnail || data.photo, 
+      data.fileName || `${data.code || 'documento'}.${data.fileType === 'pdf' ? 'pdf' : 'jpg'}`, 
+      data.fileType || "image",
+      data.thumbnail || data.photo
+    );
   } else {
     removeDocFile();
   }
@@ -6224,6 +6497,7 @@ function getEntityFormHTML(entity, data) {
           <input type="hidden" id="f_doc_filedata" value="${data.fileData || data.photo || ''}">
           <input type="hidden" id="f_doc_filename" value="${data.fileName || ''}">
           <input type="hidden" id="f_doc_filetype" value="${fileType}">
+          <input type="hidden" id="f_doc_thumbnail" value="${data.thumbnail || data.photo || ''}">
           <input type="file" id="f_doc_file" accept="image/*,application/pdf" style="display:none;" onchange="handleDocFileUpload(event)">
 
           <!-- BOTONES DE ACCIÓN: CÁMARA Y ARCHIVO -->
@@ -6279,35 +6553,36 @@ function getEntityFormHTML(entity, data) {
               </div>
             </div>
 
-            <!-- Vista Previa de Imagen -->
-            <img id="doc-photo-img" 
-                 src="${(hasFile && fileType !== 'pdf') ? (data.fileData || data.photo) : ''}" 
-                 alt="Foto Factura" 
-                 onclick="showDocImageLightboxCurrent()" 
-                 title="Clic para ampliar foto"
-                 style="display:${(hasFile && fileType !== 'pdf') ? 'block' : 'none'};width:70px;height:70px;border-radius:8px;object-fit:cover;border:1px solid var(--border-color);cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.4);">
-
-            <!-- Vista Previa de PDF -->
-            <div id="doc-pdf-card" 
-                 onclick="showDocImageLightboxCurrent()" 
-                 title="Clic para previsualizar PDF"
-                 style="display:${(hasFile && fileType === 'pdf') ? 'flex' : 'none'};align-items:center;gap:12px;padding:8px 12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:8px;cursor:pointer;flex-shrink:0;">
-              <i class="fa-solid fa-file-pdf" style="color:#ef4444;font-size:28px;"></i>
-              <div>
-                <div id="doc-pdf-name" style="font-weight:700;font-size:12px;color:#fff;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                  ${data.fileName || 'factura.pdf'}
-                </div>
-                <div style="font-size:10px;color:var(--text-sub);">Documento PDF &bull; Clic para ver</div>
-              </div>
+            <!-- Vista Previa Visual de Imagen o Primera Página de PDF -->
+            <div id="doc-preview-wrapper" style="position:relative;display:${hasFile ? 'block' : 'none'};flex-shrink:0;">
+              <img id="doc-photo-img" 
+                   src="${data.thumbnail || data.fileData || data.photo || ''}" 
+                   alt="Foto o Documento" 
+                   onclick="showDocImageLightboxCurrent()" 
+                   title="Clic para previsualizar documento en pantalla completa"
+                   style="width:72px;height:72px;border-radius:8px;object-fit:cover;background:#ffffff;border:1px solid var(--border-color);cursor:pointer;display:block;box-shadow:0 2px 8px rgba(0,0,0,0.4);">
+              <span id="doc-preview-badge" style="position:absolute;bottom:0;right:0;background:${fileType === 'pdf' ? '#ef4444' : '#10b981'};color:#fff;font-size:9px;font-weight:900;padding:2px 4px;border-top-left-radius:4px;border-bottom-right-radius:7px;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.5);">
+                ${fileType === 'pdf' ? 'PDF' : 'FOTO'}
+              </span>
             </div>
 
             <!-- Textos de estado cuando hay archivo -->
-            <div id="doc-photo-status-info" style="flex:1;">
-              <div id="doc-photo-status-title" style="font-weight:700;font-size:13px;color:var(--text-main);">
-                ${hasFile ? (data.fileName || 'Foto / Archivo Adjunto') : 'Sin Foto'}
+            <div id="doc-photo-status-info" style="flex:1;display:${hasFile ? 'block' : 'none'};">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+                <div id="doc-photo-status-title" style="font-weight:700;font-size:13px;color:var(--text-main);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  ${hasFile ? (data.fileName || (fileType === 'pdf' ? 'Documento_Factura.pdf' : 'Foto_Factura.jpg')) : 'Sin Archivo'}
+                </div>
+                <span id="doc-file-type-pill" class="badge ${fileType === 'pdf' ? 'badge-red' : 'badge-green'}" style="font-size:10px;">
+                  ${fileType === 'pdf' ? '<i class=\"fa-solid fa-file-pdf\"></i> PDF' : '<i class=\"fa-solid fa-image\"></i> Foto'}
+                </span>
               </div>
-              <div id="doc-photo-status-desc" style="font-size:11px;color:var(--text-sub);margin-top:2px;">
-                ${hasFile ? 'Documento cargado correctamente. Clic sobre la miniatura para visualizar.' : 'Toma una foto con la cámara o arrastra un archivo JPG, PNG o PDF.'}
+              <div id="doc-photo-status-desc" style="font-size:11px;color:var(--text-sub);">
+                ${hasFile ? 'Documento adjuntado correctamente. Clic sobre la miniatura para visualizarlo en el visor interactivo.' : 'Toma una foto con la cámara o sube un archivo JPG, PNG o PDF.'}
+              </div>
+              <div style="margin-top:6px;display:flex;gap:8px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="showDocImageLightboxCurrent()" style="padding:2px 8px;font-size:11px;">
+                  <i class="fa-solid fa-eye"></i> Previsualizar Documento
+                </button>
               </div>
             </div>
           </div>
@@ -6509,11 +6784,28 @@ async function saveModalRecord() {
     const fileDataEl = document.getElementById("f_doc_filedata");
     const fileNameEl = document.getElementById("f_doc_filename");
     const fileTypeEl = document.getElementById("f_doc_filetype");
+    const thumbEl = document.getElementById("f_doc_thumbnail");
     
     record.fileData = fileDataEl ? fileDataEl.value : (activeModalRecord ? activeModalRecord.fileData || "" : "");
-    record.photo = record.fileData;
     record.fileName = fileNameEl ? fileNameEl.value : (activeModalRecord ? activeModalRecord.fileName || "" : "");
     record.fileType = fileTypeEl ? fileTypeEl.value : (activeModalRecord ? activeModalRecord.fileType || "image" : "image");
+
+    let docThumb = thumbEl ? thumbEl.value : (activeModalRecord ? activeModalRecord.thumbnail || "" : "");
+    if (!docThumb && record.fileType === "pdf") {
+      docThumb = typeof createStyledDocThumbnail === "function" 
+        ? createStyledDocThumbnail(record.code, record.name, record.type, record.supplier) 
+        : "";
+    }
+    record.thumbnail = docThumb || record.fileData;
+    record.photo = record.thumbnail;
+
+    // Guardar archivo completo en IndexedDB para persistencia ilimitada
+    if (window.idbDocStorage && record.fileData) {
+      window.idbDocStorage.save(record.id, record.fileData, {
+        fileName: record.fileName,
+        fileType: record.fileType
+      });
+    }
 
     stopDocCamera();
 
