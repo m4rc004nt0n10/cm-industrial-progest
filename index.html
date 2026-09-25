@@ -24,7 +24,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
   if (window.pdfjsLib) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    try {
+      const workerBlob = new Blob(
+        ["importScripts('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js');"],
+        { type: 'application/javascript' }
+      );
+      pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
+    } catch (e) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    }
   }
 </script>
 </head>
@@ -278,24 +286,30 @@ CM
       </button>
     </div>
   </div>
-  <!-- Scrollable viewport for high-res PDF canvas -->
-  <div id="lightbox-pdf-viewport" style="background:#0f172a;border:1px solid var(--border-color);border-radius:0 0 10px 10px;min-height:280px;max-height:520px;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:16px 8px;position:relative;">
-    <canvas id="lightbox-pdf-canvas" style="background:#fff;border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,0.6);max-width:100%;height:auto;display:none;"></canvas>
+  <!-- Scrollable viewport for high-res PDF canvas & native viewer -->
+  <div id="lightbox-pdf-viewport" style="background:#0f172a;border:1px solid var(--border-color);border-radius:0 0 10px 10px;min-height:280px;max-height:560px;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:0;position:relative;">
+    <iframe id="lightbox-pdf-iframe" style="width:100%;height:520px;border:none;border-radius:0 0 10px 10px;background:#ffffff;display:none;"></iframe>
+    <canvas id="lightbox-pdf-canvas" style="background:#fff;border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,0.6);max-width:100%;height:auto;display:none;margin:16px 8px;"></canvas>
     
-    <!-- Fallback if PDF canvas fails -->
-    <div id="lightbox-pdf-fallback" style="display:none;text-align:center;padding:32px 16px;color:#fff;width:100%;">
+    <!-- Fallback if PDF needs to be reattached or opened externally -->
+    <div id="lightbox-pdf-fallback" style="display:none;text-align:center;padding:28px 20px;color:#fff;width:100%;">
       <i class="fa-solid fa-file-pdf" style="font-size:46px;color:#ef4444;margin-bottom:12px;"></i>
-      <div id="lightbox-pdf-fallback-name" style="font-weight:700;font-size:14px;margin-bottom:6px;">Documento PDF</div>
-      <p style="color:var(--text-sub);font-size:12px;margin-bottom:16px;max-width:400px;margin-left:auto;margin-right:auto;">El archivo PDF está adjunto y listo. Puedes visualizarlo en una pestaña completa del navegador o descargarlo a tu equipo.</p>
+      <div id="lightbox-pdf-fallback-name" style="font-weight:700;font-size:15px;margin-bottom:6px;color:#fff;">Documento PDF</div>
+      <p id="lightbox-pdf-fallback-desc" style="color:var(--text-sub);font-size:12px;margin-bottom:18px;max-width:440px;margin-left:auto;margin-right:auto;line-height:1.5;">El archivo PDF está adjunto y listo. Puedes visualizarlo en una pestaña completa del navegador o descargarlo a tu equipo.</p>
+      
+      <input type="file" id="lightbox-reupload-input" accept="application/pdf,image/*" style="display:none;" onchange="handleDocPdfReupload(event)">
+      
       <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
-        <button type="button" class="btn btn-primary btn-sm" onclick="openPdfInNewTab()"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir en Pestaña Completa</button>
+        <button type="button" id="btn-fallback-open-tab" class="btn btn-primary btn-sm" onclick="openPdfInNewTab()"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir en Pestaña Completa</button>
+        <button type="button" id="btn-fallback-reupload" class="btn btn-secondary btn-sm" onclick="triggerDocPdfReupload()"><i class="fa-solid fa-file-arrow-up"></i> Re-adjuntar Archivo PDF</button>
+        <button type="button" id="btn-fallback-generate" class="btn btn-secondary btn-sm" onclick="generatePdfForCurrentDoc()"><i class="fa-solid fa-wand-magic-sparkles"></i> Regenerar Respaldo PDF</button>
       </div>
     </div>
     
     <!-- Loading spinner for PDF rendering -->
-    <div id="lightbox-pdf-loading" style="display:flex;padding:36px;color:var(--text-sub);font-size:13px;align-items:center;justify-content:center;gap:10px;">
+    <div id="lightbox-pdf-loading" style="display:flex;padding:36px;color:var(--text-sub);font-size:13px;align-items:center;justify-content:center;gap:10px;width:100%;">
       <i class="fa-solid fa-circle-notch fa-spin" style="font-size:22px;color:var(--primary);"></i>
-      <span>Cargando documento PDF...</span>
+      <span id="lightbox-pdf-loading-text">Cargando documento PDF...</span>
     </div>
   </div>
 </div>

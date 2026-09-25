@@ -38,12 +38,74 @@ function createStyledDocThumbnail(code, name, type, supplier) {
 }
 window.createStyledDocThumbnail = createStyledDocThumbnail;
 
-// Generador de archivo PDF 1.4 válido y legible para previsualización inmediata
-function generateSimplePdfDataUri(title, code) {
-  const safeTitle = (title || 'Documento Oficial').replace(/[()]/g, '');
-  const safeCode = (code || 'DOC-01').replace(/[()]/g, '');
-  const content = `%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<</Font<</F1 4 0 R>>>>/Contents 5 0 R>>endobj\n4 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold>>endobj\n5 0 obj<</Length 280>>stream\nBT /F1 20 Tf 50 720 Td (CM INDUSTRIAL - CONTROL DOCUMENTAL) Tj ET\nBT /F1 15 Tf 50 680 Td (Codigo: ${safeCode}) Tj ET\nBT /F1 12 Tf 50 645 Td (Glosa: ${safeTitle}) Tj ET\nBT /F1 11 Tf 50 610 Td (Documento respaldado y registrado en la plataforma CM Industrial.) Tj ET\nBT /F1 10 Tf 50 580 Td (Validez: Verificada en faena y auditoria tecnica.) Tj ET\nendstream\nendobj\nxref\n0 6\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\n0000000224 00000 n\n0000000305 00000 n\ntrailer<</Size 6/Root 1 0 R>>\nstartxref\n640\n%%EOF`;
-  return "data:application/pdf;base64," + btoa(content);
+// Generador de archivo PDF 1.4 100% válido y conforme a especificación ISO 32000-1 para previsualización inmediata
+function generateSimplePdfDataUri(title, code, docType = "Documento") {
+  const safeTitle = (title || 'Documento Oficial').replace(/[()\\\r\n]/g, ' ');
+  const safeCode = (code || 'DOC-01').replace(/[()\\\r\n]/g, ' ');
+  const safeType = (docType || 'Control Documental').replace(/[()\\\r\n]/g, ' ');
+  const dateStr = new Date().toISOString().split("T")[0];
+
+  const streamContent = 
+    `BT\n` +
+    `/F1 18 Tf 50 720 Td (CM INDUSTRIAL - CONTROL DOCUMENTAL) Tj\n` +
+    `/F2 10 Tf 0 -22 Td (Plataforma Operativa de Obras & Gestion de Faena) Tj\n` +
+    `/F1 13 Tf 0 -38 Td (Codigo / Folio: ${safeCode}) Tj\n` +
+    `/F1 12 Tf 0 -24 Td (Tipo de Documento: ${safeType}) Tj\n` +
+    `/F2 11 Tf 0 -24 Td (Glosa / Titulo: ${safeTitle}) Tj\n` +
+    `/F2 10 Tf 0 -24 Td (Fecha del Registro: ${dateStr}) Tj\n` +
+    `/F2 10 Tf 0 -30 Td (Estado: Documento verificado y respaldado en la nube de CM Industrial.) Tj\n` +
+    `/F2 9 Tf 0 -20 Td (Validez: Firma electronica y cotejo de faena conforme.) Tj\n` +
+    `ET\n`;
+
+  const enc = new TextEncoder();
+  const streamBytes = enc.encode(streamContent);
+  const streamLength = streamBytes.length;
+
+  const header = "%PDF-1.4\n";
+  const obj1 = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+  const obj2 = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
+  const obj3 = "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>\nendobj\n";
+  const obj4 = "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n";
+  const obj5 = "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
+  const obj6 = `6 0 obj\n<< /Length ${streamLength} >>\nstream\n${streamContent}endstream\nendobj\n`;
+
+  const offset1 = enc.encode(header).length;
+  const offset2 = offset1 + enc.encode(obj1).length;
+  const offset3 = offset2 + enc.encode(obj2).length;
+  const offset4 = offset3 + enc.encode(obj3).length;
+  const offset5 = offset4 + enc.encode(obj4).length;
+  const offset6 = offset5 + enc.encode(obj5).length;
+  const xrefOffset = offset6 + enc.encode(obj6).length;
+
+  function pad10(n) {
+    return String(n).padStart(10, '0');
+  }
+
+  const xref = 
+    `xref\n` +
+    `0 7\n` +
+    `0000000000 65535 f \n` +
+    `${pad10(offset1)} 00000 n \n` +
+    `${pad10(offset2)} 00000 n \n` +
+    `${pad10(offset3)} 00000 n \n` +
+    `${pad10(offset4)} 00000 n \n` +
+    `${pad10(offset5)} 00000 n \n` +
+    `${pad10(offset6)} 00000 n \n` +
+    `trailer\n` +
+    `<< /Size 7 /Root 1 0 R >>\n` +
+    `startxref\n` +
+    `${xrefOffset}\n` +
+    `%%EOF\n`;
+
+  const fullPdfStr = header + obj1 + obj2 + obj3 + obj4 + obj5 + obj6 + xref;
+  const fullBytes = enc.encode(fullPdfStr);
+
+  let binary = "";
+  const len = fullBytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(fullBytes[i]);
+  }
+  return "data:application/pdf;base64," + btoa(binary);
 }
 window.generateSimplePdfDataUri = generateSimplePdfDataUri;
 
@@ -55,11 +117,11 @@ const idbDocStorage = {
       this.dbPromise = new Promise((resolve) => {
         if (typeof indexedDB === "undefined") return resolve(null);
         try {
-          const req = indexedDB.open("cm_docs_store", 1);
+          const req = indexedDB.open("cm_docs_store", 3);
           req.onupgradeneeded = (e) => {
             const db = e.target.result;
             if (!db.objectStoreNames.contains("files")) {
-              db.createStore = db.createObjectStore("files", { keyPath: "id" });
+              db.createObjectStore("files", { keyPath: "id" });
             }
           };
           req.onsuccess = (e) => resolve(e.target.result);
@@ -1184,7 +1246,7 @@ function pushToCloud() {
         if (isHeavy) {
           return {
             ...doc,
-            fileData: doc.thumbnail || "", // preserve thumbnail for instant visual display
+            fileData: "", // Leave empty in global_data so thumbnail is NEVER mistaken for PDF binary
             hasHeavyFile: true
           };
         }
@@ -1220,6 +1282,7 @@ function pushToCloud() {
       if (Array.isArray(DB.documents)) {
         DB.documents.forEach(doc => {
           if (doc && doc.id) {
+            const canStoreFullInCloud = doc.fileData && doc.fileData.length < 850000;
             window.firebaseDb.collection("documents").doc(doc.id).set({
               id: doc.id,
               code: doc.code || "",
@@ -1234,7 +1297,7 @@ function pushToCloud() {
               fileName: doc.fileName || "",
               fileType: doc.fileType || "pdf",
               thumbnail: doc.thumbnail || doc.photo || "",
-              fileData: (doc.fileData && doc.fileData.length < 800000) ? doc.fileData : (doc.thumbnail || ""),
+              fileData: canStoreFullInCloud ? doc.fileData : "",
               lastUpdated: new Date().toISOString()
             }, { merge: true }).catch(dErr => console.log("Doc individual sync note:", dErr));
           }
@@ -1403,7 +1466,17 @@ function initCloudSync(force = false) {
           DB.workers = Array.isArray(remoteData.workers) && remoteData.workers.length > 0 ? remoteData.workers : (DB.workers && DB.workers.length > 0 ? DB.workers : seed.workers);
           DB.overtime = Array.isArray(remoteData.overtime) && remoteData.overtime.length > 0 ? remoteData.overtime : (DB.overtime && DB.overtime.length > 0 ? DB.overtime : seed.overtime);
           DB.tools = Array.isArray(remoteData.tools) && remoteData.tools.length > 0 ? remoteData.tools : (DB.tools && DB.tools.length > 0 ? DB.tools : seed.tools);
-          DB.documents = Array.isArray(remoteData.documents) && remoteData.documents.length > 0 ? remoteData.documents : (DB.documents && DB.documents.length > 0 ? DB.documents : seed.documents);
+          if (Array.isArray(remoteData.documents) && remoteData.documents.length > 0) {
+            DB.documents = remoteData.documents.map(remoteDoc => {
+              const localDoc = (DB.documents || []).find(d => d.id === remoteDoc.id);
+              if (localDoc && localDoc.fileData && localDoc.fileData.length > (remoteDoc.fileData ? remoteDoc.fileData.length : 0)) {
+                return { ...remoteDoc, fileData: localDoc.fileData };
+              }
+              return remoteDoc;
+            });
+          } else {
+            DB.documents = (DB.documents && DB.documents.length > 0) ? DB.documents : seed.documents;
+          }
           DB.quotations = Array.isArray(remoteData.quotations) && remoteData.quotations.length > 0 ? remoteData.quotations : (DB.quotations && DB.quotations.length > 0 ? DB.quotations : seed.quotations);
           
           try {
@@ -1583,8 +1656,12 @@ function loadDB() {
           if (!doc.photo && doc.thumbnail) {
             doc.photo = doc.thumbnail;
           }
-          if (!doc.fileData && isPdf) {
-            doc.fileData = generateSimplePdfDataUri(doc.name, doc.code);
+          const hasValidPdfData = doc.fileData && doc.fileData.startsWith("data:application/pdf");
+          if (isPdf && !hasValidPdfData) {
+            // For seed documents or documents without binary data, provide a 100% compliant PDF
+            if (!doc.id || doc.id.startsWith("DOC-00") || !doc.fileData) {
+              doc.fileData = generateSimplePdfDataUri(doc.name, doc.code, doc.type);
+            }
           }
         });
       }
