@@ -2948,10 +2948,67 @@ function renderGantt(container) {
   `;
 }
 
-// 4. GASTOS VIEW
+// 4. GASTOS VIEW & CONTROL DE ADQUISICIONES
+let activeExpensesProjectFilter = "todos";
+
+function setExpensesProjectFilter(prjId) {
+  activeExpensesProjectFilter = prjId || "todos";
+  const select = document.getElementById("exp-filter-prj");
+  if (select) select.value = activeExpensesProjectFilter;
+  filterExpensesTable();
+}
+
+function filterExpensesTable() {
+  const searchInput = document.getElementById("exp-search-input");
+  const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+  const prjFilter = activeExpensesProjectFilter || "todos";
+
+  const rows = document.querySelectorAll("#exp-table tbody tr.exp-row");
+  let visibleCount = 0;
+  let visibleTotal = 0;
+
+  rows.forEach(row => {
+    const rowPrj = row.getAttribute("data-prj") || "";
+    const rowAmount = Number(row.getAttribute("data-amount")) || 0;
+    const text = row.innerText.toLowerCase();
+
+    const matchPrj = (prjFilter === "todos") || (rowPrj === prjFilter);
+    const matchQuery = !query || text.includes(query);
+
+    if (matchPrj && matchQuery) {
+      row.style.display = "";
+      visibleCount++;
+      visibleTotal += rowAmount;
+    } else {
+      row.style.display = "none";
+    }
+  });
+
+  // Actualizar badges dinámicos de métricas filtradas
+  const totalBadge = document.getElementById("exp-total-badge");
+  if (totalBadge) totalBadge.innerText = `Total: ${fmtMoney(visibleTotal)}`;
+
+  const countBadge = document.getElementById("exp-count-badge");
+  if (countBadge) {
+    if (prjFilter !== "todos" || query) {
+      countBadge.innerText = `${visibleCount} de ${rows.length} Filtrados`;
+      countBadge.className = "badge badge-orange";
+    } else {
+      countBadge.innerText = `${rows.length} Registros`;
+      countBadge.className = "badge badge-blue";
+    }
+  }
+
+  const emptyMsg = document.getElementById("exp-empty-filter-row");
+  if (emptyMsg) {
+    emptyMsg.style.display = (visibleCount === 0 && rows.length > 0) ? "" : "none";
+  }
+}
+
 function renderExpenses(container) {
-  const total = DB.expenses.reduce((acc, e) => acc + e.amount, 0);
+  const total = DB.expenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
   const userIsDev = isDeveloper();
+  const projects = DB.projects || [];
 
   container.innerHTML = `
     ${!userIsDev ? `
@@ -2962,7 +3019,7 @@ function renderExpenses(container) {
           </div>
           <div class="mode-banner-text">
             <div class="mode-banner-title">Modo Consulta</div>
-            <div class="mode-banner-sub">Visualización de gastos y adquisiciones.</div>
+            <div class="mode-banner-sub">Visualización de gastos y adquisiciones. Puedes exportar comprobantes individuales o consolidados en PDF.</div>
           </div>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="switchActiveRole('Desarrollador')">
@@ -2975,15 +3032,32 @@ function renderExpenses(container) {
       <div class="table-toolbar">
         <div class="toolbar-title-group">
           <h2 style="font-size:18px;font-weight:700;">Gastos & Adquisiciones</h2>
-          <span class="badge badge-blue">Total: ${fmtMoney(total)}</span>
+          <span id="exp-total-badge" class="badge badge-blue">Total: ${fmtMoney(total)}</span>
+          <span id="exp-count-badge" class="badge badge-gray">${DB.expenses.length} Registros</span>
         </div>
         <div class="toolbar-actions-group">
+          <!-- Filtro por Proyecto Industrial -->
+          <div style="display:flex;align-items:center;gap:6px;">
+            <select id="exp-filter-prj" class="form-control" style="font-size:12px;padding:6px 10px;height:34px;min-width:190px;max-width:250px;background:var(--bg-subtle, #ffffff);border:1px solid var(--border-color);border-radius:6px;font-weight:600;" onchange="setExpensesProjectFilter(this.value)" title="Filtrar gastos por proyecto específico">
+              <option value="todos" ${activeExpensesProjectFilter === 'todos' ? 'selected' : ''}>🏢 Todos los Proyectos (${projects.length})</option>
+              ${projects.map(p => `
+                <option value="${p.id}" ${activeExpensesProjectFilter === p.id ? 'selected' : ''}>
+                  ${p.id} - ${p.name}
+                </option>
+              `).join("")}
+            </select>
+          </div>
+
+          <!-- Buscador de texto -->
           <div class="search-box">
             <i class="fa-solid fa-search search-icon"></i>
-            <input type="text" class="search-input" placeholder="Buscar folio, proveedor..." oninput="filterTable('exp-table', this.value)">
+            <input type="text" id="exp-search-input" class="search-input" placeholder="Buscar folio, proveedor, glosa..." oninput="filterExpensesTable()">
           </div>
+
+          <!-- Acciones de barra -->
           <div class="toolbar-btn-group">
-            <button class="btn btn-secondary btn-sm" onclick="exportCSV('expenses')"><i class="fa-solid fa-file-export"></i> Exportar</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportExpensesPDF()" title="Exportar gastos visibles o filtrados en documento oficial PDF"><i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> Exportar PDF</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportCSV('expenses')" title="Exportar como planilla CSV / Excel"><i class="fa-solid fa-file-csv" style="color:#10b981;"></i> CSV</button>
             <button class="btn btn-secondary btn-sm" onclick="syncAllExpensesToFirebase()" title="Cargar o sincronizar los 20 gastos de ejemplo con la base de datos de Firebase"><i class="fa-solid fa-cloud-arrow-up"></i> Cargar Gastos en Firebase</button>
             ${userIsDev ? `
               <button class="btn btn-primary btn-sm" onclick="openCreateModal('expenses')"><i class="fa-solid fa-plus"></i> Registrar Gasto</button>
@@ -2991,7 +3065,7 @@ function renderExpenses(container) {
           </div>
         </div>
       </div>
-      <div class="table-scroll-hint"><i class="fa-solid fa-arrows-left-right"></i> Desliza horizontalmente para ver más columnas</div>
+      <div class="table-scroll-hint"><i class="fa-solid fa-arrows-left-right"></i> Desliza horizontalmente para ver más columnas y botones de PDF individual</div>
       <div class="table-responsive">
         <table id="exp-table">
           <thead>
@@ -3004,7 +3078,7 @@ function renderExpenses(container) {
               <th>Fecha</th>
               <th>Estado</th>
               <th>Glosa / Detalle</th>
-              <th style="text-align:${userIsDev ? 'right' : 'center'};">${userIsDev ? 'Acciones' : 'Permiso'}</th>
+              <th style="text-align:center;min-width:130px;">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -3023,30 +3097,53 @@ function renderExpenses(container) {
                 </td>
               </tr>
             ` : DB.expenses.map(e => `
-              <tr>
+              <tr class="exp-row" data-prj="${e.projectId}" data-amount="${e.amount}">
                 <td><strong>${e.folio}</strong></td>
-                <td>${e.projectId}</td>
+                <td>
+                  <span class="badge badge-blue" style="cursor:pointer;" onclick="setExpensesProjectFilter('${e.projectId}')" title="Clic para filtrar solo gastos de este proyecto">
+                    ${e.projectId}
+                  </span>
+                </td>
                 <td><span class="badge badge-gray">${e.category}</span></td>
                 <td><strong>${fmtMoney(e.amount)}</strong></td>
                 <td>${e.supplier}</td>
                 <td>${e.date}</td>
-                <td><span class="badge badge-green">${e.status}</span></td>
+                <td><span class="badge ${e.status === 'Pagado' ? 'badge-green' : e.status === 'Pendiente' ? 'badge-yellow' : 'badge-blue'}">${e.status}</span></td>
                 <td><small>${e.note || "-"}</small></td>
-                <td style="text-align:${userIsDev ? 'right' : 'center'};">
+                <td style="text-align:center;white-space:nowrap;">
+                  <button class="btn btn-secondary btn-sm" onclick="exportSingleExpensePDF('${e.id}')" title="Exportar Comprobante PDF Individual de este Gasto (Folio ${e.folio})" style="color:#ef4444;border-color:rgba(239,68,68,0.3);padding:3px 8px;font-size:11px;font-weight:700;">
+                    <i class="fa-solid fa-file-pdf"></i> PDF
+                  </button>
                   ${userIsDev ? `
-                    <button class="btn btn-secondary btn-sm" onclick="openEditModal('expenses', '${e.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteRecord('expenses', '${e.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn btn-secondary btn-sm" onclick="openEditModal('expenses', '${e.id}')" title="Editar Gasto" style="padding:3px 7px;"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteRecord('expenses', '${e.id}')" title="Eliminar Gasto" style="padding:3px 7px;"><i class="fa-solid fa-trash"></i></button>
                   ` : `
-                    <span class="badge badge-gray" style="font-size:10px;"><i class="fa-solid fa-lock"></i> Solo Lectura</span>
+                    <span class="badge badge-gray" style="font-size:9.5px;padding:3px 5px;"><i class="fa-solid fa-lock"></i> Lectura</span>
                   `}
                 </td>
               </tr>
             `).join("")}
+            <tr id="exp-empty-filter-row" style="display:none;">
+              <td colspan="9" style="text-align:center;padding:32px 16px;color:var(--text-sub);">
+                <i class="fa-solid fa-filter-circle-xmark" style="font-size:24px;margin-bottom:8px;display:block;color:#94a3b8;"></i>
+                No se encontraron gastos para el proyecto o búsqueda seleccionada.
+                <div style="margin-top:10px;">
+                  <button class="btn btn-secondary btn-sm" onclick="setExpensesProjectFilter('todos');document.getElementById('exp-search-input').value='';filterExpensesTable();">
+                    <i class="fa-solid fa-rotate-left"></i> Restablecer Filtros
+                  </button>
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
     </div>
   `;
+
+  // Aplicar filtro si ya había un proyecto seleccionado
+  if (activeExpensesProjectFilter !== "todos") {
+    setTimeout(filterExpensesTable, 20);
+  }
 }
 
 // 5. TRABAJADORES VIEW & CONTROL DE HORAS EXTRAS
@@ -4519,6 +4616,799 @@ function restoreJSONBackup(evt) {
   };
   reader.readAsText(file);
 }
+
+// ==========================================
+// EXPORTADOR OFICIAL DE GASTOS & COMPRAS EN PDF (CONSOLIDADO O POR PROYECTO)
+// ==========================================
+function exportExpensesPDF() {
+  const prjFilter = activeExpensesProjectFilter || "todos";
+  const searchInput = document.getElementById("exp-search-input") || document.querySelector(".search-input");
+  const filterVal = searchInput ? searchInput.value.toLowerCase().trim() : "";
+  
+  let expenses = DB.expenses || [];
+  let isFiltered = false;
+
+  if (prjFilter !== "todos") {
+    expenses = expenses.filter(e => e.projectId === prjFilter);
+    isFiltered = true;
+  }
+  
+  if (filterVal) {
+    const filtered = expenses.filter(e => 
+      (e.folio || "").toLowerCase().includes(filterVal) ||
+      (e.supplier || "").toLowerCase().includes(filterVal) ||
+      (e.category || "").toLowerCase().includes(filterVal) ||
+      (e.projectId || "").toLowerCase().includes(filterVal) ||
+      (e.note || "").toLowerCase().includes(filterVal) ||
+      (e.status || "").toLowerCase().includes(filterVal)
+    );
+    if (filtered.length > 0) {
+      expenses = filtered;
+      isFiltered = true;
+    }
+  }
+
+  if (expenses.length === 0) {
+    if (typeof showToast === "function") {
+      showToast("No hay registros de gastos para exportar en este filtro.", "warning");
+    } else {
+      alert("No hay registros de gastos para exportar en este filtro.");
+    }
+    return;
+  }
+
+  const activePrj = (prjFilter !== "todos") ? (DB.projects || []).find(p => p.id === prjFilter) : null;
+  const totalAmount = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("es-CL", { year: "numeric", month: "2-digit", day: "2-digit" });
+  const timeStr = now.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+  const isoDate = now.toISOString().split("T")[0];
+  const filePrefix = prjFilter !== "todos" ? `CM_Industrial_Gastos_${prjFilter}` : `CM_Industrial_Gastos`;
+  const filename = `${filePrefix}_${isoDate}.pdf`;
+
+  // Verificar disponibilidad de jsPDF + autoTable para generación vectorizada directa
+  if (window.jspdf && window.jspdf.jsPDF) {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4"
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Franja superior de marca (#0284c7)
+      doc.setFillColor(2, 132, 199);
+      doc.rect(0, 0, pageWidth, 4, "F");
+
+      // Encabezado Corporativo
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(2, 132, 199);
+      doc.text("CM INDUSTRIAL", 14, 14);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Servicios de Ingeniería, Montajes & Construcción Industrial", 14, 18.5);
+      doc.text("RUT: 76.503.216-4  |  Arica 4160, Estación Central, Santiago  |  contacto@cmindustrial.cl", 14, 22.5);
+
+      // Tarjeta de título y metadatos derecha
+      doc.setFillColor(240, 249, 255);
+      doc.setDrawColor(186, 230, 253);
+      doc.roundedRect(pageWidth - 116, 6.5, 102, 20, 2, 2, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(3, 105, 161);
+      doc.text(activePrj ? `INFORME DE GASTOS: ${activePrj.id}` : "INFORME DE GASTOS Y ADQUISICIONES", pageWidth - 112, 11.5);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(15, 23, 42);
+      if (activePrj) {
+        doc.text(`Obra: ${activePrj.name.length > 32 ? activePrj.name.substring(0, 30) + '...' : activePrj.name}`, pageWidth - 112, 15.5);
+      } else {
+        doc.text(`Alcance: Todos los Proyectos Industriales`, pageWidth - 112, 15.5);
+      }
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Fecha Emisión: ${dateStr} ${timeStr}`, pageWidth - 112, 19.5);
+      doc.text(`Registros: ${expenses.length} facturas/boletas`, pageWidth - 112, 23.5);
+
+      // Franja de resumen de métricas
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(14, 27, pageWidth - 28, 14, 2, 2, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text("TOTAL GASTOS:", 18, 33);
+      doc.setFontSize(11);
+      doc.setTextColor(2, 132, 199);
+      doc.text(`$ ${formatNumberCL(totalAmount)} CLP`, 43, 33.5);
+
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text("CANTIDAD DE COMPROBANTES:", 110, 33);
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`${expenses.length} facturas/boletas`, 164, 33.5);
+
+      const avgAmount = Math.round(totalAmount / (expenses.length || 1));
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text("MONTO PROMEDIO POR GASTO:", 205, 33);
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`$ ${formatNumberCL(avgAmount)} CLP`, 253, 33.5);
+
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text(activePrj ? `Proyecto Filtrado: [${activePrj.id}] ${activePrj.name} - Cliente: ${activePrj.client || 'CM Industrial'}` : "Valores expresados en Pesos Chilenos (CLP). Control y respaldo digital verificado en plataforma CM Industrial.", 18, 38.5);
+
+      // Construcción de filas para autoTable
+      const tableRows = expenses.map(e => {
+        const prj = (DB.projects || []).find(p => p.id === e.projectId);
+        const prjName = prj ? `${e.projectId} (${prj.name.length > 20 ? prj.name.substring(0, 18) + '...' : prj.name})` : (e.projectId || "-");
+        const formattedAmount = `$ ${formatNumberCL(e.amount)}`;
+        return [
+          e.folio || "-",
+          prjName,
+          e.category || "General",
+          e.supplier || "-",
+          e.date || "-",
+          e.status || "Aprobado",
+          e.note || "-",
+          formattedAmount
+        ];
+      });
+
+      // AutoTable vectorizada y paginada
+      doc.autoTable({
+        startY: 44,
+        head: [["Folio / Doc", "Proyecto Asociado", "Categoría", "Proveedor", "Fecha", "Estado", "Glosa / Detalle", "Monto (CLP)"]],
+        body: tableRows,
+        foot: [
+          ["", "", "", "", "", "", "TOTAL CONSOLIDADO:", `$ ${formatNumberCL(totalAmount)}`]
+        ],
+        theme: "grid",
+        styles: {
+          fontSize: 7.5,
+          cellPadding: 2,
+          font: "helvetica",
+          textColor: [30, 41, 59],
+          lineColor: [226, 232, 240],
+          lineWidth: 0.15
+        },
+        headStyles: {
+          fillColor: [15, 23, 42],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 8,
+          halign: "left"
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252]
+        },
+        footStyles: {
+          fillColor: [2, 132, 199],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 8.5
+        },
+        columnStyles: {
+          0: { fontStyle: "bold", cellWidth: 26 },
+          1: { cellWidth: 38 },
+          2: { cellWidth: 26 },
+          3: { cellWidth: 40 },
+          4: { cellWidth: 20, halign: "center" },
+          5: { cellWidth: 22, halign: "center" },
+          6: { cellWidth: "auto" },
+          7: { halign: "right", fontStyle: "bold", cellWidth: 30 }
+        },
+        didDrawPage: function(data) {
+          const pageCount = doc.internal.getNumberOfPages();
+          const str = `Página ${data.pageNumber} de ${pageCount}`;
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7.5);
+          doc.setTextColor(148, 163, 184);
+          doc.setDrawColor(226, 232, 240);
+          doc.line(14, pageHeight - 10, pageWidth - 14, pageHeight - 10);
+          doc.text(`CM Industrial LTDA — Control Operativo de Obras, Adquisiciones y Facturación.${activePrj ? ` [Proyecto ${activePrj.id}]` : ''}`, 14, pageHeight - 6);
+          doc.text(str, pageWidth - 14 - doc.getTextWidth(str), pageHeight - 6);
+        }
+      });
+
+      // Firmas al pie del reporte
+      let finalY = doc.lastAutoTable.finalY + 8;
+      if (finalY + 28 > pageHeight) {
+        doc.addPage();
+        finalY = 20;
+      }
+
+      const sigWidth = 60;
+      const spacing = 25;
+      const startX = (pageWidth - (sigWidth * 3 + spacing * 2)) / 2;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(71, 85, 105);
+      doc.setDrawColor(148, 163, 184);
+
+      // Firma 1
+      doc.line(startX, finalY + 16, startX + sigWidth, finalY + 16);
+      doc.text("Responsable de Adquisiciones", startX + (sigWidth / 2), finalY + 20, { align: "center" });
+      doc.text("CM Industrial LTDA", startX + (sigWidth / 2), finalY + 23.5, { align: "center" });
+
+      // Firma 2
+      const x2 = startX + sigWidth + spacing;
+      doc.line(x2, finalY + 16, x2 + sigWidth, finalY + 16);
+      doc.text("Jefatura de Finanzas & Costos", x2 + (sigWidth / 2), finalY + 20, { align: "center" });
+      doc.text("Revisión & Control", x2 + (sigWidth / 2), finalY + 23.5, { align: "center" });
+
+      // Firma 3
+      const x3 = x2 + sigWidth + spacing;
+      doc.line(x3, finalY + 16, x3 + sigWidth, finalY + 16);
+      doc.text("Gerencia de Operaciones", x3 + (sigWidth / 2), finalY + 20, { align: "center" });
+      doc.text("Aprobación Final", x3 + (sigWidth / 2), finalY + 23.5, { align: "center" });
+
+      // Descarga inmediata del PDF
+      doc.save(filename);
+
+      if (typeof showToast === "function") {
+        showToast(`¡Reporte de ${expenses.length} gastos exportado en PDF exitosamente!`);
+      }
+      return;
+    } catch (pdfErr) {
+      console.warn("jsPDF autoTable generation notice, using printable report fallback:", pdfErr);
+    }
+  }
+
+  // Fallback garantizado: Generación de informe imprimible / Guardar PDF del navegador
+  printExpensesReportHtml(expenses, totalAmount, dateStr, filename, activePrj);
+}
+
+// Conversor de montos a palabras en español para comprobantes chilenos
+function getAmountInWordsSpanish(num) {
+  num = Math.round(Number(num) || 0);
+  if (num === 0) return "CERO PESOS CLP";
+  if (num === 1) return "UN PESO CLP";
+
+  function convertGroup(n) {
+    const units = ["", "un", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"];
+    const tens = ["", "diez", "veinte", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa"];
+    const teens = ["diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve"];
+    const hundreds = ["", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos"];
+
+    if (n === 100) return "cien";
+    let res = "";
+    const h = Math.floor(n / 100);
+    const rem = n % 100;
+    if (h > 0) res += hundreds[h] + " ";
+    if (rem >= 10 && rem < 20) {
+      res += teens[rem - 10] + " ";
+    } else {
+      const t = Math.floor(rem / 10);
+      const u = rem % 10;
+      if (t === 2 && u > 0) {
+        res += "veinti" + units[u] + " ";
+      } else {
+        if (t > 0) res += tens[t] + (u > 0 ? " y " : " ");
+        if (u > 0 && t !== 2) res += units[u] + " ";
+      }
+    }
+    return res.trim();
+  }
+
+  let text = "";
+  if (num >= 1000000000) {
+    const b = Math.floor(num / 1000000000);
+    num %= 1000000000;
+    text += (b === 1 ? "mil millones " : convertGroup(b) + " mil millones ");
+  }
+  if (num >= 1000000) {
+    const m = Math.floor(num / 1000000);
+    num %= 1000000;
+    text += (m === 1 ? "un millón " : convertGroup(m) + " millones ");
+  }
+  if (num >= 1000) {
+    const k = Math.floor(num / 1000);
+    num %= 1000;
+    text += (k === 1 ? "mil " : convertGroup(k) + " mil ");
+  }
+  if (num > 0) {
+    text += convertGroup(num) + " ";
+  }
+
+  return (text.trim() + " pesos clp").toUpperCase();
+}
+
+// ========================================================
+// EXPORTADOR INDIVIDUAL DE GASTO EN PDF (VOUCHER DE EGRESO)
+// ========================================================
+function exportSingleExpensePDF(expenseId) {
+  const exp = (DB.expenses || []).find(e => e.id === expenseId);
+  if (!exp) {
+    alert("No se encontró el registro de gasto seleccionado.");
+    return;
+  }
+
+  const prj = (DB.projects || []).find(p => p.id === exp.projectId);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("es-CL", { year: "numeric", month: "2-digit", day: "2-digit" });
+  const timeStr = now.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+  const isoDate = now.toISOString().split("T")[0];
+  const safeFolio = (exp.folio || exp.id).replace(/[^a-zA-Z0-9_-]/g, "");
+  const filename = `CM_Comprobante_Gasto_${safeFolio}_${isoDate}.pdf`;
+
+  if (window.jspdf && window.jspdf.jsPDF) {
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth(); // 210mm
+      const pageHeight = doc.internal.pageSize.getHeight(); // 297mm
+
+      // Franja superior de marca
+      doc.setFillColor(2, 132, 199);
+      doc.rect(0, 0, pageWidth, 5, "F");
+
+      // Encabezado Corporativo
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(2, 132, 199);
+      doc.text("CM INDUSTRIAL", 14, 16);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Servicios de Ingeniería, Montajes & Construcción Industrial", 14, 21);
+      doc.text("RUT: 76.503.216-4  |  Arica 4160, Estación Central, Santiago  |  contacto@cmindustrial.cl", 14, 25.5);
+
+      // Tarjeta de Folio y Fecha (Superior Derecha)
+      doc.setFillColor(240, 249, 255);
+      doc.setDrawColor(186, 230, 253);
+      doc.roundedRect(pageWidth - 78, 9, 64, 21, 2, 2, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(3, 105, 161);
+      doc.text("COMPROBANTE DE GASTO", pageWidth - 74, 15);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`FOLIO: ${exp.folio || exp.id}`, pageWidth - 74, 20);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Fecha Gasto: ${exp.date || '-'}`, pageWidth - 74, 25);
+
+      // Título Central del Documento
+      doc.setFillColor(15, 23, 42);
+      doc.rect(14, 33, pageWidth - 28, 8, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text("COMPROBANTE OFICIAL DE GASTO & ADQUISICIÓN EN OBRA", pageWidth / 2, 38.5, { align: "center" });
+
+      // Estado del Gasto (Badge)
+      const statusColor = (exp.status === "Pagado") ? [16, 185, 129] : (exp.status === "Pendiente") ? [234, 179, 8] : [2, 132, 199];
+      doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+      doc.roundedRect(pageWidth - 46, 34.5, 28, 5, 1, 1, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(255, 255, 255);
+      doc.text(exp.status ? exp.status.toUpperCase() : "APROBADO", pageWidth - 32, 38, { align: "center" });
+
+      // Sección 1: Imputación a Proyecto de Obra
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(3, 105, 161);
+      doc.text("1. IMPUTACIÓN A PROYECTO / CENTRO DE COSTO", 14, 47);
+
+      doc.autoTable({
+        startY: 49,
+        head: [["Parámetro", "Detalle de Imputación en Faena"]],
+        body: [
+          ["Código Proyecto", exp.projectId || "General"],
+          ["Nombre de la Obra", prj ? prj.name : "Administración Central y Maestranza"],
+          ["Cliente Mandante", prj ? prj.client : "CM Industrial"],
+          ["Ubicación de Faena", prj ? prj.location : "Planta Central Santiago"],
+          ["Jefe / Supervisor", prj ? prj.manager : "Supervisión de Operaciones"]
+        ],
+        theme: "grid",
+        styles: { fontSize: 8, cellPadding: 2, font: "helvetica", textColor: [30, 41, 59], lineColor: [226, 232, 240], lineWidth: 0.15 },
+        headStyles: { fillColor: [241, 245, 249], textColor: [71, 85, 105], fontStyle: "bold", fontSize: 8 },
+        columnStyles: { 0: { fontStyle: "bold", cellWidth: 42, fillColor: [248, 250, 252] }, 1: { cellWidth: "auto" } }
+      });
+
+      // Sección 2: Información del Proveedor y Clasificación
+      let y2 = doc.lastAutoTable.finalY + 6;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(3, 105, 161);
+      doc.text("2. INFORMACIÓN DEL PROVEEDOR & DOCUMENTO", 14, y2);
+
+      doc.autoTable({
+        startY: y2 + 2,
+        head: [["Campo", "Información Comercial"]],
+        body: [
+          ["Proveedor / Emisor", exp.supplier || "-"],
+          ["Categoría de Gasto", exp.category || "General"],
+          ["N° Folio / Factura", exp.folio || "-"],
+          ["Fecha de Registro", exp.date || dateStr],
+          ["Moneda de Pago", "Pesos Chilenos (CLP)"]
+        ],
+        theme: "grid",
+        styles: { fontSize: 8, cellPadding: 2, font: "helvetica", textColor: [30, 41, 59], lineColor: [226, 232, 240], lineWidth: 0.15 },
+        headStyles: { fillColor: [241, 245, 249], textColor: [71, 85, 105], fontStyle: "bold", fontSize: 8 },
+        columnStyles: { 0: { fontStyle: "bold", cellWidth: 42, fillColor: [248, 250, 252] }, 1: { cellWidth: "auto" } }
+      });
+
+      // Sección 3: Glosa y Justificación de Compra
+      let y3 = doc.lastAutoTable.finalY + 6;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(3, 105, 161);
+      doc.text("3. GLOSA DESCRIPTIVA / OBSERVACIÓN DE LA ADQUISICIÓN", 14, y3);
+
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(203, 213, 225);
+      doc.roundedRect(14, y3 + 2, pageWidth - 28, 18, 1.5, 1.5, "FD");
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(30, 41, 59);
+      const splitNote = doc.splitTextToSize(exp.note || "Adquisición de insumos, materiales o servicios para la faena conforme a requerimiento de obra.", pageWidth - 36);
+      doc.text(splitNote, 18, y3 + 8);
+
+      // Sección 4: Monto y Liquidación Económica
+      let y4 = y3 + 24;
+      doc.setFillColor(240, 249, 255);
+      doc.setDrawColor(2, 132, 199);
+      doc.setLineWidth(0.6);
+      doc.roundedRect(14, y4, pageWidth - 28, 24, 2, 2, "FD");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(3, 105, 161);
+      doc.text("TOTAL GASTO REGISTRADO:", 20, y4 + 7);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(2, 132, 199);
+      doc.text(`$ ${formatNumberCL(exp.amount)} CLP`, 20, y4 + 14);
+
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      const wordsText = getAmountInWordsSpanish(exp.amount);
+      doc.text(`Son: ${wordsText}`, 20, y4 + 19.5);
+
+      // Sección 5: Firmas y Control de Conformidad
+      let y5 = y4 + 30;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(3, 105, 161);
+      doc.text("4. AUTORIZACIONES & CONFORMIDAD DE FAENA", 14, y5);
+
+      const sigBoxWidth = 55;
+      const sigGap = 8;
+      const sigStartX = 14;
+
+      // Recuadro Firma 1
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineWidth(0.2);
+      doc.roundedRect(sigStartX, y5 + 3, sigBoxWidth, 30, 1.5, 1.5, "FD");
+      doc.line(sigStartX + 5, y5 + 23, sigStartX + sigBoxWidth - 5, y5 + 23);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Solicitante / Comprador", sigStartX + (sigBoxWidth / 2), y5 + 26.5, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Adquisiciones CM Industrial", sigStartX + (sigBoxWidth / 2), y5 + 30, { align: "center" });
+
+      // Recuadro Firma 2
+      const x2 = sigStartX + sigBoxWidth + sigGap;
+      doc.roundedRect(x2, y5 + 3, sigBoxWidth, 30, 1.5, 1.5, "FD");
+      doc.line(x2 + 5, y5 + 23, x2 + sigBoxWidth - 5, y5 + 23);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Revisión Contable", x2 + (sigBoxWidth / 2), y5 + 26.5, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Control de Factura & RUT", x2 + (sigBoxWidth / 2), y5 + 30, { align: "center" });
+
+      // Recuadro Firma 3
+      const x3 = x2 + sigBoxWidth + sigGap;
+      doc.roundedRect(x3, y5 + 3, sigBoxWidth, 30, 1.5, 1.5, "FD");
+      doc.line(x3 + 5, y5 + 23, x3 + sigBoxWidth - 5, y5 + 23);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Jefe de Proyecto / Gerencia", x3 + (sigBoxWidth / 2), y5 + 26.5, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Aprobación Imputación a Obra", x3 + (sigBoxWidth / 2), y5 + 30, { align: "center" });
+
+      // Pie de Página
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.2);
+      doc.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(148, 163, 184);
+      doc.text("CM Industrial LTDA — Documento Tributario y Operativo Interno. Respaldo verificado en Google Cloud.", 14, pageHeight - 7.5);
+      doc.text(`Emisión: ${dateStr} ${timeStr}`, pageWidth - 14, pageHeight - 7.5, { align: "right" });
+
+      // Descarga directa del voucher individual
+      doc.save(filename);
+
+      if (typeof showToast === "function") {
+        showToast(`¡Comprobante de gasto Folio ${exp.folio || exp.id} exportado en PDF!`);
+      }
+      return;
+    } catch (pdfErr) {
+      console.warn("Single expense PDF error, using fallback:", pdfErr);
+    }
+  }
+
+  // Fallback imprimible si jsPDF no está listo
+  printSingleExpenseHtml(exp, prj, filename);
+}
+
+// Fallback HTML para impresión de comprobante individual
+function printSingleExpenseHtml(exp, prj, filename) {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("Por favor habilita las ventanas emergentes en el navegador para imprimir el comprobante PDF.");
+    return;
+  }
+  const dateStr = new Date().toLocaleDateString("es-CL");
+  const html = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <title>${escapeHtml(filename || "Comprobante_Gasto.pdf")}</title>
+      <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #0f172a; margin: 0; padding: 36px; background: #ffffff; font-size: 13px; line-height: 1.5; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2.5px solid #0284c7; padding-bottom: 14px; margin-bottom: 20px; }
+        .logo { font-size: 24px; font-weight: 900; color: #0284c7; }
+        .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin-bottom: 16px; }
+        .card-title { font-size: 11px; font-weight: 800; color: #0369a1; text-transform: uppercase; margin-bottom: 8px; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 12px; }
+        .amount-box { background: #f0f9ff; border: 2px solid #0284c7; border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+        .amount-val { font-size: 24px; font-weight: 900; color: #0284c7; }
+        .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px; text-align: center; font-size: 11px; }
+        .sig-line { border-top: 1px solid #0f172a; padding-top: 6px; }
+        @media print { body { padding: 0; } }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div>
+          <div class="logo">CM INDUSTRIAL</div>
+          <div style="font-size:12px;color:#64748b;">Servicios de Ingeniería, Montajes & Construcción Industrial</div>
+          <div style="font-size:11px;color:#64748b;">RUT: 76.503.216-4 &bull; Arica 4160, Estación Central</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:14px;font-weight:800;color:#0284c7;">VOUCHER DE GASTO</div>
+          <div style="font-size:12px;font-weight:700;">FOLIO: ${escapeHtml(exp.folio || exp.id)}</div>
+          <div style="font-size:11px;color:#64748b;">Fecha: ${exp.date || dateStr}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">1. Asignación a Obra</div>
+        <div class="grid">
+          <div><strong>Proyecto:</strong> ${escapeHtml(exp.projectId || 'General')} - ${escapeHtml(prj ? prj.name : 'Central')}</div>
+          <div><strong>Cliente:</strong> ${escapeHtml(prj ? prj.client : 'CM Industrial')}</div>
+          <div><strong>Ubicación:</strong> ${escapeHtml(prj ? prj.location : 'Faena')}</div>
+          <div><strong>Jefe Proyecto:</strong> ${escapeHtml(prj ? prj.manager : 'Supervisión')}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">2. Datos de la Adquisición</div>
+        <div class="grid">
+          <div><strong>Proveedor:</strong> ${escapeHtml(exp.supplier || '-')}</div>
+          <div><strong>Categoría:</strong> ${escapeHtml(exp.category || 'General')}</div>
+          <div><strong>Folio / Factura:</strong> ${escapeHtml(exp.folio || '-')}</div>
+          <div><strong>Estado:</strong> ${escapeHtml(exp.status || 'Aprobado')}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">3. Glosa / Detalle</div>
+        <div style="font-size:12.5px;">${escapeHtml(exp.note || 'Sin glosa especificada.')}</div>
+      </div>
+
+      <div class="amount-box">
+        <div style="font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;">Monto Total Liquidado</div>
+        <div class="amount-val">$ ${formatNumberCL(exp.amount)} CLP</div>
+        <div style="font-size:11.5px;color:#475569;margin-top:4px;">Son: ${escapeHtml(getAmountInWordsSpanish(exp.amount))}</div>
+      </div>
+
+      <div class="signatures">
+        <div>
+          <div class="sig-line"><strong>Solicitante</strong><br>Adquisiciones</div>
+        </div>
+        <div>
+          <div class="sig-line"><strong>Revisión Contable</strong><br>Control de Factura</div>
+        </div>
+        <div>
+          <div class="sig-line"><strong>Jefe de Proyecto</strong><br>Aprobación Final</div>
+        </div>
+      </div>
+
+      <script>
+        window.onload = function() { window.print(); }
+      </script>
+    </body>
+    </html>
+  `;
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
+// Fallback HTML de alta fidelidad para informe consolidado
+function printExpensesReportHtml(expenses, totalAmount, dateStr, filename, activePrj) {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("Por favor habilita las ventanas emergentes en el navegador para imprimir el PDF.");
+    return;
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <title>${escapeHtml(filename || "CM_Industrial_Gastos.pdf")}</title>
+      <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #0f172a; margin: 0; padding: 28px; background: #ffffff; font-size: 12px; line-height: 1.4; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2.5px solid #0284c7; padding-bottom: 12px; margin-bottom: 18px; }
+        .logo { font-size: 22px; font-weight: 900; color: #0284c7; letter-spacing: -0.5px; }
+        .company-info { text-align: right; font-size: 11px; color: #64748b; }
+        .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 18px; }
+        .kpi-title { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+        .kpi-val { font-size: 16px; font-weight: 900; color: #0284c7; margin-top: 2px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
+        th { background: #0f172a; color: #ffffff; text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700; }
+        td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
+        tbody tr:nth-child(even) { background: #f8fafc; }
+        .total-row { background: #0284c7 !important; color: #ffffff; font-weight: 900; font-size: 12px; }
+        .total-row td { color: #ffffff; padding: 9px 10px; }
+        .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 36px; text-align: center; font-size: 10.5px; }
+        .sig-line { border-top: 1px solid #0f172a; padding-top: 6px; }
+        @media print {
+          body { padding: 0; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div>
+          <div class="logo">CM INDUSTRIAL</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px;">Servicios de Ingeniería, Montajes & Construcción Industrial</div>
+        </div>
+        <div class="company-info">
+          <strong>CM Industrial LTDA</strong><br>
+          RUT: 76.503.216-4 &bull; Arica 4160, Estación Central<br>
+          Fecha Emisión: ${dateStr}
+        </div>
+      </div>
+
+      <div style="font-size:15px;font-weight:800;color:#0369a1;text-transform:uppercase;margin-bottom:6px;">
+        Informe de Gastos y Adquisiciones ${activePrj ? `&bull; Proyecto: ${escapeHtml(activePrj.id)} - ${escapeHtml(activePrj.name)}` : ''}
+      </div>
+
+      <div class="kpi-row">
+        <div>
+          <div class="kpi-title">Total de Gastos</div>
+          <div class="kpi-val">$ ${formatNumberCL(totalAmount)} CLP</div>
+        </div>
+        <div>
+          <div class="kpi-title">Cantidad de Facturas</div>
+          <div class="kpi-val" style="color:#0f172a;">${expenses.length} documentos</div>
+        </div>
+        <div>
+          <div class="kpi-title">Monto Promedio</div>
+          <div class="kpi-val" style="color:#0f172a;">$ ${formatNumberCL(Math.round(totalAmount / (expenses.length || 1)))} CLP</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Folio</th>
+            <th>Proyecto</th>
+            <th>Categoría</th>
+            <th>Proveedor</th>
+            <th style="text-align:center;">Fecha</th>
+            <th style="text-align:center;">Estado</th>
+            <th>Glosa / Detalle</th>
+            <th style="text-align:right;">Monto (CLP)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${expenses.map(e => `
+            <tr>
+              <td><strong>${escapeHtml(e.folio || '-')}</strong></td>
+              <td>${escapeHtml(e.projectId || '-')}</td>
+              <td>${escapeHtml(e.category || '-')}</td>
+              <td>${escapeHtml(e.supplier || '-')}</td>
+              <td style="text-align:center;">${e.date || '-'}</td>
+              <td style="text-align:center;">${escapeHtml(e.status || 'Aprobado')}</td>
+              <td>${escapeHtml(e.note || '-')}</td>
+              <td style="text-align:right;font-weight:700;">$ ${formatNumberCL(e.amount)}</td>
+            </tr>
+          `).join('')}
+          <tr class="total-row">
+            <td colspan="7" style="text-align:right;">TOTAL CONSOLIDADO:</td>
+            <td style="text-align:right;">$ ${formatNumberCL(totalAmount)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="signatures">
+        <div>
+          <div class="sig-line"><strong>Responsable de Adquisiciones</strong><br>CM Industrial LTDA</div>
+        </div>
+        <div>
+          <div class="sig-line"><strong>Jefatura de Finanzas & Costos</strong><br>Revisión & Control</div>
+        </div>
+        <div>
+          <div class="sig-line"><strong>Gerencia de Operaciones</strong><br>Aprobación Final</div>
+        </div>
+      </div>
+
+      <script>
+        window.onload = function() { window.print(); }
+      </script>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
+function exportPDF(entity) {
+  if (entity === "expenses") {
+    exportExpensesPDF();
+  } else {
+    exportCSV(entity);
+  }
+}
+window.exportExpensesPDF = exportExpensesPDF;
+window.exportSingleExpensePDF = exportSingleExpensePDF;
+window.setExpensesProjectFilter = setExpensesProjectFilter;
+window.filterExpensesTable = filterExpensesTable;
+window.exportPDF = exportPDF;
 
 // CSV Export
 function exportCSV(entity) {
@@ -6083,6 +6973,17 @@ function getEntityFormHTML(entity, data) {
           <label class="form-label">Glosa / Observación</label>
           <input type="text" id="f_note" class="form-control" value="${data.note || ''}">
         </div>
+        ${data.id ? `
+          <div class="form-group full" style="display:flex;justify-content:space-between;align-items:center;background:rgba(2, 132, 199, 0.08);border:1px solid rgba(2, 132, 199, 0.25);border-radius:8px;padding:10px 14px;margin-top:4px;">
+            <div>
+              <div style="font-weight:700;font-size:12px;color:var(--text-main);"><i class="fa-solid fa-receipt" style="color:var(--primary);margin-right:4px;"></i> Voucher de Egreso Individual</div>
+              <div style="font-size:11px;color:var(--text-sub);">Genera el comprobante formal de este gasto específico con firmas</div>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="exportSingleExpensePDF('${data.id}')" style="color:#ef4444;border-color:rgba(239,68,68,0.3);font-weight:700;">
+              <i class="fa-solid fa-file-pdf"></i> Exportar Comprobante PDF
+            </button>
+          </div>
+        ` : ""}
       </div>
     `;
   } else if (entity === "workers") {
