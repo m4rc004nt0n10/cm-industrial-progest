@@ -873,6 +873,32 @@ function defaultSeedData() {
         lastMaintenance: "2026-07-25",
         status: "En Faena",
         photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="30" y="70" width="130" height="60" rx="4" fill="%231e293b" stroke="%23f97316" stroke-width="2"/><rect x="130" y="50" width="50" height="80" rx="4" fill="%23334155"/><line x1="50" y1="70" x2="110" y2="30" stroke="%23f97316" stroke-width="4"/><circle cx="65" cy="130" r="14" fill="%23475569"/><circle cx="155" cy="130" r="14" fill="%23475569"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%23f97316" font-weight="bold" text-anchor="middle">CAM-02: MB Actros Pluma 15T</text></svg>'
+      },
+      {
+        id: "TLS-007",
+        code: "TOR-01",
+        name: "Torno Paralelo Mecánico Industrial 2000mm",
+        brand: "Pinacho SC-250",
+        serialNumber: "PN-66120",
+        projectId: "Taller Central",
+        responsible: "Pedro Valenzuela",
+        nextMaintenance: "2026-11-20",
+        lastMaintenance: "2026-06-15",
+        status: "En Taller",
+        photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="20" y="60" width="200" height="70" rx="4" fill="%231e293b" stroke="%230284c7" stroke-width="2"/><rect x="35" y="45" width="45" height="40" rx="3" fill="%23334155"/><circle cx="100" cy="95" r="16" fill="%230f172a" stroke="%2338bdf8" stroke-width="2"/><line x1="100" y1="95" x2="200" y2="95" stroke="%2394a3b8" stroke-width="4"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%2338bdf8" font-weight="bold" text-anchor="middle">TOR-01: Torno Pinacho 2000mm</text></svg>'
+      },
+      {
+        id: "TLS-008",
+        code: "TAL-02",
+        name: "Taladro Fresador de Columna Industrial",
+        brand: "Optimum Maschinen",
+        serialNumber: "OP-44912",
+        projectId: "Taller Central",
+        responsible: "Pedro Valenzuela",
+        nextMaintenance: "2026-12-05",
+        lastMaintenance: "2026-07-02",
+        status: "En Taller",
+        photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="75" y="30" width="90" height="110" rx="6" fill="%231e293b" stroke="%2310b981" stroke-width="2"/><rect x="90" y="45" width="60" height="30" rx="3" fill="%23334155"/><line x1="120" y1="75" x2="120" y2="115" stroke="%2394a3b8" stroke-width="5"/><circle cx="120" cy="120" r="10" fill="%23f59e0b"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%2310b981" font-weight="bold" text-anchor="middle">TAL-02: Taladro Fresador Optimum</text></svg>'
       }
     ],
     documents: [
@@ -2009,3 +2035,31 @@ function getUserRole() {
   const s = getSession();
   return (s && s.user && s.user.role) || "Usuario";
 }
+
+function switchActiveRole(newRole) {
+  let s = getSession();
+  if (!s || !s.user) {
+    s = {
+      user: {
+        id: "usr-demo-master",
+        name: newRole === "Usuario" ? "Operador Terreno" : "Carlos Morales",
+        email: newRole === "Usuario" ? "operador@cmindustrial.cl" : "carlos.morales@cmindustrial.cl",
+        role: newRole || "Desarrollador"
+      }
+    };
+  } else {
+    s.user.role = newRole;
+  }
+  currentSession = s;
+  try {
+    sessionStorage.setItem("cm_progest_session", JSON.stringify(s));
+  } catch (e) {}
+
+  if (typeof updateNavPermissions === "function") updateNavPermissions();
+  if (typeof renderSidebarUserCard === "function") renderSidebarUserCard();
+  if (typeof renderCurrentView === "function") renderCurrentView();
+  if (typeof showToast === "function") {
+    showToast(`Perfil cambiado a: ${newRole}`, "info");
+  }
+}
+window.switchActiveRole = switchActiveRole;

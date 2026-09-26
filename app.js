@@ -3895,8 +3895,166 @@ function renderWorkers(container) {
 }
 
 // 6. HERRAMIENTAS VIEW
+let activeToolsLocationFilter = "todos"; // "todos" | "taller" | "faena" | "mantenimiento" | project ID (e.g. "PRJ-001")
+
+function isToolInTaller(t) {
+  if (!t) return false;
+  const p = (t.projectId || "").toLowerCase();
+  const s = (t.status || "").toLowerCase();
+  return p.includes("taller") || p.includes("bodega") || p.includes("central") || s.includes("taller") || s.includes("mantenimiento") || (!p.startsWith("prj-") && p !== "");
+}
+
+function setToolsLocationFilter(filterVal) {
+  activeToolsLocationFilter = filterVal || "todos";
+  const select = document.getElementById("tool-filter-location");
+  if (select) select.value = activeToolsLocationFilter;
+
+  // Actualizar botones de filtro rápido si existen
+  document.querySelectorAll(".tool-quick-filter-btn").forEach(btn => {
+    const val = btn.getAttribute("data-filter");
+    if (val === activeToolsLocationFilter) {
+      btn.classList.add("active");
+      btn.style.background = "var(--primary)";
+      btn.style.color = "#ffffff";
+    } else {
+      btn.classList.remove("active");
+      btn.style.background = "var(--bg-subtle, rgba(255,255,255,0.04))";
+      btn.style.color = "var(--text-main)";
+    }
+  });
+
+  filterToolsTable();
+}
+
+function filterToolsTable() {
+  const searchInput = document.getElementById("tool-search-input");
+  const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+  const filterVal = activeToolsLocationFilter || "todos";
+
+  const rows = document.querySelectorAll("#tool-table tbody tr.tool-row");
+  const emptyRow = document.getElementById("tool-empty-filter-row");
+  let visibleCount = 0;
+
+  rows.forEach(row => {
+    const rowPrj = row.getAttribute("data-prj") || "";
+    const rowStatus = row.getAttribute("data-status") || "";
+    const isTaller = row.getAttribute("data-is-taller") === "true";
+    const text = row.innerText.toLowerCase();
+
+    let matchLocation = false;
+    if (filterVal === "todos") {
+      matchLocation = true;
+    } else if (filterVal === "taller") {
+      matchLocation = isTaller;
+    } else if (filterVal === "faena") {
+      matchLocation = !isTaller || rowPrj.startsWith("PRJ-");
+    } else if (filterVal === "mantenimiento") {
+      matchLocation = rowStatus.toLowerCase().includes("mantenimiento");
+    } else {
+      matchLocation = (rowPrj === filterVal);
+    }
+
+    const matchQuery = !query || text.includes(query);
+
+    if (matchLocation && matchQuery) {
+      row.style.display = "";
+      visibleCount++;
+    } else {
+      row.style.display = "none";
+    }
+  });
+
+  // Dynamic count badge
+  const countBadge = document.getElementById("tool-count-badge");
+  if (countBadge) {
+    if (filterVal !== "todos" || query) {
+      countBadge.innerText = `${visibleCount} de ${rows.length} Filtrados`;
+      countBadge.className = "badge badge-orange";
+    } else {
+      countBadge.innerText = `${rows.length} Equipos`;
+      countBadge.className = "badge badge-orange";
+    }
+  }
+
+  // Active filter badge
+  const activeBadge = document.getElementById("tool-active-filter-badge");
+  if (activeBadge) {
+    if (filterVal === "taller") {
+      activeBadge.style.display = "inline-flex";
+      activeBadge.className = "badge badge-yellow";
+      activeBadge.innerHTML = `<i class="fa-solid fa-wrench"></i> En Taller / Bodega <i class="fa-solid fa-xmark" style="cursor:pointer;margin-left:4px;" onclick="setToolsLocationFilter('todos')"></i>`;
+    } else if (filterVal === "faena") {
+      activeBadge.style.display = "inline-flex";
+      activeBadge.className = "badge badge-green";
+      activeBadge.innerHTML = `<i class="fa-solid fa-helmet-safety"></i> En Faena <i class="fa-solid fa-xmark" style="cursor:pointer;margin-left:4px;" onclick="setToolsLocationFilter('todos')"></i>`;
+    } else if (filterVal === "mantenimiento") {
+      activeBadge.style.display = "inline-flex";
+      activeBadge.className = "badge badge-red";
+      activeBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> En Mantenimiento <i class="fa-solid fa-xmark" style="cursor:pointer;margin-left:4px;" onclick="setToolsLocationFilter('todos')"></i>`;
+    } else if (filterVal !== "todos") {
+      activeBadge.style.display = "inline-flex";
+      activeBadge.className = "badge badge-blue";
+      activeBadge.innerHTML = `<i class="fa-solid fa-building"></i> ${filterVal} <i class="fa-solid fa-xmark" style="cursor:pointer;margin-left:4px;" onclick="setToolsLocationFilter('todos')"></i>`;
+    } else {
+      activeBadge.style.display = "none";
+    }
+  }
+
+  // Empty state row
+  if (emptyRow) {
+    emptyRow.style.display = (visibleCount === 0 && rows.length > 0) ? "" : "none";
+  }
+}
+
 function renderTools(container) {
   const userIsDev = isDeveloper();
+  const tools = DB.tools || [];
+  const projects = DB.projects || [];
+
+  // Asegurar que si DB.tools no tiene equipos de taller los incluya
+  if (!tools.some(t => isToolInTaller(t))) {
+    tools.push(
+      {
+        id: "TLS-007",
+        code: "TOR-01",
+        name: "Torno Paralelo Mecánico Industrial 2000mm",
+        brand: "Pinacho SC-250",
+        serialNumber: "PN-66120",
+        projectId: "Taller Central",
+        responsible: "Pedro Valenzuela",
+        nextMaintenance: "2026-11-20",
+        lastMaintenance: "2026-06-15",
+        status: "En Taller",
+        photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="20" y="60" width="200" height="70" rx="4" fill="%231e293b" stroke="%230284c7" stroke-width="2"/><rect x="35" y="45" width="45" height="40" rx="3" fill="%23334155"/><circle cx="100" cy="95" r="16" fill="%230f172a" stroke="%2338bdf8" stroke-width="2"/><line x1="100" y1="95" x2="200" y2="95" stroke="%2394a3b8" stroke-width="4"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%2338bdf8" font-weight="bold" text-anchor="middle">TOR-01: Torno Pinacho 2000mm</text></svg>'
+      },
+      {
+        id: "TLS-008",
+        code: "TAL-02",
+        name: "Taladro Fresador de Columna Industrial",
+        brand: "Optimum Maschinen",
+        serialNumber: "OP-44912",
+        projectId: "Taller Central",
+        responsible: "Pedro Valenzuela",
+        nextMaintenance: "2026-12-05",
+        lastMaintenance: "2026-07-02",
+        status: "En Taller",
+        photo: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180"><rect width="240" height="180" fill="%230f172a"/><rect x="75" y="30" width="90" height="110" rx="6" fill="%231e293b" stroke="%2310b981" stroke-width="2"/><rect x="90" y="45" width="60" height="30" rx="3" fill="%23334155"/><line x1="120" y1="75" x2="120" y2="115" stroke="%2394a3b8" stroke-width="5"/><circle cx="120" cy="120" r="10" fill="%23f59e0b"/><text x="120" y="165" font-family="Arial" font-size="11" fill="%2310b981" font-weight="bold" text-anchor="middle">TAL-02: Taladro Fresador Optimum</text></svg>'
+      }
+    );
+  }
+
+  // Conteo métricas
+  const tallerCount = tools.filter(t => isToolInTaller(t)).length;
+  const faenaCount = tools.filter(t => !isToolInTaller(t) || (t.projectId && t.projectId.startsWith("PRJ-"))).length;
+  const maintCount = tools.filter(t => (t.status || "").toLowerCase().includes("mantenimiento")).length;
+
+  // Otras ubicaciones personalizadas si existieran
+  const knownPrjIds = new Set(projects.map(p => p.id));
+  const otherLocations = Array.from(new Set(
+    tools
+      .map(t => t.projectId || "")
+      .filter(loc => loc && !knownPrjIds.has(loc) && !loc.toLowerCase().includes("taller") && !loc.toLowerCase().includes("bodega"))
+  ));
 
   container.innerHTML = `
     ${!userIsDev ? `
@@ -3916,19 +4074,74 @@ function renderTools(container) {
       </div>
     ` : ""}
 
+    <!-- Botones de Filtro Rápido por Ubicación -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+      <span style="font-size:12px;font-weight:700;color:var(--text-sub);margin-right:4px;">
+        <i class="fa-solid fa-filter"></i> Filtrar por:
+      </span>
+      <button type="button" class="btn btn-sm tool-quick-filter-btn ${activeToolsLocationFilter === 'todos' ? 'active' : ''}" data-filter="todos" onclick="setToolsLocationFilter('todos')" style="font-size:11.5px;padding:5px 11px;border-radius:6px;${activeToolsLocationFilter === 'todos' ? 'background:var(--primary);color:#fff;' : 'background:var(--bg-subtle, rgba(255,255,255,0.04));'}">
+        Todos (${tools.length})
+      </button>
+      <button type="button" class="btn btn-sm tool-quick-filter-btn ${activeToolsLocationFilter === 'taller' ? 'active' : ''}" data-filter="taller" onclick="setToolsLocationFilter('taller')" style="font-size:11.5px;padding:5px 11px;border-radius:6px;${activeToolsLocationFilter === 'taller' ? 'background:var(--primary);color:#fff;' : 'background:var(--bg-subtle, rgba(255,255,255,0.04));'}">
+        <i class="fa-solid fa-wrench" style="color:#f59e0b;"></i> En Taller / Bodega (${tallerCount})
+      </button>
+      <button type="button" class="btn btn-sm tool-quick-filter-btn ${activeToolsLocationFilter === 'faena' ? 'active' : ''}" data-filter="faena" onclick="setToolsLocationFilter('faena')" style="font-size:11.5px;padding:5px 11px;border-radius:6px;${activeToolsLocationFilter === 'faena' ? 'background:var(--primary);color:#fff;' : 'background:var(--bg-subtle, rgba(255,255,255,0.04));'}">
+        <i class="fa-solid fa-helmet-safety" style="color:#10b981;"></i> En Faena / Obras (${faenaCount})
+      </button>
+      ${maintCount > 0 ? `
+        <button type="button" class="btn btn-sm tool-quick-filter-btn ${activeToolsLocationFilter === 'mantenimiento' ? 'active' : ''}" data-filter="mantenimiento" onclick="setToolsLocationFilter('mantenimiento')" style="font-size:11.5px;padding:5px 11px;border-radius:6px;${activeToolsLocationFilter === 'mantenimiento' ? 'background:var(--primary);color:#fff;' : 'background:var(--bg-subtle, rgba(255,255,255,0.04));'}">
+          <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i> En Mantenimiento (${maintCount})
+        </button>
+      ` : ""}
+    </div>
+
     <div class="data-table-container">
       <div class="table-toolbar">
         <div class="toolbar-title-group">
           <h2 style="font-size:18px;font-weight:700;">Inventario de Herramientas & Maquinaria</h2>
-          <span class="badge badge-orange">${DB.tools.length} Equipos</span>
+          <span id="tool-count-badge" class="badge badge-orange">${tools.length} Equipos</span>
+          <span id="tool-active-filter-badge" style="display:none;"></span>
         </div>
         <div class="toolbar-actions-group">
+          <!-- Selector de Filtro por Proyecto o en Taller -->
+          <div style="display:flex;align-items:center;gap:6px;">
+            <select id="tool-filter-location" class="form-control" style="font-size:12px;padding:6px 10px;height:34px;min-width:210px;max-width:280px;background:var(--bg-subtle, #ffffff);border:1px solid var(--border-color);border-radius:6px;font-weight:600;" onchange="setToolsLocationFilter(this.value)" title="Filtrar herramientas por proyecto específico o taller">
+              <option value="todos" ${activeToolsLocationFilter === 'todos' ? 'selected' : ''}>🏢 Todas las Ubicaciones (${tools.length})</option>
+              <option value="taller" ${activeToolsLocationFilter === 'taller' ? 'selected' : ''}>🔧 En Taller / Bodega Central (${tallerCount})</option>
+              <optgroup label="Proyectos en Faena">
+                ${projects.map(p => {
+                  const pCount = tools.filter(t => t.projectId === p.id).length;
+                  return `
+                    <option value="${p.id}" ${activeToolsLocationFilter === p.id ? 'selected' : ''}>
+                      ${p.id} - ${p.name} (${pCount})
+                    </option>
+                  `;
+                }).join("")}
+              </optgroup>
+              ${otherLocations.length > 0 ? `
+                <optgroup label="Otras Ubicaciones">
+                  ${otherLocations.map(loc => {
+                    const lCount = tools.filter(t => t.projectId === loc).length;
+                    return `
+                      <option value="${loc}" ${activeToolsLocationFilter === loc ? 'selected' : ''}>
+                        📍 ${loc} (${lCount})
+                      </option>
+                    `;
+                  }).join("")}
+                </optgroup>
+              ` : ""}
+            </select>
+          </div>
+
+          <!-- Buscador de texto -->
           <div class="search-box">
             <i class="fa-solid fa-search search-icon"></i>
-            <input type="text" class="search-input" placeholder="Buscar tag, marca, equipo..." oninput="filterTable('tool-table', this.value)">
+            <input type="text" id="tool-search-input" class="search-input" placeholder="Buscar tag, marca, equipo..." oninput="filterToolsTable()">
           </div>
+
+          <!-- Botones de Acción -->
           <div class="toolbar-btn-group">
-            <button class="btn btn-secondary btn-sm" onclick="exportCSV('tools')"><i class="fa-solid fa-file-export"></i> Exportar</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportCSV('tools')" title="Exportar inventario de herramientas a CSV / Excel"><i class="fa-solid fa-file-export"></i> Exportar</button>
             ${userIsDev ? `
               <button class="btn btn-primary btn-sm" onclick="openCreateModal('tools')"><i class="fa-solid fa-plus"></i> Añadir Equipo</button>
             ` : ""}
@@ -3953,7 +4166,7 @@ function renderTools(container) {
           </tr>
         </thead>
         <tbody>
-          ${DB.tools.length === 0 ? `
+          ${tools.length === 0 ? `
             <tr>
               <td colspan="10" style="text-align:center;padding:48px 20px;">
                 <i class="fa-solid fa-toolbox" style="font-size:32px;color:var(--text-sub);margin-bottom:12px;display:block;"></i>
@@ -3964,10 +4177,11 @@ function renderTools(container) {
                 ` : ""}
               </td>
             </tr>
-          ` : DB.tools.map(t => {
+          ` : tools.map(t => {
             const isDue = new Date(t.nextMaintenance) < new Date();
+            const inTaller = isToolInTaller(t);
             return `
-              <tr>
+              <tr class="tool-row" data-prj="${t.projectId || ''}" data-status="${t.status || ''}" data-is-taller="${inTaller ? 'true' : 'false'}">
                 <td style="text-align:center;">
                   ${t.photo ? `
                     <div onclick="openToolPhotoViewer('${t.id}')" title="Ver fotografía del equipo" style="width:40px;height:40px;border-radius:6px;overflow:hidden;border:1px solid var(--border-color);background:#080c14;margin:0 auto;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
@@ -3982,11 +4196,25 @@ function renderTools(container) {
                 <td><strong>${t.code}</strong></td>
                 <td><strong>${t.name}</strong><br><small style="color:var(--text-sub);">${t.brand}</small></td>
                 <td><small>${t.serialNumber}</small></td>
-                <td><span class="badge badge-blue">${t.projectId}</span></td>
+                <td>
+                  ${inTaller ? `
+                    <span class="badge badge-yellow" style="cursor:pointer;" onclick="setToolsLocationFilter('taller')" title="Clic para filtrar equipos en Taller / Bodega">
+                      <i class="fa-solid fa-wrench"></i> ${t.projectId || 'Taller Central'}
+                    </span>
+                  ` : `
+                    <span class="badge badge-blue" style="cursor:pointer;" onclick="setToolsLocationFilter('${t.projectId}')" title="Clic para filtrar equipos de este proyecto">
+                      <i class="fa-solid fa-helmet-safety"></i> ${t.projectId}
+                    </span>
+                  `}
+                </td>
                 <td>${t.responsible}</td>
                 <td>${t.lastMaintenance}</td>
                 <td><span class="badge ${isDue ? 'badge-red' : 'badge-green'}">${t.nextMaintenance}</span></td>
-                <td><span class="badge ${t.status === 'En Faena' ? 'badge-green' : 'badge-yellow'}">${t.status}</span></td>
+                <td>
+                  <span class="badge ${t.status === 'En Faena' ? 'badge-green' : t.status === 'En Taller' ? 'badge-blue' : t.status === 'En Mantenimiento' ? 'badge-red' : 'badge-yellow'}">
+                    ${t.status}
+                  </span>
+                </td>
                 <td style="text-align:${userIsDev ? 'right' : 'center'};">
                   ${userIsDev ? `
                     <button class="btn btn-secondary btn-sm" onclick="openEditModal('tools', '${t.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
@@ -3998,11 +4226,27 @@ function renderTools(container) {
               </tr>
             `;
           }).join("")}
+          <tr id="tool-empty-filter-row" style="display:none;">
+            <td colspan="10" style="text-align:center;padding:32px 16px;color:var(--text-sub);">
+              <i class="fa-solid fa-filter-circle-xmark" style="font-size:24px;margin-bottom:8px;display:block;color:#94a3b8;"></i>
+              No se encontraron herramientas ni maquinaria para la ubicación o búsqueda seleccionada.
+              <div style="margin-top:10px;">
+                <button class="btn btn-secondary btn-sm" onclick="setToolsLocationFilter('todos');document.getElementById('tool-search-input').value='';filterToolsTable();">
+                  <i class="fa-solid fa-rotate-left"></i> Restablecer Filtros
+                </button>
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
       </div>
     </div>
   `;
+
+  // Aplicar filtro si ya había una ubicación seleccionada
+  if (activeToolsLocationFilter !== "todos") {
+    setTimeout(filterToolsTable, 20);
+  }
 }
 
 // 7. DOCUMENTOS VIEW
@@ -5408,6 +5652,8 @@ window.exportExpensesPDF = exportExpensesPDF;
 window.exportSingleExpensePDF = exportSingleExpensePDF;
 window.setExpensesProjectFilter = setExpensesProjectFilter;
 window.filterExpensesTable = filterExpensesTable;
+window.setToolsLocationFilter = setToolsLocationFilter;
+window.filterToolsTable = filterToolsTable;
 window.exportPDF = exportPDF;
 
 // CSV Export
@@ -5439,7 +5685,7 @@ function exportCSV(entity) {
         w.id, w.rut, w.name, w.role, w.projectId, 
         w.workSchedule || "40 hrs/semana", rate, extraRate, 
         reg, ovt, subReg, subOvt, total,
-        w.status, w.phone, w.certifications, w.medExamExpiry
+        w.status, w.phone, w.certificaciones, w.medExamExpiry
       ]);
     });
   } else if (entity === "overtime") {
@@ -5458,8 +5704,21 @@ function exportCSV(entity) {
       ]);
     });
   } else if (entity === "tools") {
-    rows = [["ID", "Codigo", "Nombre", "Marca", "Proyecto", "Estado", "UltimaMant", "ProximaMant", "Serie", "Responsable", "TieneFoto"]];
-    DB.tools.forEach(t => {
+    let toolsToExport = DB.tools || [];
+    if (activeToolsLocationFilter && activeToolsLocationFilter !== "todos") {
+      filename = `CM_Industrial_herramientas_${activeToolsLocationFilter}_${new Date().toISOString().split("T")[0]}.csv`;
+      if (activeToolsLocationFilter === "taller") {
+        toolsToExport = toolsToExport.filter(t => isToolInTaller(t));
+      } else if (activeToolsLocationFilter === "faena") {
+        toolsToExport = toolsToExport.filter(t => !isToolInTaller(t) || (t.projectId && t.projectId.startsWith("PRJ-")));
+      } else if (activeToolsLocationFilter === "mantenimiento") {
+        toolsToExport = toolsToExport.filter(t => (t.status || "").toLowerCase().includes("mantenimiento"));
+      } else {
+        toolsToExport = toolsToExport.filter(t => t.projectId === activeToolsLocationFilter);
+      }
+    }
+    rows = [["ID", "Codigo", "Nombre", "Marca", "Ubicacion_Proyecto", "Estado", "UltimaMant", "ProximaMant", "Serie", "Responsable", "TieneFoto"]];
+    toolsToExport.forEach(t => {
       rows.push([t.id, t.code, t.name, t.brand, t.projectId, t.status, t.lastMaintenance, t.nextMaintenance, t.serialNumber, t.responsible, t.photo ? "Si" : "No"]);
     });
   } else if (entity === "documents") {
@@ -7314,13 +7573,30 @@ function getEntityFormHTML(entity, data) {
         </div>
         <div class="form-group">
           <label class="form-label">Ubicación / Proyecto</label>
-          <input type="text" id="f_tprj" class="form-control" value="${data.projectId || 'Bodega Central'}">
+          <select id="f_tprj" class="form-control">
+            <option value="Taller Central" ${(!data.projectId || data.projectId === 'Taller Central') ? 'selected' : ''}>🏭 Taller Central</option>
+            <option value="Bodega Central" ${data.projectId === 'Bodega Central' ? 'selected' : ''}>📦 Bodega Central</option>
+            <optgroup label="Proyectos en Faena">
+              ${(DB.projects || []).map(p => `
+                <option value="${p.id}" ${data.projectId === p.id ? 'selected' : ''}>${p.id} - ${p.name}</option>
+              `).join('')}
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estado del Equipo</label>
+          <select id="f_tstatus" class="form-control">
+            <option value="En Faena" ${(data.status || 'En Faena') === 'En Faena' ? 'selected' : ''}>🟢 En Faena</option>
+            <option value="En Taller" ${data.status === 'En Taller' ? 'selected' : ''}>🟡 En Taller</option>
+            <option value="En Mantenimiento" ${data.status === 'En Mantenimiento' ? 'selected' : ''}>🟠 En Mantenimiento</option>
+            <option value="Disponible" ${data.status === 'Disponible' ? 'selected' : ''}>🔵 Disponible</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label">Responsable</label>
           <input type="text" id="f_tresp" class="form-control" value="${data.responsible || ''}" placeholder="Encargado del equipo">
         </div>
-        <div class="form-group full">
+        <div class="form-group">
           <label class="form-label">Próxima Mantención</label>
           <input type="date" id="f_tnext" class="form-control" value="${data.nextMaintenance || '2026-06-30'}">
         </div>
@@ -7806,7 +8082,8 @@ async function saveModalRecord() {
     record.responsible = document.getElementById("f_tresp").value.trim();
     record.nextMaintenance = document.getElementById("f_tnext").value;
     record.lastMaintenance = activeModalRecord && activeModalRecord.lastMaintenance ? activeModalRecord.lastMaintenance : new Date().toISOString().split("T")[0];
-    record.status = activeModalRecord && activeModalRecord.status ? activeModalRecord.status : "En Faena";
+    const statusEl = document.getElementById("f_tstatus");
+    record.status = statusEl ? statusEl.value : (activeModalRecord && activeModalRecord.status ? activeModalRecord.status : (record.projectId.toLowerCase().includes('taller') ? 'En Taller' : 'En Faena'));
     
     // Save equipment photo
     const photoEl = document.getElementById("f_tphoto");
